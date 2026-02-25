@@ -3,7 +3,10 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
+import { RegisterResponse } from "@/types/typesRegister"
 import axios from "axios";
+
+const apiHost = process.env.NEXT_PUBLIC_API_HOST;
 
 const MapSelector = dynamic(() => import("@/components/MapSelector"), { ssr: false });
 
@@ -15,9 +18,9 @@ export default function RegisterClient() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [password2, setPassword2] = useState("");
-    const passwordsMatch = password === password2 && password2.length > 0;
-    const password2Bg = password2.length === 0
+    const [passwordSecond, setPasswordSecond] = useState("");
+    const passwordsMatch = password === passwordSecond && passwordSecond.length > 0;
+    const passwordSecondBg = passwordSecond.length === 0
         ? "bg-gray-700"
         : passwordsMatch
             ? "bg-green-200"
@@ -38,19 +41,9 @@ export default function RegisterClient() {
     async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
         setLoading(true);
-        const body = {
-            userName: username,
-            email,
-            password,
-            meteosource_lat: lat,
-            meteosource_lon: lon,
-            evt,
-            wea,
-            mtx,
-            rtc,
-        };
+        const body = { username, email, password };
         try {
-            const response = await axios.post("http://localhost:3000/users/register", body, {
+            const response = await axios.post<RegisterResponse>(`${apiHost}/users/register`, body, {
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -59,9 +52,23 @@ export default function RegisterClient() {
             if (response.status < 200 || response.status >= 300) {
                 throw new Error(`API returned error ${response.status}`);
             }
-            router.push("/login");
+            if (response.status >= 200 && response.status < 300) {
+                console.log("RegisterClient: Create location data.")
+                console.log("Register response:", response.data);
+                const userId = response.data.id;
+                await axios.post("/api/register", {
+                    userId,
+                    lat,
+                    lon,
+                    evt,
+                    wea,
+                    mtx,
+                    rtc,
+                });
+                router.push("/login");
+            }
         } catch (e) {
-            console.error(e);
+            console.error("RegisterClient: ", e);
             setError("Registration failed!");
         }
         setLoading(false);
@@ -70,6 +77,7 @@ export default function RegisterClient() {
     return (
         <div className="w-full h-full bg-gray-500 flex items-center justify-center">
             <div className="w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
+
                 {/* Left: Karte und Koordinaten */}
                 <div className="p-10 relative bg-gray-900 text-white flex flex-col justify-between">
                     <h1 className="mb-6 text-4xl font-bold text-orange-400">
@@ -103,19 +111,19 @@ export default function RegisterClient() {
                             </div>
                             <div className="flex flex-row item-center gap-3">
                                 <div className="flex flex-col items-center">
-                                    <input type="checkbox" checked={evt} onChange={e => setEvt(e.target.checked)}/>
+                                    <input type="checkbox" checked={evt} onChange={e => setEvt(e.target.checked)} />
                                     <label className="text-xs">EVT</label>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <input type="checkbox" checked={wea} onChange={e => setWea(e.target.checked)}/>
+                                    <input type="checkbox" checked={wea} onChange={e => setWea(e.target.checked)} />
                                     <label className="text-xs">WEA</label>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <input type="checkbox" checked={mtx} onChange={e => setMtx(e.target.checked)}/>
+                                    <input type="checkbox" checked={mtx} onChange={e => setMtx(e.target.checked)} />
                                     <label className="text-xs">MTX</label>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <input type="checkbox" checked={rtc} onChange={e => setRtc(e.target.checked)}/>
+                                    <input type="checkbox" checked={rtc} onChange={e => setRtc(e.target.checked)} />
                                     <label className="text-xs">RTC</label>
                                 </div>
                             </div>
@@ -130,6 +138,7 @@ export default function RegisterClient() {
                         {t.officialWebsite}
                     </button>
                 </div>
+
                 {/* Right: Registrierungsformular */}
                 <div className="p-10 bg-gray-850 text-white flex flex-col justify-center">
                     <h2 className="mb-6 text-2xl font-semibold text-white">REGISTER</h2>
@@ -170,11 +179,11 @@ export default function RegisterClient() {
                         <div className="mb-5">
                             <label className="mb-1 block text-sm">Repeat Password</label>
                             <input
-                                className={`w-full px-4 py-3 rounded-xl ${password2Bg}  focus:outline-none`}
-                                id="password2"
+                                className={`w-full px-4 py-3 rounded-xl ${passwordSecondBg}  focus:outline-none`}
+                                id="passwordSecond"
                                 type="password"
-                                value={password2}
-                                onChange={(e) => setPassword2(e.target.value)}
+                                value={passwordSecond}
+                                onChange={(e) => setPasswordSecond(e.target.value)}
                                 required
                             />
                         </div>
@@ -186,18 +195,18 @@ export default function RegisterClient() {
                             {loading ? "Registering..." : "Register"}
                         </button>
                         <div className="flex flex-row">
-                        <div className="text-sm">
-                            Already have an account?{" "}
-                            <span
-                                className="text-orange-400 hover:underline cursor-pointer"
-                                onClick={() => router.push("/login")}
-                            >
-                                Login
-                            </span>
-                        </div>
-                        <div className="ml-4 text-sm">
-                            {error && <div className="text-red-500 mb-2">{error}</div>}
-                        </div>
+                            <div className="text-sm">
+                                Already have an account?{" "}
+                                <span
+                                    className="text-orange-400 hover:underline cursor-pointer"
+                                    onClick={() => router.push("/login")}
+                                >
+                                    Login
+                                </span>
+                            </div>
+                            <div className="text-sm">
+                                {error && <div className="text-red-500 mb-2">{error}</div>}
+                            </div>
                         </div>
                     </form>
                 </div>

@@ -1,4 +1,48 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-  /*  * { outline: 1px solid red; }  */
+  * { outline: 1px solid red; } 
+
+/*
+sm: – ab 640px (Smartphones)
+md: – ab 768px (Tablets)
+lg: – ab 1024px (kleine Desktops)
+xl: – ab 1280px (große Desktops)
+2xl: – ab 1536px (sehr große Bildschirme)
+*/
+
+@media (min-width: 768px) {
+  .desktop-frame {
+    border: 50px solid transparent;
+    border-image-source: url("/wooden-frame.png");
+    border-image-slice: 80;
+    border-image-repeat: stretch;
+    box-shadow: inset 0 0 25px rgba(0,0,0,0.35);
+  }
+}
+
+/* In deiner CSS Datei */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE, Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+/* LoginClient.tsx */
+/* animate signal */
+.animate-signal {
+  animation: signal 4s infinite linear;
+}
+
+@keyframes signal {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.bg-linear-to-r {
+  background: linear-gradient(to right, #374151, #6B7280, transparent);
+}

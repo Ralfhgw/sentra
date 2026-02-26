@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
 import { RegisterResponse } from "@/types/typesRegister"
+import { MoveableScrollArea } from "@/components/CompMovableScrollArea"
 import axios from "axios";
 
 const apiHost = process.env.NEXT_PUBLIC_API_HOST;
 
-const MapSelector = dynamic(() => import("@/components/MapSelector"), { ssr: false });
+const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
 
 export default function RegisterClient() {
     const router = useRouter();
@@ -76,7 +77,7 @@ export default function RegisterClient() {
 
     return (
         <div className="w-full h-full bg-gray-500 flex items-center justify-center">
-            <div className="w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
+            <MoveableScrollArea className="h-full sm:h-150 max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
 
                 {/* Left: Karte und Koordinaten */}
                 <div className="p-10 relative bg-gray-900 text-white flex flex-col justify-between">
@@ -146,7 +147,7 @@ export default function RegisterClient() {
                         <div className="mb-4">
                             <label className="mb-1 block text-sm">User Name</label>
                             <input
-                                className="w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
+                                className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="username"
                                 type="text"
                                 value={username}
@@ -157,7 +158,7 @@ export default function RegisterClient() {
                         <div className="mb-4">
                             <label className="block text-sm mb-1">Email</label>
                             <input
-                                className="w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
+                                className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="email"
                                 type="email"
                                 value={email}
@@ -168,7 +169,7 @@ export default function RegisterClient() {
                         <div className="mb-4">
                             <label className="block text-sm mb-1">Password</label>
                             <input
-                                className="w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
+                                className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="password"
                                 type="password"
                                 value={password}
@@ -179,7 +180,7 @@ export default function RegisterClient() {
                         <div className="mb-5">
                             <label className="mb-1 block text-sm">Repeat Password</label>
                             <input
-                                className={`w-full px-4 py-3 rounded-xl ${passwordSecondBg}  focus:outline-none`}
+                                className={`h-10 w-full px-4 py-3 rounded-xl ${passwordSecondBg}  focus:outline-none`}
                                 id="passwordSecond"
                                 type="password"
                                 value={passwordSecond}
@@ -194,6 +195,7 @@ export default function RegisterClient() {
                         >
                             {loading ? "Registering..." : "Register"}
                         </button>
+
                         <div className="flex flex-row">
                             <div className="text-sm">
                                 Already have an account?{" "}
@@ -210,7 +212,7 @@ export default function RegisterClient() {
                         </div>
                     </form>
                 </div>
-            </div>
+            </MoveableScrollArea>
         </div>
     );
 }

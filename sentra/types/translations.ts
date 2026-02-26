@@ -16,6 +16,8 @@ export interface Translations {
   simWebCam: string;
   simSensors: string;
   simDisplay: string;
+  terms: string,
+  privacy: string,
 }
 
 export const loginTranslations = {
@@ -27,7 +29,7 @@ export const loginTranslations = {
     forgotPassword: "Forgot password?",
     loginBtn: "Login",
     loggingIn: "Logging in...",
-    agreement: "I have read and agree to User Registration Protocol and Privacy Policy",
+    agreement: "I have read and agree to ",
     noAccount: "Don’t have an account?",
     signUp: "Sign up",
     officialWebsite: "Official Website",
@@ -37,6 +39,8 @@ export const loginTranslations = {
     simWebCam: "WebCam",
     simSensors: "\u00A0Sensors\u00A0\u00A0",
     simDisplay: "Display",
+    terms: "Terms of Use",
+    privacy: "Privacy Policy"
   },
   de: {
     login: "ANMELDUNG",
@@ -56,6 +60,8 @@ export const loginTranslations = {
     simWebCam: "WebCam",
     simSensors: "\u00A0Sensoren",
     simDisplay: "Anzeige",
+    terms: "Nutzungsbedingungen",
+    privacy: "Datenschutzrichtlinien"
   },
 };
 

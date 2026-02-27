@@ -7,7 +7,7 @@ import { RegisterResponse } from "@/types/typesRegister"
 import { MoveableScrollArea } from "@/components/CompMovableScrollArea"
 import axios from "axios";
 
-const apiHost = process.env.NEXT_PUBLIC_API_HOST;
+const apiHost = process.env.NEXT_PUBLIC_AUTH_HOST;
 
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
 
@@ -20,19 +20,15 @@ export default function RegisterClient() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [passwordSecond, setPasswordSecond] = useState("");
-    const passwordsMatch = password === passwordSecond && passwordSecond.length > 0;
-    const passwordSecondBg = passwordSecond.length === 0
-        ? "bg-gray-700"
-        : passwordsMatch
-            ? "bg-green-200"
-            : "bg-pink-200";
-
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [evt, setEvt] = useState(false);
     const [wea, setWea] = useState(false);
     const [mtx, setMtx] = useState(false);
     const [rtc, setRtc] = useState(false);
+
+    const passwordsMatch = password === passwordSecond && passwordSecond.length > 0;
+    const passwordSecondBg = passwordSecond.length === 0 ? "bg-gray-700" : passwordsMatch ? "bg-green-200" : "bg-pink-200";
 
     const searchParams = useSearchParams();
     const lang = searchParams.get("lang") as "en" | "de" | null;
@@ -43,6 +39,8 @@ export default function RegisterClient() {
         e.preventDefault();
         setLoading(true);
         const body = { username, email, password };
+        console.log("Body to send: ", body)
+        console.log("API Host: ", apiHost)
         try {
             const response = await axios.post<RegisterResponse>(`${apiHost}/users/register`, body, {
                 headers: {
@@ -59,6 +57,7 @@ export default function RegisterClient() {
                 const userId = response.data.id;
                 await axios.post("/api/register", {
                     userId,
+                    lang: language,
                     lat,
                     lon,
                     evt,
@@ -85,6 +84,7 @@ export default function RegisterClient() {
                         {t.title}
                         <sup className="ml-1 text-base align-top">&copy;</sup>
                     </h1>
+                    {/* Leaflet Map, Display of coordinates, Checkboxes*/}
                     <div className="flex-1 flex flex-col items-center justify-center">
                         <MapSelector
                             lat={lat}
@@ -97,13 +97,13 @@ export default function RegisterClient() {
                         <div className="mt-3 flex flex-row items-center justify-between">
                             <div className="my-2 mr-11">
                                 <label className="mb-2 block text-sm text-center">
-                                    Breitengrad: <input
+                                    {t.latitude} <input
                                         value={lat.toFixed(6)}
                                         readOnly
                                         className="w-30 h-6 ml-3 pl-5 py-1 rounded bg-gray-700" />
                                 </label>
                                 <label className="block text-sm text-center">
-                                    Längengrad: <input
+                                    {t.longitude} <input
                                         value={lon.toFixed(6)}
                                         readOnly
                                         className="w-30 h-6 ml-3 pl-5 py-1 rounded bg-gray-700"
@@ -131,6 +131,7 @@ export default function RegisterClient() {
                         </div>
                     </div>
 
+                    {/* Website Button */}
                     <button
                         type="button"
                         className="mt-3 px-6 py-2 rounded-xl border border-orange-400 hover:bg-orange-400 text-orange-400 hover:text-black transition"
@@ -140,12 +141,12 @@ export default function RegisterClient() {
                     </button>
                 </div>
 
-                {/* Right: Registrierungsformular */}
+                {/* Right: Registrierungsformular --> HandleSubmit()*/}
                 <div className="p-10 bg-gray-850 text-white flex flex-col justify-center">
-                    <h2 className="mb-6 text-2xl font-semibold text-white">REGISTER</h2>
+                    <h2 className="mb-6 text-2xl font-semibold text-white">{t.registerTitle}</h2>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="mb-1 block text-sm">User Name</label>
+                            <label className="mb-1 block text-sm">{t.username}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="username"
@@ -156,7 +157,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm mb-1">Email</label>
+                            <label className="block text-sm mb-1">{t.email}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="email"
@@ -167,7 +168,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm mb-1">Password</label>
+                            <label className="block text-sm mb-1">{t.password}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="password"
@@ -178,7 +179,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-5">
-                            <label className="mb-1 block text-sm">Repeat Password</label>
+                            <label className="mb-1 block text-sm">{t.repeatPassword}</label>
                             <input
                                 className={`h-10 w-full px-4 py-3 rounded-xl ${passwordSecondBg}  focus:outline-none`}
                                 id="passwordSecond"
@@ -193,17 +194,18 @@ export default function RegisterClient() {
                             type="submit"
                             disabled={loading}
                         >
-                            {loading ? "Registering..." : "Register"}
+                            {loading ? t.registerIn : t.registerBtn}
                         </button>
 
+                        {/* BackButton and ErrorMessage */}
                         <div className="flex flex-row">
                             <div className="text-sm">
-                                Already have an account?{" "}
+                                {t.alreadyAccount}
                                 <span
                                     className="text-orange-400 hover:underline cursor-pointer"
                                     onClick={() => router.push("/login")}
                                 >
-                                    Login
+                                    {t.loggingIn}
                                 </span>
                             </div>
                             <div className="text-sm">

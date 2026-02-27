@@ -55,7 +55,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
           {/* Box with animation */}
           <div className="flex flex-col">
 
-            <div className="bg-yellow-300 flex flex-row justify-center">
+            <div className="flex flex-row justify-center">
 
               {/* Buttons */}
               <div className="flex flex-col gap-1 justify-around">
@@ -163,7 +163,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
 
             {/* Title small */}
             <div className="mt-4 text-center text-[16px] tracking-wide opacity-70">
-              Central&nbsp;&nbsp;Sentinel&nbsp;&nbsp;Sensing
+              Sensing&nbsp;&nbsp;Streaming&nbsp;&nbsp;Situating
             </div>
 
           </div>

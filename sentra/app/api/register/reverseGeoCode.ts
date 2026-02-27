@@ -25,7 +25,7 @@ export async function getLocationFromCoords(
   const data = await response.json() as { address?: Address; display_name?: string };
   const address = data.address ?? {};
 
-  const display_name = data.display_name;
+  const display_name: string | undefined = data.display_name;
   const town: string | undefined =
     address.town ||
     address.village ||

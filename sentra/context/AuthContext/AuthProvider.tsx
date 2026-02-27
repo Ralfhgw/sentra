@@ -4,10 +4,10 @@ import { AuthContext } from "./AuthContext";
 import { authReducer } from "./AuthReducer";
 import axios from "axios";
 
-const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
+const API_HOST = process.env.NEXT_PUBLIC_AUTH_HOST;
 
 if (!API_HOST) {
-  throw new Error("API_HOST not configured");
+  throw new Error("AUTH_HOST not configured");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

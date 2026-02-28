@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Corners } from "@/components/CompCorners";
+import { SettingsProvider } from "@/context/SettingsContext";
 
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="de">
       <body className="m-0">
         <AuthProvider>
+          <SettingsProvider>
           <div className="w-screen min-h-screen flex justify-center">
             {/* Mit Rahmen auf Desktop */}
             <div className="relative w-full min-h-screen box-border hidden lg:block"
@@ -48,6 +50,7 @@ export default function RootLayout({
               </div>
             </div>
           </div>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>

@@ -21,7 +21,51 @@ export interface Translations {
   privacy: string,
 }
 
-export const loginTranslations = {
+export const startpageTranslations = {
+ en: {
+    title: "Welcome to Sentra",
+    descriptionlg: "Your central info dashboard for local news, weather, live streams, video conferencing, and more – all in one place, accessible anytime. Click the screws 🔩 in the corners to open the modules.",
+    descriptionsm: "Your central info dashboard for local news, weather, live streams, video conferencing, and more – all in one place, accessible anytime. Select the modules from the hamburger menu ☰.",
+    userinfo: "User Information and Technical Data",
+    news: "📰 News: Your local cultural calendar for the coming days",
+    weather: "🌦️ Weather: Forecast for the next few days",
+    liveview: "📷 LiveView: Webcam streaming and integrated live TV channels",
+    livetalk: "👥 LiveTalk: Video conferencing powered by MediaSoup (WebRTC)"
+
+ },
+  de: {
+    title: "Willkommen bei Sentra",
+    descriptionlg: "Dein zentrales Info-Dashboard für regionale Nachrichten, Wetter, Live-Streams, Videokonferenzen und mehr – alles an einem Ort, jederzeit erreichbar. Klicke auf die Schrauben 🔩 in den Ecken, um die Module zu öffnen.",
+    descriptionsm: "Dein zentrales Info-Dashboard für regionale Nachrichten, Wetter, Live-Streams, Videokonferenzen und mehr – alles an einem Ort, jederzeit erreichbar. Wähle die Module im Burger-Menü ☰ aus.",
+    userinfo: "Benutzerinformationen und technische Daten",
+    news: "📰 Aktuelles: Dein regionaler Kulturkalender für die nächsten Tage",
+    weather: "🌦️ Wetter: Aussichten für die nächsten Tage",
+    liveview: "📷 LiveView: Webcam-Streaming und integrierte Live-TV-Kanäle",
+    livetalk: "👥 LiveTalk: Videokonferenzen auf Basis von MediaSoup (WebRTC)"
+},
+};
+
+export interface LoginTranslation {
+  login: string;
+  email: string;
+  password: string;
+  loginBtn: string;
+  loggingIn: string;
+  agreement: string;
+  noAccount: string;
+  signUp: string;
+  officialWebsite: string;
+  title: string;
+  simNews: string;
+  simWeather: string;
+  simWebCam: string;
+  simSensors: string;
+  simDisplay: string;
+  terms: string;
+  privacy: string;
+}
+
+export const loginTranslations: { [key: string]: LoginTranslation } = {
   en: {
     login: "LOGIN",
     email: "Email",

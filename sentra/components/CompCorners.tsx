@@ -10,8 +10,8 @@ const cornerButtonStyle =
 const symbols = {
     news: { emoji: "📰", alt: "News" },
     weather: { emoji: "🌦️", alt: "Weather" },
-    webcam: { emoji: "📷", alt: "Webcam" },
-    sensors: { emoji: "🧭", alt: "Sensors" },
+    liveview: { emoji: "📷", alt: "LiveView" },
+    livetalk: { emoji: "👥", alt: "LiveTalk" },
 };
 
 export function Corners() {
@@ -95,9 +95,9 @@ export function Corners() {
             </Link>
 
             <Link
-                href="/webcam"
+                href="/liveview"
                 className={`${cornerButtonStyle} -left-6 -bottom-5 -translate-x-1/2 translate-y-1/2`}
-                onMouseEnter={() => setHovered("webcam")}
+                onMouseEnter={() => setHovered("liveview")}
                 onMouseLeave={() => setHovered(null)}
             >
                 <div className="rotate-[5deg] transition-transform duration-300 hover:-rotate-90">
@@ -106,9 +106,9 @@ export function Corners() {
             </Link>
 
             <Link
-                href="/sensors"
+                href="/livetalk"
                 className={`${cornerButtonStyle} -right-6 -bottom-5 translate-x-1/2 translate-y-1/2`}
-                onMouseEnter={() => setHovered("sensors")}
+                onMouseEnter={() => setHovered("livetalk")}
                 onMouseLeave={() => setHovered(null)}
             >
                 <div className="rotate-[-10deg] transition-transform duration-300 hover:-rotate-90">

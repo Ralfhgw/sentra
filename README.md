@@ -10,6 +10,8 @@ $ npm install @types/serpapi
 $ npm install openai
 $ npm install openmeteo
 $ npm install cloudinary
+$ npm install rehype-slug
+$ npm install react-markdown
 
 Open Port in WSL
 PS C:\Windows\System32> netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=172.30.234.252

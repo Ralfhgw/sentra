@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, useRouter } from "next/navigation";
-import type { Translations } from "@/types/translations";
+import type { LoginTranslation } from "@/types/translations";
 
 interface LoginFormProps {
-  translations: { [key: string]: Translations };
+  translations: { [key: string]: LoginTranslation };
   defaultLanguage?: "en" | "de";
 }
 

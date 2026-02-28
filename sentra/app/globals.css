@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-  * { outline: 1px solid red; } 
+/*   * { outline: 1px solid red; }  */
 
 /*
 sm: – ab 640px (Smartphones)
@@ -10,6 +10,11 @@ lg: – ab 1024px (kleine Desktops)
 xl: – ab 1280px (große Desktops)
 2xl: – ab 1536px (sehr große Bildschirme)
 */
+
+.markdown h1 { font-size: 2em; font-weight: bold; }
+.markdown h2 { font-size: 1.5em; font-weight: bold; }
+.markdown h3 { font-size: 1.2em; font-weight: bold; }
+.markdown p  { margin-bottom: 1em; }
 
 @media (min-width: 768px) {
   .desktop-frame {

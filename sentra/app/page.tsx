@@ -3,6 +3,9 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { startpageTranslations } from "@/types/translations";
+import { useSettings } from "@/context/SettingsContext";
+
 
 export default function Home() {
   const auth = useContext(AuthContext);
@@ -10,6 +13,7 @@ export default function Home() {
   const [infoVisible, setInfoVisible] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
+  // Get Background Image
   useEffect(() => {
     async function fetchImageUrl() {
       if (auth && auth.user) {
@@ -23,6 +27,9 @@ export default function Home() {
 
   const handleToggle = () => setInfoVisible((v) => !v);
 
+  const { lang } = useSettings();
+  const t = startpageTranslations[lang];
+
   return (
     <ProtectedRoute>
       <div
@@ -35,7 +42,7 @@ export default function Home() {
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           cursor: "pointer",
-          position: "relative", 
+          position: "relative",
         }}
         onClick={handleToggle}
       >
@@ -68,47 +75,75 @@ export default function Home() {
               handleToggle();
             }}
           >
+            {/* t.title */}
             <h1
-              className="text-5xl font-bold text-orange-400 mb-6"
+              className="mt-2 text-5xl text-center font-bold text-orange-400"
               style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
-            >Willkommen bei Sentra<sup className="ml-1 text-base align-top">&copy;</sup></h1>
+            >{t.title}<sup className="text-base align-top">&copy;</sup></h1>
 
-            <p className="text-lg text-gray-800 mb-4 max-w-xl">
-              Dein zentrales Info-Dashboard für Events, Wetter, Webcam und Sensordaten.
-              Alle Daten auf einen Blick – direkt in deinem Holzrahmen-Interface.
-            </p>
-
-            <p className="text-md text-gray-700 mb-6 max-w-xl">
-              Wähle eine der Schrauben in den Ecken oder die Buttons unten, um die verschiedenen Module zu öffnen.
-              Jeder Bereich bietet Echtzeit-Informationen und eine interaktive Übersicht.
+            {/* t.descriptionlg */}
+            <p className="max-w-xl my-3 mx-2 text-gray-800 text-lg hidden lg:block">
+              {t.descriptionlg}
             </p>
 
+            {/* t.descriptionsm */}
+            <p className="max-w-xl my-3 mx-2  text-gray-800 text-lg block lg:hidden">
+              {t.descriptionsm}
+            </p>
 
-            <p className="m-2 transition text-gray-700 hover:bg-gray-100 hover:text-gray-800 rounded cursor-pointer">
-              <Link href="/readme#news" target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                📰 Aktuelles: Regionale Information und Ereignisse
-              </Link>
+            {/* t.userinfo */}
+            <p className="max-w-xl my-2 text-center font-medium text-gray-700 ">
+              {t.userinfo}
             </p>
-            <p className="m-2 transition text-gray-700 hover:bg-gray-100 hover:text-gray-800 rounded cursor-pointer">
-              <Link href="/readme#weather" target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                🌦️ Wettervorschau: Aussichten für die nächsten Tage
-              </Link>
-            </p>
-            <p className="m-2 transition text-gray-700 hover:bg-gray-100 hover:text-gray-800 rounded cursor-pointer">
-              <Link href="/readme#webcam" target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                📷 WebCam: Live-Bilder deiner Kameras
-              </Link>
-            </p>
-            <p className="m-2 transition text-gray-700 hover:bg-gray-100 hover:text-gray-800 rounded cursor-pointer">
-              <Link href="/readme#sensors" target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                🧭 Sensoren: Echtzeit-Daten von angeschlossenen Sensoren
+
+            {/* t.news */}
+            <p
+              className="p-2 my-1 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+              style={{
+                boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
+              }}
+            >
+              <Link href="/readme#news" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
+                {t.news}
               </Link>
             </p>
 
-
-            <p className="text-gray-700 mt-6 max-w-xl">
-              Klicke auf ein Modul, um detailierte Informationen in der README zu sehen.
+            {/* t.weather */}
+            <p
+              className="p-2 my-1 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+              style={{
+                boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
+              }}
+            >
+              <Link href="/readme#weather" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
+                {t.weather}
+              </Link>
             </p>
+
+            {/* t.liveview */}
+            <p
+              className="p-2 my-1 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+              style={{
+                boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
+              }}
+            >
+              <Link href="/readme#liveview" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
+                {t.liveview}
+              </Link>
+            </p>
+
+            {/* t.livetalk */}
+            <p
+              className="p-2 my-1 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+              style={{
+                boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
+              }}
+            >
+              <Link href="/readme#livetalk" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
+                {t.livetalk}
+              </Link>
+            </p>
+
           </div>
         )}
       </div>

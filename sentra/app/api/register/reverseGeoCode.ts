@@ -17,7 +17,6 @@ export async function getLocationFromCoords(
       "User-Agent": "my-app/1.0"
     }
   });
-  console.log(response)
   if (!response.ok) {
     throw new Error("Reverse geocoding failed");
   }

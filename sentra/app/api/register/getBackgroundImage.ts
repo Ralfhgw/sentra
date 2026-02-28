@@ -2,11 +2,18 @@ import { fetchWeatherApi } from "openmeteo"; // Stelle sicher, dass 'openmeteo-s
 import fs from "fs/promises";
 import path from "path";
 import OpenAI from "openai";
+import { v2 as cloudinary } from "cloudinary";
 
 const { OPENAI_API_KEY } = process.env;
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY! });
 
-// Hilfsfunktion zur Interpretation der Codes für bessere Prompts
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+});
+
 const getWeatherDescription = (code: number) => {
     if (code === 0) return "klarer Himmel";
     if (code < 4) return "leicht bewölkt";
@@ -22,11 +29,12 @@ export async function getBackgroundImage(userId: string, lat: number, lon: numbe
     const params = {
         latitude: lat,
         longitude: lon,
-        daily: ["weather_code", "temperature_2m_max"], // "weather_code" ist der aktuelle Standard
+        daily: ["weather_code", "temperature_2m_max"],
         start_date: dateString,
         end_date: dateString,
         timezone: "auto",
     };
+console.log("GetBackGroundImage params:", params);
 
     const url = "https://api.open-meteo.com/v1/forecast";
     const responses = await fetchWeatherApi(url, params);
@@ -36,10 +44,9 @@ export async function getBackgroundImage(userId: string, lat: number, lon: numbe
         throw new Error("No weather API response received.");
     }
 
-    // Extraktion der täglichen Daten aus dem SDK-Format
+
     const daily = response.daily()!;
-    
-    // Die Werte liegen in Float32Arrays vor
+
     const weatherCode = daily.variables(0)!.valuesArray()![0];
     const maxTemp = daily.variables(1)!.valuesArray()![0];
 
@@ -49,30 +56,91 @@ export async function getBackgroundImage(userId: string, lat: number, lon: numbe
 
     const weatherDesc = getWeatherDescription(weatherCode);
 
-    // Prompt mit echtem Text statt nur Zahlen verbessert das Ergebnis von DALL-E enorm
-    const prompt = `Erstelle ein fotorealistisches Landschaftsbild für die Koordinaten (${lat}, ${lon}). 
-    Das Wetter ist ${weatherDesc} (Wetter-Code ${weatherCode}) bei einer Temperatur von ${maxTemp.toFixed(1)}°C. 
-    Stimmung: Atmosphärisch und hochwertig.`;
-    
+    const prompt = `
+Erstelle ein extrem fotorealistisches Landschaftsfoto für die Koordinaten (${lat}, ${lon}).
+
+Berücksichtige:
+- reale Topografie dieser Region
+- typische Vegetation
+- korrekten regionalen Baustil der Gebäude
+- geografisch plausible Landschaftsmerkmale
+
+Wetter:
+${weatherDesc}, maximale Temperatur ${maxTemp.toFixed(1)}°C.
+Stelle die Wetterlage visuell realistisch dar:
+- physikalisch korrekte Lichtverhältnisse
+- passende Wolkenstruktur
+- atmosphärische Tiefe
+- realistische Schattenintensität
+- Oberflächen entsprechend trocken, nass oder verschneit
+
+Temperatur visuell berücksichtigen:
+- Farbtemperatur der Szene passend zur Lufttemperatur
+- ggf. Hitzeflimmern bei hoher Temperatur
+- kaltes, bläuliches Licht bei niedrigen Temperaturen
+
+Fotografie:
+Professionelle DSLR-Aufnahme.
+35mm Objektiv, Blende f/8.
+Natürliches Licht.
+Hoher Dynamikumfang.
+Keine HDR-Übertreibung.
+Kein CGI-Look.
+Keine künstliche Übersättigung.
+Realistische Tiefenschärfe.
+Augenhöhe ca. 1,6m.
+
+Wichtige Einschränkungen:
+Keine Menschen.
+Keine Tiere.
+Keine Fahrzeuge.
+Keine Fantasy-Elemente.
+Keine futuristische Architektur.
+Keine Illustration.
+Keine stilisierte oder künstlerische Interpretation.
+
+Stimmung:
+Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fotografen.
+`;
+
     console.log("GPTPROMPT:", prompt);
 
-    /* 
-    // OpenAI Bildgenerierung
     const imageRes = await openai.images.generate({
+        model: "gpt-image-1.5",
         prompt,
         n: 1,
-        size: "1024x1024",
-        response_format: "b64_json",
+        size: "1536x1024",
     });
 
+    if (!imageRes.data || imageRes.data.length === 0 || !imageRes.data[0].b64_json) {
+        throw new Error("Kein Bild von OpenAI erhalten.");
+    }
     const imageBase64 = imageRes.data[0].b64_json!;
     const buffer = Buffer.from(imageBase64, "base64");
 
-    const filePath = path.join(process.cwd(), "public", "backgrounds", `${userId}_${dateString}.png`);
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, buffer); 
-    */
+    const fileDir = path.join(process.cwd(), "public", "backgrounds");
+    const tempFilePath = path.join(fileDir, `${userId}.png`);
 
-    console.log(`/backgrounds/${userId}_${dateString}.png`);
-    return `/backgrounds/${userId}_${dateString}.png`;
+    await fs.mkdir(fileDir, { recursive: true });
+    await fs.writeFile(tempFilePath, buffer);
+
+    const result = await cloudinary.uploader.upload(tempFilePath, {
+        public_id: userId,
+        folder: "user_profiles",
+        overwrite: true,
+        invalidate: true
+    });
+    console.log("Cloudinary Upload Result:", result.secure_url);
+
+    let i = 1;
+    let numberedPath;
+    do {
+        const suffix = String(i).padStart(3, "0");
+        numberedPath = path.join(fileDir, `${userId}-${suffix}.png`);
+        i++;
+    } while (await fs.stat(numberedPath).then(() => true).catch(() => false));
+    await fs.rename(tempFilePath, numberedPath);
+
+    console.log(`/backgrounds/${path.basename(numberedPath)}`)
+    return;
 }

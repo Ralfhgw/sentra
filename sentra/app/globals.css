@@ -11,10 +11,47 @@ xl: – ab 1280px (große Desktops)
 2xl: – ab 1536px (sehr große Bildschirme)
 */
 
+
 .markdown h1 { font-size: 2em; font-weight: bold; }
 .markdown h2 { font-size: 1.5em; font-weight: bold; }
 .markdown h3 { font-size: 1.2em; font-weight: bold; }
 .markdown p  { margin-bottom: 1em; }
+
+.markdown ul, .markdown ol {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+  padding-left: 1.2em;
+}
+
+.markdown ul {
+  list-style-type: disc;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li {
+  margin-bottom: 0.3em;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid #d1d5db; /* Tailwind: gray-300 */
+  padding: 0.5em 1em;
+  text-align: left;
+}
+
+.markdown th {
+  background: #f3f4f6; /* Tailwind: gray-100 */
+  font-weight: bold;
+}
 
 @media (min-width: 768px) {
   .desktop-frame {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Corners } from "@/components/CompCorners";
+import { CompBurgerMenu } from "@/components/CompBurgerMenu";
 import { SettingsProvider } from "@/context/SettingsContext";
 
 
@@ -43,6 +44,7 @@ export default function RootLayout({
 
             {/* Ohne Rahmen auf Mobile */}
             <div className="relative w-full min-h-screen box-border lg:hidden">
+              <CompBurgerMenu />
               <div className="relative w-full h-full flex justify-center overflow-auto font-serif hide-scrollbar">
                 <main className="mt-0 w-full h-full flex justify-center hide-scrollbar">
                   {children}

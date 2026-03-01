@@ -47,7 +47,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
         <div className="p-4 bg-gray-900 text-white relative flex-col justify-between hidden md:flex">
 
           {/* Title SENTRA */}
-          <h1 className="mt-3 text-4xl text-orange-400 font-bold">
+          <h1 className="mt-3 ml-5 text-4xl text-orange-400 font-bold">
             {t.title}
             <sup className="ml-1 text-base align-top">&copy;</sup>
           </h1>
@@ -184,7 +184,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
 
         {/* Right Form */}
         <div className="p-4 md:p-10 flex flex-col justify-center text-white relative h-full min-h-0">
-          <h1 className="mb-5 mt-3 text-4xl text-orange-400 font-bold md:hidden">
+          <h1 className="mb-5 mt-3 ml-4 text-4xl text-orange-400 font-bold md:hidden">
             {t.title}
             <sup className="ml-1 text-base align-top">&copy;</sup>
           </h1>

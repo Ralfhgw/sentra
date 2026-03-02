@@ -63,7 +63,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 <div className="z-20 h-6 w-20 rounded-xl bg-gray-800 hover:bg-orange-400 opacity-70
                 border border-orange-400 text-[16px] text-orange-400 hover:text-black transition">
                   <a
-                    href="/readme#aktuelle-news-und-events"
+                    href="/readme#news"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center"
@@ -91,7 +91,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 <div className="z-20 h-6 w-20 rounded-xl bg-gray-800 hover:bg-orange-400 opacity-70
                 border border-orange-400 text-[16px] text-orange-400 hover:text-black transition">
                   <a
-                    href="/readme#webcam"
+                    href="/readme#liveview"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center"
@@ -105,7 +105,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 <div className="z-20 h-6 w-20 rounded-xl bg-gray-800 hover:bg-orange-400 opacity-70
                 border border-orange-400 text-[16px] text-orange-400 hover:text-black transition">
                   <a
-                    href="/readme#sensors"
+                    href="/readme#livetalk"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center"

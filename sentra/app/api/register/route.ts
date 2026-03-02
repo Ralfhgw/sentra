@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import sql from "@/app/utils/db";
+import sql from "@/utils/db";
 import { getLocationFromCoords } from "./reverseGeoCode";
 import { getEvents } from "./getEvents";
-import { getBackgroundImage } from "./getBackgroundImage";
+/* import { getBackgroundImage } from "./getBackgroundImage"; */
 
 export async function POST(req: NextRequest) {
   const { userId, lang, lat, lon, evt, wea, mtx, rtc } = await req.json();
@@ -33,13 +33,19 @@ export async function POST(req: NextRequest) {
 
   if (!loc.display_name) throw new Error("RegisterRoute: <display_name> is undefined.");
   if (!loc.town) throw new Error("RegisterRoute: <town> is undefinded.");
-  await getEvents(userId, loc.display_name, loc.town);
+
+  for (let i = 1; i <= 2; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    const dayString = date.toISOString().slice(0, 10);
+    await getEvents(userId, loc.town, dayString);
+  }
 
   if (!userId || lat == null || lon == null) {
-  throw new Error("userId, lat oder lon fehlt!");
-}
+    throw new Error("userId, lat oder lon fehlt!");
+  }
 
-  await getBackgroundImage(userId, lat, lon);
+/*   await getBackgroundImage(userId, lat, lon); */
 
   return NextResponse.json({ success: true });
 }

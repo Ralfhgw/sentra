@@ -91,7 +91,7 @@ Table channels {
   tvg_id text
   group text
   logo_url test
-  sendername" text
+  sendername text
   stream_url text
   created_at timestamptz [default: `now()`]
 }
@@ -109,4 +109,3 @@ Ref: user_settings.user_id > users.id [delete: cascade]
 Ref: events.user_id > users.id [delete: cascade]
 Ref: event_urls.user_id > users.id [delete: cascade]
 Ref: weather_hourly.user_id > users.id [delete: cascade]
-Ref: weather_description.user_id > users.id [delete: cascade]

@@ -1,9 +1,23 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.6">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.0">
   <diagram name="Seite-1" id="IUutfSf5lURH9log8A4I">
-    <mxGraphModel dx="1426" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1358" dy="708" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="ZUI4I_z8aON0ezP0LGWO-8" collapsed="1" parent="1" style="swimlane;whiteSpace=wrap;html=1;startSize=40;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;@/app/api/register/getEvents.ts&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;export async getEvents(userId, display_name, town)&lt;/span&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="360" x="40" y="840" as="geometry">
+            <mxRectangle height="130" width="360" x="40" y="840" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ZUI4I_z8aON0ezP0LGWO-2" parent="ZUI4I_z8aON0ezP0LGWO-8" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="70" width="150" x="10" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkYKIbUQ6F5p7ruNSCXP-4" parent="ZUI4I_z8aON0ezP0LGWO-8" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div&gt;fetchGoogleEvents()&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;filterEventsData()&lt;/span&gt;&lt;/div&gt;&lt;div&gt;storeEventsData()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="22" y="51" as="geometry" />
+        </mxCell>
+        <mxCell id="dkYKIbUQ6F5p7ruNSCXP-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="110" width="320" x="90" y="1030" as="geometry" />
+        </mxCell>
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
           <mxGeometry height="363.5" width="660" x="30" y="96.5" as="geometry" />
         </mxCell>
@@ -13,17 +27,11 @@
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;@/app/login/page.tsx&lt;/b&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;lt;ProtectedRoute&amp;gt;&lt;/div&gt;&lt;div&gt;&amp;lt;div&amp;lt;/div&amp;gt;&lt;/div&gt;&lt;div&gt;&amp;lt;/ProtectedRoute&amp;gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="100" width="170" x="30" y="487" as="geometry" />
         </mxCell>
-        <mxCell id="dkYKIbUQ6F5p7ruNSCXP-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="90" width="170" x="30" y="1000" as="geometry" />
-        </mxCell>
-        <mxCell id="dkYKIbUQ6F5p7ruNSCXP-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="@/types/translations.ts" vertex="1">
-          <mxGeometry height="30" width="150" x="40" y="1010" as="geometry" />
-        </mxCell>
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="110" width="200" x="240" y="1040" as="geometry" />
+          <mxGeometry height="110" width="200" x="520" y="950" as="geometry" />
         </mxCell>
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="@/components/LoginClient" vertex="1">
-          <mxGeometry height="30" width="200" x="240" y="1060" as="geometry" />
+          <mxGeometry height="30" width="200" x="520" y="970" as="geometry" />
         </mxCell>
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
           <mxGeometry height="250" width="460" x="220" y="200" as="geometry" />
@@ -123,6 +131,9 @@
         </mxCell>
         <mxCell id="dkYKIbUQ6F5p7ruNSCXP-48" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;@/types/translations.ts&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="150" x="472" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="ZUI4I_z8aON0ezP0LGWO-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="@/app/api/register/getEvents.ts" vertex="1">
+          <mxGeometry height="30" width="200" x="150" y="1001" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

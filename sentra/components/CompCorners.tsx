@@ -73,7 +73,7 @@ export function Corners() {
             )}
 
             <Link
-                href="/weather"
+                href="/news"
                 className={`${cornerButtonStyle} -left-6 -top-5 -translate-x-1/2 -translate-y-1/2`}
                 onMouseEnter={() => setHovered("news")}
                 onMouseLeave={() => setHovered(null)}
@@ -84,7 +84,7 @@ export function Corners() {
             </Link>
 
             <Link
-                href="/news"
+                href="/weather"
                 className={`${cornerButtonStyle} -right-6 -top-5 translate-x-1/2 -translate-y-1/2`}
                 onMouseEnter={() => setHovered("weather")}
                 onMouseLeave={() => setHovered(null)}

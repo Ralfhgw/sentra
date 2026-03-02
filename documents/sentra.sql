@@ -198,3 +198,5 @@ OR
 END;
 $$ LANGUAGE plpgsql;
 --SELECT * FROM get_days_for_date('2026-01-13');
+
+\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM './day_meanings_export.csv' WITH (FORMAT CSV, HEADER);

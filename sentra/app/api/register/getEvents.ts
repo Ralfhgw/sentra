@@ -1,6 +1,6 @@
 import { getJson } from "serpapi";
 import type { GoogleEventsParams, EventData } from "@/types/typesRegister";
-import sql from "@/app/utils/db";
+import sql from "@/utils/db";
 
 const { SERPAPI_KEY } = process.env;
 
@@ -10,32 +10,24 @@ if (!SERPAPI_KEY) {
 
 // Function fetchGoogleEvents() ==> return events[]
 async function fetchGoogleEvents({
-    display_name,
     town,
+    dayString,
     apiKey,
     hl = "de",
     gl = "de",
+
 }: GoogleEventsParams): Promise<EventData[]> {
-    if (!display_name?.trim()) {
-        throw new Error("Parameter 'location' ist erforderlich.");
-    }
 
     try {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        const dateString = `${day}.${month}.${year}`;
-
         const data = await getJson({
             engine: "google_events",
-            q: `Events in ${town} am ${dateString}`,
+            q: `Events in ${town}`,
+            htichips: `date:${dayString}`,
             google_domain: "google.de",
             hl,
             gl,
-            location: display_name,
+            location: town,
             api_key: apiKey,
-            htichips: "date:next_month",
         });
 
         const events = data.events_results || [];
@@ -58,57 +50,99 @@ function filterEventData(event: EventData) {
     };
 }
 
-// Function storeEventData() ==> Store Data
-async function storeEventData(userId: string, events: EventData[]) {
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, "0");
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const year = today.getFullYear();
-    const todayString = `${day}.${month}.${year}`;
+// Preparing date format
+function formatDate(date: string): string {
+    if (!date) return "";
+    try {
+        const obj = JSON.parse(date);
+        if (obj.when) return obj.when;
+        if (obj.start_date) return obj.start_date;
+    } catch {
+        const d = new Date(date);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString("de-DE", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+        return date;
+    }
+    return date;
+}
 
-    await sql`
+// Function storeEventData() ==> Store Data
+async function storeEventData(userId: string, events: EventData[], date: string) {
+    const today = new Date();
+    const todayString = today.toISOString().slice(0, 10);
+
+    try {
+        await sql`
         DELETE FROM events 
         WHERE user_id = ${userId}
-        AND date <= ${todayString}
+        AND date < ${todayString}
     `;
+    } catch (error) {
+        console.error("Fehler beim Löschen alter Events:", error);
+    }
     const domain = "https://serpapi.com/"
     for (const event of events) {
         const filtered = filterEventData(event);
+
+        // Speichere das übergebene Datum (ISO-Format)
+        const isoDate = date;
+
+        let newDescription = filtered.description || "";
+        if (filtered.date) {
+            newDescription += `\n[Original date: ${formatDate(filtered.date)}]`;
+        }
+
         await sql`
             INSERT INTO events (user_id, title, date, address, link, description, image, domain)
             VALUES (
-            ${userId}, 
-            ${filtered.title}, 
-            ${filtered.date}, 
-            ${filtered.address}, 
-            ${filtered.link}, 
-            ${filtered.description}, 
-            ${filtered.image},
-            ${domain})
+                ${userId}, 
+                ${filtered.title}, 
+                ${isoDate}, 
+                ${filtered.address}, 
+                ${filtered.link}, 
+                ${newDescription}, 
+                ${filtered.image},
+                ${domain}
+            )
         `;
     }
+    await sql`
+        DELETE FROM events
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM events
+            WHERE user_id = ${userId}
+            GROUP BY title, date, user_id
+        )
+        AND user_id = ${userId}
+    `;
 }
 
 // Main Function getEvents() ==> 
-export async function getEvents(userId: string, display_name: string, town: string) {
+export async function getEvents(userId: string, town: string, dayString: string) {
     try {
         const googleEvents = await fetchGoogleEvents({
-            display_name,
             town,
+            dayString,
             apiKey: SERPAPI_KEY!,
         });
 
-        await storeEventData(userId, googleEvents);
+        await storeEventData(userId, googleEvents, dayString);
         console.log(`Events für User ${userId} gespeichert.`);
     } catch (err) {
         console.error(`Fehler bei User ${userId}:`, err);
     }
 }
 
-
 export {
     fetchGoogleEvents,
     storeEventData,
     filterEventData,
 };
-

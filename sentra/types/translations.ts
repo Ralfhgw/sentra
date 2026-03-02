@@ -79,8 +79,8 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     title: "SENTRA",
     simNews: "News",
     simWeather: "Weather",
-    simWebCam: "WebCam",
-    simSensors: "Sensors",
+    simWebCam: "LiveView",
+    simSensors: "LiveTalk",
     simDisplay: "Display",
     terms: "Terms of Use",
     privacy: "Privacy Policy"
@@ -98,8 +98,8 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     title: "SENTRA",
     simNews: "News",
     simWeather: "Wetter",
-    simWebCam: "WebCam",
-    simSensors: "Sensoren",
+    simWebCam: "LiveView",
+    simSensors: "LiveTalk",
     simDisplay: "Anzeige",
     terms: "Nutzungsbedingungen",
     privacy: "Datenschutzrichtlinien"

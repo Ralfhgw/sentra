@@ -27,8 +27,8 @@ export type Address = {
 };
 
 export interface GoogleEventsParams {
-  display_name: string;
   town: string;
+  dayString: string;
   apiKey: string;
   hl?: string;
   gl?: string;

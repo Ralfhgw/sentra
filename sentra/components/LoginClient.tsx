@@ -63,7 +63,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 <div className="z-20 h-6 w-20 rounded-xl bg-gray-800 hover:bg-orange-400 opacity-70
                 border border-orange-400 text-[16px] text-orange-400 hover:text-black transition">
                   <a
-                    href="/readme#news"
+                    href="/readme#events"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center"

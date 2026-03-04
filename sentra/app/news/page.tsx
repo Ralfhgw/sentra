@@ -28,7 +28,7 @@ import type { NewsClientProps, JwtPayload, Event, DayMeaning } from "@/types/typ
       SELECT title, date, address, link, description, image, domain
       FROM events
       WHERE user_id = ${user_id}
-      ORDER BY date DESC
+      ORDER BY date ASC
     `;
 
     // Create current date in format YYYY-MM-DD  

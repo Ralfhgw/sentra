@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
 import { RegisterResponse } from "@/types/typesRegister"
-import { MoveableScrollArea } from "@/components/CompMovableScrollArea"
+import { MoveableScrollArea } from "@/components/CompMovableScrollAreaVertical"
 import axios from "axios";
 
 const apiHost = process.env.NEXT_PUBLIC_AUTH_HOST;

@@ -16,6 +16,8 @@ $ npm install react-markdown
 $ npm install remark-gfm
 $ npm install jsonwebtoken
 $ npm install --save-dev @types/jsonwebtoken
+$ npm install weather-icons
+$ npm install mqtt
 ```
 
 ##### Open Port in WSL

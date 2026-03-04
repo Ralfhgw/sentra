@@ -6,7 +6,7 @@ type MoveableScrollAreaProps = React.PropsWithChildren<{
   style?: React.CSSProperties;
 }>;
 
-export const MoveableScrollArea: React.FC<MoveableScrollAreaProps> = ({
+export const MoveableScrollAreaVertical: React.FC<MoveableScrollAreaProps> = ({
   children,
   className = "",
   style,

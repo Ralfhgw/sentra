@@ -2,7 +2,7 @@
 import { NewsClientProps } from "@/types/typesNews";
 import { useState } from "react";
 import Image from "next/image";
-import { MoveableScrollArea } from "@/components/CompMovableScrollArea"
+import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 
 // Preparing address format for serpapi, there are different formats possible
 function formatAddress(address: string | null): string {
@@ -174,7 +174,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
       </div>
 
       {/* Right <div> */}
-      <MoveableScrollArea className="flex-1 bg-gray-200  rounded-xl text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-200  rounded-xl text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
         {/* Events am Standort */}
         <h1 className="text-xl lg:text-2xl my-6 text-center font-extrabold text-gray-700 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
           Events am Standort
@@ -263,7 +263,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
         ) : (
           !error && <div className="text-center text-gray-500">Keine Events gefunden.</div>
         )}
-      </MoveableScrollArea>
+      </MoveableScrollAreaVertical>
     </div>
   );
 }

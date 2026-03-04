@@ -1,0 +1,29 @@
+# --- Globale Sektion ---
+api: yes
+apiAddress: :9997
+
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+hlsVariant: lowLatency      # Nutzt Low-Latency HLS
+hlsSegmentCount: 7          # Anzahl der Segmente in der Playlist
+hlsSegmentDuration: 1s      # Dauer der einzelnen Segmente
+
+# Authentifizierung
+authMethod: internal
+authInternalUsers:
+  - user: admin
+    pass: password
+    permissions:
+      - action: api
+      - action: read
+      - action: playback
+  - user: any
+    permissions:
+      - action: read
+      - action: playback
+
+# --- Pfad-Sektion ---
+paths:
+  cam:
+    source: rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0
+    sourceProtocol: tcp

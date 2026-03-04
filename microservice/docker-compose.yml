@@ -1,0 +1,33 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554" # RTSP (Server-Ausgang)
+      - "1935:1935" # RTMP
+      - "8888:8888" # HLS (Browser-tauglich!)
+      - "8889:8889" # WebRTC (Niedrige Latenz)
+      - "9997:9997" # API Port access from extern
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: always
+    ports:
+      - "1883:1883"   # MQTT
+      #- "9001:9001"   # MQTT über WebSockets
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+      
+# docker compose down
+# docker compose up -d
+# docker logs mediamtx
+# docker-compose logs -f mediamtx
+
+# docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v-v
+# indoor/sensor/climate {"temp":21.60,"hum":45.98,"pres":1028.83}

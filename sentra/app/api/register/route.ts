@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     throw new Error("userId, lat oder lon fehlt!");
   }
 
+
 /*   await getBackgroundImage(userId, lat, lon); */
 
   return NextResponse.json({ success: true });

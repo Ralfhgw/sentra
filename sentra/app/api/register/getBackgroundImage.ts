@@ -14,12 +14,42 @@ cloudinary.config({
     secure: true
 });
 
-const getWeatherDescription = (code: number) => {
-    if (code === 0) return "klarer Himmel";
-    if (code < 4) return "leicht bewölkt";
-    if (code < 70) return "regnerisch";
-    if (code < 80) return "Schneefall";
-    return "stürmisch";
+const getWeatherDescription = (code: number): string => {
+  switch (code) {
+    case 0: return "Klarer Himmel";
+    case 1: return "Hauptsächlich klar";
+    case 2: return "Teilweise bewölkt";
+    case 3: return "Bedeckt";
+    
+    case 45: return "normaler Nebel ohne Rauhreifbildung";
+    case 48: return "Nebel oder Reifnebel";
+    
+    case 51: return "Leichter Nieselregen";
+    case 53: return "Mäßiger Nieselregen";
+    case 55: return "Dichter Nieselregen";
+    
+    case 61: return "Leichter Regen";
+    case 63: return "Mäßiger Regen";
+    case 65: return "Starker Regen";
+    
+    case 71: return "Leichter Schneefall";
+    case 73: return "Mäßiger Schneefall";
+    case 75: return "Starker Schneefall";
+    case 77: return "Schneegriesel";
+    
+    case 80: return "Leichte Regenschauer";
+    case 81: return "Mäßige Regenschauer";
+    case 82: return "Starke Regenschauer";
+    
+    case 85: return "Leichte Schneeschauer";
+    case 86: return "Starke Schneeschauer";
+    
+    case 95: return "Gewitter";
+    case 96: return "Gewitter mit Hagel oder Graupel";
+    case 99: return "Starkes Gewitter mit Hagel";
+    
+    default: return "Unbekanntes Wetter";
+  }
 };
 
 export async function getBackgroundImage(userId: string, lat: number, lon: number) {
@@ -34,7 +64,8 @@ export async function getBackgroundImage(userId: string, lat: number, lon: numbe
         end_date: dateString,
         timezone: "auto",
     };
-console.log("GetBackGroundImage params:", params);
+
+    console.log("GetBackGroundImage params:", params);
 
     const url = "https://api.open-meteo.com/v1/forecast";
     const responses = await fetchWeatherApi(url, params);
@@ -56,12 +87,15 @@ console.log("GetBackGroundImage params:", params);
 
     const weatherDesc = getWeatherDescription(weatherCode);
 
+
+
     const prompt = `
 Erstelle ein extrem fotorealistisches Landschaftsfoto für die Koordinaten (${lat}, ${lon}).
 
 Berücksichtige:
 - reale Topografie dieser Region
-- typische Vegetation
+- typische Vegetation in der Region
+- typische Vegetation am ${dateString}
 - korrekten regionalen Baustil der Gebäude
 - geografisch plausible Landschaftsmerkmale
 

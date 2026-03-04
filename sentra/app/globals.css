@@ -3,6 +3,12 @@
 
   /*  * { outline: 1px solid red; } */
 
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /*
 sm: – ab 640px (Smartphones)
 md: – ab 768px (Tablets)

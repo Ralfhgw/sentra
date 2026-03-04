@@ -18,6 +18,7 @@ $ npm install jsonwebtoken
 $ npm install --save-dev @types/jsonwebtoken
 $ npm install weather-icons
 $ npm install mqtt
+$ npm install hls.js
 ```
 
 ##### Open Port in WSL

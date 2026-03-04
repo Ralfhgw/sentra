@@ -2,42 +2,67 @@ import { NextResponse } from 'next/server';
 import mqtt from 'mqtt';
 
 export async function GET() {
-//const brokerUrl = 'mqtt://192.168.2.77:1883';
-
     try {
         const data = await new Promise((resolve, reject) => {
-            // Verbindung ohne zusätzliche Optionen-Objekte (weniger fehleranfällig)
-            //const client = mqtt.connect(brokerUrl, { connectTimeout: 5000 });
             const client = mqtt.connect({
                 host: 'localhost',
                 port: 1883,
                 protocol: 'mqtt',
                 connectTimeout: 5000
             });
+
+            const results: {
+                indoor: string | null,
+                outdoor: string | null,
+                indoorStatus: string | null,
+                outdoorStatus: string | null
+            } = {
+                indoor: null,
+                outdoor: null,
+                indoorStatus: null,
+                outdoorStatus: null
+            };
+
             const timeout = setTimeout(() => {
                 if (client.connected) client.end();
-                resolve("Timeout: Keine Daten vom Sensor empfangen");
+                // Besser das Objekt zurückgeben, auch wenn noch nicht alle Daten da sind
+                resolve(results);
             }, 4000);
 
             client.on('connect', () => {
                 console.log("Verbunden mit Broker!");
-                client.subscribe('indoor/sensor/climate');
+                client.subscribe([
+                    'indoor/sensor/climate',
+                    'outdoor/sensor/climate',
+                    'indoor/sensor/status',
+                    'outdoor/sensor/status'
+                ]);
             });
 
             client.on('message', (topic, message) => {
-                console.log("Nachricht erhalten:", message.toString());
-                clearTimeout(timeout);
-                const result = message.toString();
-                client.end(true); // 'true' erzwingt das sofortige Schließen
-                resolve(result);
+                console.log(`Nachricht erhalten von ${topic}:`, message.toString());
+                const msgStr = message.toString();
+                if (topic === 'indoor/sensor/climate') results.indoor = msgStr;
+                else if (topic === 'outdoor/sensor/climate') results.outdoor = msgStr;
+                else if (topic === 'indoor/sensor/status') results.indoorStatus = msgStr;
+                else if (topic === 'outdoor/sensor/status') results.outdoorStatus = msgStr;
+
+                // Optional: Warten, bis alles da ist, oder nach Timeout auflösen
+                if (results.indoor && results.outdoor && results.indoorStatus && results.outdoorStatus) {
+                    clearTimeout(timeout);
+                    client.end(true);
+                    resolve(results);
+                }
             });
 
+            // WICHTIG: Fehlerbehandlung für den MQTT-Client hinzufügen
             client.on('error', (err) => {
                 console.error("MQTT Fehler:", err);
-                client.end();
+                clearTimeout(timeout);
+                client.end(true);
                 reject(err);
             });
-        });
+        }); // <-- FEHLTE VORHER: Hier wird das Promise geschlossen
 
         return NextResponse.json({ wert: data });
 

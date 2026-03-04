@@ -1,17 +1,26 @@
 "use client";
 import { Thermometer, Hygrometer, Compass, Barometer } from "@/app/weather/Instruments";
 import { useState, useEffect, useMemo } from "react";
-import { WeatherClientProps, weatherDataCurrent, HourlyDataItem } from "@/types/typesWeather";
+import { WeatherClientProps, weatherDataCurrent } from "@/types/typesWeather";
 import 'weather-icons/css/weather-icons.min.css';
 import WeatherIcon from "@/app/weather/WeatherIcons";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import MoveableScrollAreaHorizontal from "@/components/CompMovableScrollAreaHorizontal"
 
 interface SensorData {
-    temp: number;
-    hum: number;
-    pres: number;
-    dew: number;
+  temp: number;
+  hum: number;
+  pres: number;
+  dew?: number;
+}
+
+type SensorStatus = "online" | "offline" | null;
+
+interface DualSensorState {
+  indoor: SensorData | null;
+  outdoor: SensorData | null;
+  indoorStatus?: SensorStatus;
+  outdoorStatus?: SensorStatus;
 }
 
 export default function WeatherClient({
@@ -24,8 +33,8 @@ export default function WeatherClient({
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // Sensordata
-  const [daten, setDaten] = useState<HourlyDataItem[] | null>(null);
-  const [sensorData, setSensorData] = useState<SensorData | null>(null);
+
+  const [sensorValues, setSensorValues] = useState<DualSensorState>({ indoor: null, outdoor: null });
 
   const dailyArray = useMemo(() => {
     return weatherDataDaily?.time
@@ -55,27 +64,74 @@ export default function WeatherClient({
   }, [weatherDataDaily]);
 
   // Update MQTT data every 15 minutes
-    useEffect(() => {
-        async function fetchSensorData() {
-            try {
-                // API-Route aufrufen
-                const response = await fetch('/api/sensor');
-                const result = await response.json();
+  useEffect(() => {
+    async function fetchSensorData() {
+      try {
+        const response = await fetch('/api/sensor');
+        const result = await response.json();
 
-                // Den String im Feld "wert" parsen
-                if (result.wert && !result.wert.includes('Timeout')) {
-                    const parsedData: SensorData = JSON.parse(result.wert);
-                    setSensorData(parsedData);
-                }
-            } catch (error) {
-                console.error("Fehler beim Laden der Sensordaten:", error);
-            }
+        if (result.wert) {
+          // Wir initialisieren das Objekt inklusive der neuen Status-Felder
+          const newSensorData: DualSensorState = {
+            indoor: null,
+            outdoor: null,
+            indoorStatus: result.wert.indoorStatus || "offline",
+            outdoorStatus: result.wert.outdoorStatus || "offline"
+          };
+
+          // Parsen der Klima-Daten (JSON-Strings vom ESP)
+          if (result.wert.indoor) {
+            try { newSensorData.indoor = JSON.parse(result.wert.indoor); } catch (e) { console.error("Parse Error Indoor", e); }
+          }
+          if (result.wert.outdoor) {
+            try { newSensorData.outdoor = JSON.parse(result.wert.outdoor); } catch (e) { console.error("Parse Error Outdoor", e); }
+          }
+
+          setSensorValues(newSensorData);
         }
+      } catch (error) {
+        console.error("Fehler beim Laden der Sensordaten:", error);
+      }
+    }
 
-        fetchSensorData();
-    }, []);
+    fetchSensorData();
+    const intervalId = window.setInterval(fetchSensorData, 60 * 1000); // 1 Minute Intervall
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
 
   useEffect(() => { }, [dailyArray]);
+
+  const isIndoorWarning =
+    sensorValues.indoor !== null &&
+    sensorValues.outdoor !== null &&
+    typeof sensorValues.indoor.dew === "number" &&
+    typeof sensorValues.outdoor.dew === "number" &&
+    sensorValues.outdoor.dew < sensorValues.indoor.dew;
+
+  const indoorSignalColor = (() => {
+    const indoorDew = sensorValues.indoor?.dew;
+    const outdoorDew = sensorValues.outdoor?.dew;
+
+    if (typeof indoorDew !== "number" || typeof outdoorDew !== "number") {
+      return "rgb(229, 231, 235)";
+    }
+
+    // 0..1 Intensität (ab 8°C Differenz volle Farbe)
+    const diff = Math.abs(outdoorDew - indoorDew);
+    const t = Math.min(diff / 8, 1);
+
+    const from = { r: 229, g: 231, b: 235 }; // grau
+    const to = isIndoorWarning
+      ? { r: 220, g: 38, b: 38 }   // rot
+      : { r: 22, g: 163, b: 74 };  // grün
+
+    const lerp = (a: number, b: number, x: number) =>
+      Math.round(a + (b - a) * x);
+
+    return `rgb(${lerp(from.r, to.r, t)}, ${lerp(from.g, to.g, t)}, ${lerp(from.b, to.b, t)})`;
+  })();
 
   // Current Data Set
   function getNumber(
@@ -100,43 +156,107 @@ export default function WeatherClient({
   const c_precipitation = getNumber(weatherDataCurrent, "precipitation");
   const c_cloudCover = getNumber(weatherDataCurrent, "cloud_cover");
   const c_surfacePressure = getNumber(weatherDataCurrent, "surface_pressure");
+  console.log("Aktuelle Wetterdaten (Current):", {
+    c_temperature_2m,
+    c_isDay,
+    c_windSpeed_10m,
+    c_windDirection_10m,
+    c_windGusts_10m,
+    c_relativeHumidity_2m,
+    c_weatherCode,
+    c_apparentTemperature,
+    c_precipitation,
+    c_cloudCover,
+    c_surfacePressure
+  });
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-hidden">
-      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 rounded-xl text-gray-800 px-14 w-screen hide-scrollbar overflow-y-auto shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 rounded-xl text-gray-800 px-13 w-screen hide-scrollbar overflow-y-auto shadow-md cursor-grab select-none">
 
         { /* Weather Instruments */}
-        <div className="relative w-full h-full rounded-xl bg-blue-300 overflow-hidden shadow-xl flex flex-col items-center justify-center">
+        <div className="relative w-full h-full py-10 bg-blue-300 rounded-xl overflow-hidden shadow-xl flex flex-col items-center justify-center">
           <div>
-            <div className="flex flex-row gap-25 justify-center">
-              <Thermometer temperature_2m={c_temperature_2m} apparentTemperature={c_apparentTemperature} />
-              <Compass wind_direction_10m={c_windDirection_10m} wind_speed_10m={c_windSpeed_10m} wind_gusts_10m={c_windGusts_10m} />
-              <Hygrometer humidity={c_relativeHumidity_2m} />
-              <Barometer pressure={c_surfacePressure} />
-            </div>
-            <div className="flex flex-col items-center gap-2 mt-6">
-              <WeatherIcon code={c_weatherCode} isDay={c_isDay} size={96} />
-              <span className="text-gray-700 text-lg font-semibold">
-                {Math.round(c_cloudCover)}% Bewölkung
-              </span>
-              <span className="text-gray-700 text-lg font-semibold">
-                {Number(c_precipitation).toFixed(1)} mm Niederschlag
-              </span>
-            </div>
-            Höhe: {elevation} m ü. NN
-            <div>
-              {sensorData ? (() => {
-                return (
-                  <div>
-                    <p><strong>Temperatur:</strong> {sensorData.temp.toFixed(1)} °C</p>
-                    <p><strong>Taupunkt:</strong> {sensorData.dew.toFixed(1)} °C</p>
-                    <p><strong>Luftfeuchtigkeit:</strong> {sensorData.hum.toFixed(1)} %</p>
-                    <p><strong>Luftdruck:</strong> {sensorData.pres.toFixed(1)} hPa</p>
+            <h1 className="bg-gray-300/40 py-4 my-6 rounded-xl text-xl font-bold text-center">Aktuelle Wetterdaten</h1>
+            <div className="p-10 bg-gray-300/40 rounded-xl flex flex-row gap-10 justify-center">
+
+              <div className="flex justify-center items-center">
+                <Thermometer temperature_2m={c_temperature_2m} apparentTemperature={c_apparentTemperature} />
+              </div>
+              <div className="flex flex-col gap-10">
+                <div className="flex flex-row gap-10">
+                  <Compass
+                    c_wind_direction_10m={c_windDirection_10m}
+                    c_wind_speed_10m={c_windSpeed_10m}
+                    c_wind_gusts_10m={c_windGusts_10m}
+                  />
+                  <Hygrometer humidity={c_relativeHumidity_2m} />
+                  <Barometer pressure={c_surfacePressure} />
+                </div>
+                <div className="bg-gray-300/50 p-6 rounded-xl flex flex-col md:flex-row gap-10 justify-center">
+                  <div className="bg-white/30 flex flex-col p-4 rounded-xl shadow-sm min-w-50">
+                    <WeatherIcon code={c_weatherCode} isDay={c_isDay} size={96} />
+                    <span className="text-gray-700 font-bold text-lg">
+                      {Math.round(c_cloudCover)}% Bewölkung
+                    </span>
+                    <span className="text-gray-700 font-bold text-lg">
+                      Höhe: {elevation} m ü. NN
+                    </span>
+                    <span className="text-gray-700 font-bold text-lg">
+                      {Number(c_precipitation).toFixed(1)} mm Niederschlag
+                    </span>
                   </div>
-                );
-              })() : (
-                <p>Lade Sensordaten...</p>
-              )}
+
+                  {/* Anzeige Indoor */}
+                  <div
+                    className={`p-4 rounded-xl shadow-sm min-w-50 transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "border-transparent"
+                      }`}
+                    style={{ backgroundColor: sensorValues.indoorStatus === "online" ? indoorSignalColor : undefined }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-bold text-lg">Sensor Innen</h4>
+                      {sensorValues.indoorStatus === "offline" && (
+                        <span className="text-red-600 font-black animate-pulse text-xs">OFFLINE</span>
+                      )}
+                    </div>
+
+                    {sensorValues.indoor ? (
+                      <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
+                        <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                        <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                        <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                      </div>
+                    ) : (
+                      <p>Warte auf Innensensor...</p>
+                    )}
+                  </div>
+
+                  {/* Anzeige Outdoor */}
+                  <div
+                    className={`p-4 rounded-xl shadow-sm min-w-50 transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-white/30 border-transparent"
+                      }`}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-bold text-lg">Sensor Außen</h4>
+                      {sensorValues.outdoorStatus === "offline" && (
+                        <span className="text-red-600 font-black animate-pulse text-xs">OFFLINE</span>
+                      )}
+                    </div>
+
+                    {sensorValues.outdoor ? (
+                      <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
+                        <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                        <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                        <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                      </div>
+                    ) : (
+                      <p>Warte auf Außensensor...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

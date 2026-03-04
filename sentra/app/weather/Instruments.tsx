@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { temperatureToPercentage, percentageToRotationPressure, percentageToRotationHygro } from "./InstrumentsCalculation";
+import { CompassProps } from "@/types/typesWeather"
 
 // --- Thermometer
 type ThermometerCurrentProps = {
@@ -8,6 +9,10 @@ type ThermometerCurrentProps = {
 };
 
 export function Thermometer({ temperature_2m, apparentTemperature }: ThermometerCurrentProps) {
+    const useTestTemperature = false;
+    temperature_2m = useTestTemperature ? 50 : temperature_2m;
+    apparentTemperature = useTestTemperature ? -40 : apparentTemperature;
+
     const fillTemperature_2m = temperatureToPercentage(temperature_2m);
     const fillApparentTemperature = temperatureToPercentage(apparentTemperature);
 
@@ -18,10 +23,10 @@ export function Thermometer({ temperature_2m, apparentTemperature }: Thermometer
         <div className="relative">
             <div className="absolute"
                 style={{
-                    top: "3.2vw",
-                    left: "2.4vw",
-                    width: "0.2vw",
-                    height: "12.8vw",
+                    top: "4.2vw",
+                    left: "2.9vw",
+                    width: "0.25vw",
+                    height: "15.8vw",
                 }}
             >
                 <div
@@ -54,7 +59,7 @@ export function Thermometer({ temperature_2m, apparentTemperature }: Thermometer
                 alt="Thermometer"
                 width={150}
                 height={600}
-                className="h-[20vw] w-[5vw]"
+                className="h-[25vw] w-[6vw]"
             />
         </div>
     );
@@ -137,22 +142,22 @@ export function Barometer({ pressure }: { pressure: number }) {
     );
 }
 
-// --- Kompass für Windrichtung (windDeg: 0-360) ---
-type CompassProps = {
-    wind_direction_10m: number;
-    wind_speed_10m: number;
-    wind_gusts_10m: number;
-};
+// --- Compass
+export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_10m }: CompassProps) {
 
-export function Compass({ wind_direction_10m, wind_speed_10m, wind_gusts_10m }: CompassProps) {
+/*     const useTestWind = true;
+    c_wind_direction_10m = useTestWind ? 200 : c_wind_direction_10m;
+    c_wind_speed_10m = useTestWind ? 12 : c_wind_speed_10m;
+    c_wind_gusts_10m = useTestWind ? 40 : c_wind_gusts_10m; */
+
     // Definiere die minimale und maximale Umdrehungsdauer (in Sekunden)
     const minDuration = 0.5; // schnellste Drehung (bei windSpeed = 90)
     const maxDuration = 48;   // langsamste Drehung (bei windSpeed = 0)
     const size = "14.5vw";
     const sizeRad = "16vw";
     // Begrenze windSpeed auf den Bereich 0–90
-    const clampedSpeed = Math.max(0, Math.min(wind_speed_10m, 90));
-    const clampedSpeedGusts = Math.max(0, Math.min(wind_gusts_10m, 90));
+    const clampedSpeed = Math.max(0, Math.min(c_wind_speed_10m, 90));
+    const clampedSpeedGusts = Math.max(0, Math.min(c_wind_gusts_10m, 90));
     // Berechne die Dauer abhängig von windSpeed
     // windSpeed = 0   → Zahnrad steht (keine Animation)
     // windSpeed = 90  → minDuration (schnellste Animation)
@@ -179,7 +184,7 @@ export function Compass({ wind_direction_10m, wind_speed_10m, wind_gusts_10m }: 
                     position: "absolute",
                     top: 0,
                     left: 0,
-                    animation: rotationDuration > 0
+                    animation: rotationDurationGusts > 0
                         ? `spin ${rotationDurationGusts}s linear infinite`
                         : "none",
                 }}
@@ -228,7 +233,7 @@ export function Compass({ wind_direction_10m, wind_speed_10m, wind_gusts_10m }: 
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    transform: `translate(-50%, -50%) rotate(${wind_direction_10m}deg)`,
+                    transform: `translate(-50%, -50%) rotate(${c_wind_direction_10m}deg)`,
                     transition: "transform 0.3s ease",
                     zIndex: 10,
                 }}

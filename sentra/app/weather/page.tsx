@@ -135,12 +135,15 @@ async function getWeatherData() {
         forecast_days: 16,
     };
     const url = "https://api.open-meteo.com/v1/forecast";
+    console.log(`WeatherClient: Lade Wetterdaten von ${url}...`);
+
     const responses = await fetchWeatherApi(url, params);
 
     const response = responses[0];
     if (!response) {
-        throw new Error("No weather API response received.");
+        throw new Error("WeatherClient: No weather API response received.");
     }
+    console.log("WeatherClient: Wetterdaten erfolgreich von open-meteo geladen!");
 
     const elevation = response.elevation ? response.elevation() : null;
     const utcOffsetSeconds = response.utcOffsetSeconds();

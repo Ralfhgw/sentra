@@ -1,3 +1,9 @@
+export type CompassProps = {
+c_wind_direction_10m: number;
+c_wind_speed_10m: number;
+c_wind_gusts_10m: number;
+}
+
 export type WeatherCurrent = {
     time: Date | null;
     temperature_2m?: number;

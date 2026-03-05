@@ -19,6 +19,8 @@ $ npm install --save-dev @types/jsonwebtoken
 $ npm install weather-icons
 $ npm install mqtt
 $ npm install hls.js
+$ npm install recharts
+$ npm install --save-dev @types/recharts
 ```
 
 ##### Open Port in WSL

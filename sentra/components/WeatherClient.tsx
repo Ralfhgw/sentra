@@ -6,6 +6,7 @@ import 'weather-icons/css/weather-icons.min.css';
 import WeatherIcon from "@/app/weather/WeatherIcons";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import MoveableScrollAreaHorizontal from "@/components/CompMovableScrollAreaHorizontal"
+import  ChartTemperature  from "@/app/weather/chartTemperature";
 
 interface SensorData {
   temp: number;
@@ -172,10 +173,10 @@ export default function WeatherClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-hidden">
-      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 rounded-xl text-gray-800 px-13 w-screen hide-scrollbar overflow-y-auto shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 text-gray-800 px-13 w-screen hide-scrollbar overflow-y-auto shadow-md cursor-grab select-none">
 
         { /* Weather Instruments */}
-        <div className="relative w-full h-full py-10 bg-blue-300 rounded-xl overflow-hidden shadow-xl flex flex-col items-center justify-center">
+        <div className="relative w-full h-[65vh] lg:h-full py-10 bg-gray-400 overflow-hidden shadow-xl flex flex-col items-center justify-center">
           <div>
             <h1 className="bg-gray-300/40 py-4 my-6 rounded-xl text-xl font-bold text-center">Aktuelle Wetterdaten</h1>
             <div className="p-10 bg-gray-300/40 rounded-xl flex flex-row gap-10 justify-center">
@@ -216,7 +217,7 @@ export default function WeatherClient({
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-bold text-lg">Sensor Innen</h4>
                       {sensorValues.indoorStatus === "offline" && (
-                        <span className="text-red-600 font-black animate-pulse text-xs">OFFLINE</span>
+                        <span className="text-red-600 font-black text-xs">OFFLINE</span>
                       )}
                     </div>
 
@@ -240,7 +241,7 @@ export default function WeatherClient({
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-bold text-lg">Sensor Außen</h4>
                       {sensorValues.outdoorStatus === "offline" && (
-                        <span className="text-red-600 font-black animate-pulse text-xs">OFFLINE</span>
+                        <span className="text-red-600 font-black text-xs">OFFLINE</span>
                       )}
                     </div>
 
@@ -261,8 +262,10 @@ export default function WeatherClient({
           </div>
         </div>
         <div>
-          <h3 className="bg-gray-300 my-6 text-lg font-bold text-center">Tägliche Wetterprognose</h3>
+          <h3 className="text-lg font-bold my-3 text-center">Tägliche Wetterprognose</h3>
         </div>
+        <ChartTemperature data={weatherDataHourly} />
+
 
         { /* Daily Weather Date Table */}
         <MoveableScrollAreaHorizontal className="bg-gray-400 flex flex-row gap-1 p-2 w-full overflow-x-auto no-scrollbar">

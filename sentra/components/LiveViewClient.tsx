@@ -118,10 +118,10 @@ type UserChannel = {
 };
 
 export default function WebcamClient({ channels, userChannels, error }: WebcamClientProps) {
-  console.log(userChannels)
+  console.log("LiveViewClient userChannels: ", userChannels)
+
   const [layoutId, setLayoutId] = useState<keyof typeof LAYOUT_CONFIGS>(10);
   const config = LAYOUT_CONFIGS[layoutId];
-
   const [showMenu, setShowMenu] = useState(false);
   const [popupCell, setPopupCell] = useState<number | null>(null);
   const [groupFilter, setGroupFilter] = useState<string>("");
@@ -129,11 +129,12 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
   const [customName, setCustomName] = useState("");
   const [selectedUrl, setSelectedUrl] = useState("");
   const [selectedName, setSelectedName] = useState("");
- const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
-  typeof userChannels === "string"
-    ? JSON.parse(userChannels)
-    : userChannels ?? []
-);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
+    typeof userChannels === "string"
+      ? JSON.parse(userChannels)
+      : userChannels ?? []
+  );
 
   // Extract all groups from channel list
   const groups = Array.from(new Set(channels.map(ch => ch.group).filter(Boolean)));
@@ -151,7 +152,8 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
     } else {
       newChannels[popupCell!] = { name: selectedName, url: selectedUrl };
     }
-    console.log("Neuer Inhalt von newChannels:", newChannels);
+    console.log("LiveViewClient newChannels: newChannels:", newChannels);
+
     setCurrentUserChannels(newChannels);
     await fetch("/api/user-channels", {
       method: "POST",
@@ -163,6 +165,27 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
     setCustomUrl("");
     setCustomName("");
     setSelectedUrl("");
+  };
+
+  const persistChannels = async (next: UserChannel[]) => {
+    await fetch("/api/user-channels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channels: next }),
+    });
+  };
+
+  const handleDropOnSlot = async (toIdx: number) => {
+    if (dragFrom === null || dragFrom === toIdx) return;
+
+    const size = Math.max(config.cells.length, currentUserChannels.length);
+    const next = Array.from({ length: size }, (_, i) => currentUserChannels[i] ?? { name: "", url: "" });
+
+    [next[dragFrom], next[toIdx]] = [next[toIdx], next[dragFrom]];
+
+    setCurrentUserChannels(next);
+    setDragFrom(null);
+    await persistChannels(next);
   };
 
   return (
@@ -256,9 +279,14 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
           <div
             key={`cell-${idx}-${cell.id ?? "empty"}`}
             className={`${cell.span} relative bg-black border border-gray-900/50 group overflow-hidden`}
+            draggable
+            onDragStart={() => setDragFrom(idx)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => void handleDropOnSlot(idx)}
+            onDragEnd={() => setDragFrom(null)}
             onDoubleClick={() => setPopupCell(idx)}
           >
-              	
+
             <WebcamItem
               url={currentUserChannels[idx]?.url ?? null}
               isHuge={cell.span.includes("col-span-4")}

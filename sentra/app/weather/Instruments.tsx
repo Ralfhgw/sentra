@@ -145,14 +145,14 @@ export function Barometer({ pressure }: { pressure: number }) {
 // --- Compass
 export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_10m }: CompassProps) {
 
-/*     const useTestWind = true;
+   /*  const useTestWind = true;
     c_wind_direction_10m = useTestWind ? 200 : c_wind_direction_10m;
-    c_wind_speed_10m = useTestWind ? 12 : c_wind_speed_10m;
-    c_wind_gusts_10m = useTestWind ? 40 : c_wind_gusts_10m; */
+    c_wind_speed_10m = useTestWind ? 1 : c_wind_speed_10m;
+    c_wind_gusts_10m = useTestWind ? 90 : c_wind_gusts_10m; */
 
     // Definiere die minimale und maximale Umdrehungsdauer (in Sekunden)
-    const minDuration = 0.5; // schnellste Drehung (bei windSpeed = 90)
-    const maxDuration = 48;   // langsamste Drehung (bei windSpeed = 0)
+    const minDuration = 2; // schnellste Drehung (bei windSpeed = 90)
+    const maxDuration = 200;   // langsamste Drehung (bei windSpeed = 0)
     const size = "14.5vw";
     const sizeRad = "16vw";
     // Begrenze windSpeed auf den Bereich 0–90

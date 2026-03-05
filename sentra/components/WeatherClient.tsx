@@ -7,6 +7,7 @@ import WeatherIcon from "@/app/weather/WeatherIcons";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import MoveableScrollAreaHorizontal from "@/components/CompMovableScrollAreaHorizontal"
 import  ChartTemperature  from "@/app/weather/chartTemperature";
+import ChartWind from "@/app/weather/chartWind";
 
 interface SensorData {
   temp: number;
@@ -265,7 +266,7 @@ export default function WeatherClient({
           <h3 className="text-lg font-bold my-3 text-center">Tägliche Wetterprognose</h3>
         </div>
         <ChartTemperature data={weatherDataHourly} />
-
+        <ChartWind data={weatherDataHourly} />
 
         { /* Daily Weather Date Table */}
         <MoveableScrollAreaHorizontal className="bg-gray-400 flex flex-row gap-1 p-2 w-full overflow-x-auto no-scrollbar">

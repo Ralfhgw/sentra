@@ -279,13 +279,18 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
           <div
             key={`cell-${idx}-${cell.id ?? "empty"}`}
             className={`${cell.span} relative bg-black border border-gray-900/50 group overflow-hidden`}
-            draggable
-            onDragStart={() => setDragFrom(idx)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => void handleDropOnSlot(idx)}
-            onDragEnd={() => setDragFrom(null)}
             onDoubleClick={() => setPopupCell(idx)}
           >
+            <div
+              className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
+              draggable
+              onDragStart={() => setDragFrom(idx)}
+              onDragEnd={() => setDragFrom(null)}
+              title="Zum Verschieben hier ziehen"
+              aria-label="Drag handle"
+            />
 
             <WebcamItem
               url={currentUserChannels[idx]?.url ?? null}

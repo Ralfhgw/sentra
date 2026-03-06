@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
-  Area,
   Line,
   XAxis,
   YAxis,
@@ -15,7 +14,7 @@ import {
 import type { HourlyDataItem } from "@/types/typesWeather";
 
 const CHART_MARGIN = { top: 8, right: 16, left: 0, bottom: 4 };
-const DIRECTION_TICKS = [0, 90, 180, 270, 360];
+const PROBABILITY_TICKS = [0, 20, 40, 60, 80, 100];
 
 const styles = {
   grid: {
@@ -43,15 +42,15 @@ const styles = {
   },
 };
 
-type ChartWindProps = {
+type ChartPrecipitationProps = {
   data: HourlyDataItem[];
 };
 
 type ChartPoint = {
   time: number;
-  wind_speed_10m: number | null;
-  wind_gusts_10m: number | null;
-  wind_direction_10m: number | null;
+  precipitation: number | null;
+  precipitation_probability: number | null;
+  humidity: number | null;
 };
 
 function toDayKey(ts: number): string {
@@ -69,46 +68,39 @@ function formatDayAxis(ts: number): string {
   });
 }
 
-function clampDirection(value: number | null): number | null {
-  if (value === null || !Number.isFinite(value)) return null;
-  return Math.max(0, Math.min(360, value));
-}
-
-function buildLeftYAxisConfig(
-  data: ChartPoint[],
-  step = 5
+function buildPrecipYAxisConfig(
+  data: ChartPoint[]
 ): { yTicks: number[]; yDomain: [number, number] } {
   const values = data
-    .flatMap((d) => [d.wind_speed_10m, d.wind_gusts_10m])
+    .map((d) => d.precipitation)
     .filter((v): v is number => Number.isFinite(v));
 
-  if (values.length === 0) return { yTicks: [0, 5, 10], yDomain: [0, 10] };
+  if (values.length === 0) return { yTicks: [0, 1, 2], yDomain: [0, 2] };
 
-  const min = 0;
-  let max = Math.ceil(Math.max(...values) / step) * step;
+  const maxValue = Math.max(0, ...values);
+  const step = maxValue <= 10 ? 1 : maxValue <= 40 ? 5 : 10;
+  let max = Math.ceil(maxValue / step) * step;
 
   if (max <= 0) max = step;
-  if (max === min) max = min + step;
 
-  const yTicks = Array.from({ length: (max - min) / step + 1 }, (_, i) => min + i * step);
-  return { yTicks, yDomain: [min, max] };
+  const yTicks = Array.from({ length: max / step + 1 }, (_, i) => i * step);
+  return { yTicks, yDomain: [0, max] };
 }
 
-export default function ChartWind({ data }: ChartWindProps) {
+export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
   const chartData = useMemo<ChartPoint[]>(
     () =>
       [...(data ?? [])]
         .map((item) => {
           const ts = new Date(item.time).getTime();
-          const speed = typeof item.wind_speed === "number" ? item.wind_speed : null;
-          const gusts = typeof item.wind_gusts === "number" ? item.wind_gusts : null;
-          const direction = typeof item.wind_direction === "number" ? item.wind_direction : null;
-
+          const precipitation = typeof item.precipitation === "number" ? item.precipitation : null;
+          const probability = typeof item.precipitation_probability === "number" ? item.precipitation_probability : null;
+          const humidity = typeof item.relative_humidity === "number" ? item.relative_humidity : null;
           return {
             time: ts,
-            wind_speed_10m: speed,
-            wind_gusts_10m: gusts,
-            wind_direction_10m: clampDirection(direction),
+            precipitation,
+            precipitation_probability: probability,
+            humidity,
           };
         })
         .filter((p) => Number.isFinite(p.time))
@@ -128,12 +120,12 @@ export default function ChartWind({ data }: ChartWindProps) {
       .map((p) => p.time);
   }, [chartData]);
 
-  const { yTicks, yDomain } = buildLeftYAxisConfig(chartData, 5);
+  const { yTicks, yDomain } = buildPrecipYAxisConfig(chartData);
 
   return (
     <div style={styles.grid}>
       <section style={styles.card}>
-        <h2 style={styles.cardTitle}>Wind km/h und Richtung</h2>
+        <h2 style={styles.cardTitle}>Niederschlag mm und Wahrscheinlichkeit %</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN}>
@@ -146,18 +138,6 @@ export default function ChartWind({ data }: ChartWindProps) {
                 fillOpacity={0.35}
               />
 
-              <defs>
-                <linearGradient id="windSpeedFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38BDF8" stopOpacity={0.36} />
-                  <stop offset="100%" stopColor="#0369A1" stopOpacity={0.06} />
-                </linearGradient>
-
-                <linearGradient id="windGustFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.30} />
-                  <stop offset="100%" stopColor="#B45309" stopOpacity={0.06} />
-                </linearGradient>
-              </defs>
-
               <XAxis
                 dataKey="time"
                 type="number"
@@ -166,8 +146,8 @@ export default function ChartWind({ data }: ChartWindProps) {
                 ticks={dayTicks}
                 tickFormatter={formatDayAxis}
                 tick={{ fill: "#d8dfe9", fontSize: 14 }}
-                axisLine={false}
-                tickLine={false}
+                axisLine={true}
+                tickLine={true}
               />
 
               <YAxis
@@ -175,36 +155,44 @@ export default function ChartWind({ data }: ChartWindProps) {
                 width={54}
                 ticks={yTicks}
                 domain={yDomain}
-                tick={{ fill: "#d8dfe9", fontSize: 14 }}
-                tickFormatter={(value) => (value === yTicks[0] ? "" : String(value))}
-                axisLine={false}
-                tickLine={false}
+                tick={{ fill: "#2d8d50", fontSize: 14 }}
+                axisLine={true}
+                tickLine={true}
+                label={{
+                  value: "mm",
+                  angle: -90,
+                  position: "insideLeft",
+                  fill: "#2d8d50",
+                  fontSize: 14,
+                }}
               />
 
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 width={58}
-                domain={[0, 360]}
-                ticks={DIRECTION_TICKS}
-                tickFormatter={(value) => `${value}°`}
+                domain={[0, 100]}
+                ticks={PROBABILITY_TICKS}
+                tickFormatter={(value) => `${value}%`}
                 tick={{ fill: "#d8dfe9", fontSize: 14 }}
-                axisLine={false}
-                tickLine={false}
+                axisLine={true}
+                tickLine={true}
               />
+
               <Legend
                 verticalAlign="bottom"
                 align="center"
                 iconType="line"
                 height={36}
                 wrapperStyle={{ paddingTop: 8, color: "#d8dfe9", fontSize: 14 }}
-                itemSorter={(item) => {
-                  if (item.dataKey === "wind_speed_10m") return 0;
-                  if (item.dataKey === "wind_gusts_10m") return 1;
-                  if (item.dataKey === "wind_direction_10m") return 2;
+                                itemSorter={(item) => {
+                  if (item.dataKey === "precipitation") return 0;
+                  if (item.dataKey === "precipitation_probability") return 1;
+                  if (item.dataKey === "humidity") return 2;
                   return 99;
                 }}
               />
+
               <Tooltip
                 offset={{ x: 40, y: 6 }}
                 cursor={{ stroke: "#94a3b8", strokeDasharray: "3 3", strokeOpacity: 0.45 }}
@@ -237,72 +225,44 @@ export default function ChartWind({ data }: ChartWindProps) {
                 formatter={(value, name) => {
                   const num = typeof value === "number" ? value : Number(value);
                   if (!Number.isFinite(num)) return ["-", String(name)];
-                  if (name === "Windrichtung") return [`${num.toFixed(0)}°`, String(name)];
-                  return [`${num.toFixed(1)} km/h`, String(name)];
+                  if (name === "Niederschlagswahrscheinlichkeit") {
+                    return [`${num.toFixed(0)} %`, String(name)];
+                  }
+                  return [`${num.toFixed(1)} mm`, String(name)];
                 }}
               />
 
-              <Area
-                yAxisId="left"
-                type="monotone"
-                dataKey="wind_speed_10m"
-                stroke="none"
-                fill="url(#windSpeedFill)"
-                fillOpacity={1}
-                isAnimationActive={false}
-                legendType="none"
-                tooltipType="none"
-                dot={false}
-                activeDot={false}
-              />
-
-              <Area
-                yAxisId="left"
-                type="monotone"
-                dataKey="wind_gusts_10m"
-                stroke="none"
-                fill="url(#windGustFill)"
-                fillOpacity={1}
-                isAnimationActive={false}
-                legendType="none"
-                tooltipType="none"
-                dot={false}
-                activeDot={false}
-              />
-
               <Line
                 yAxisId="left"
                 type="monotone"
-                dataKey="wind_speed_10m"
-                name="Wind"
-                stroke="#38BDF8"
+                dataKey="precipitation"
+                name="Niederschlag"
+                stroke="#2d8d50"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#38BDF8" }}
-              />
-
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="wind_gusts_10m"
-                name="Windböen"
-                stroke="#F59E0B"
-                strokeDasharray="5 3"
-                strokeWidth={1.8}
-                dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#F59E0B" }}
+                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#22C55E" }}
               />
 
               <Line
                 yAxisId="right"
                 type="monotone"
-                dataKey="wind_direction_10m"
-                name="Windrichtung"
-                stroke="#A78BFA"
-                strokeWidth={1.6}
-                strokeDasharray="2 3"
+                dataKey="precipitation_probability"
+                name="Niederschlagswahrscheinlichkeit"
+                stroke="#a5e6bd"
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#A78BFA" }}
+                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#86EFAC" }}
+              />
+
+               <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="humidity"
+                name="Luftfeuchtigkeit"
+                stroke="#d1737b"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#86EFAC" }}
               />
             </ComposedChart>
           </ResponsiveContainer>

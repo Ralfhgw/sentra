@@ -8,6 +8,9 @@ import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVe
 import MoveableScrollAreaHorizontal from "@/components/CompMovableScrollAreaHorizontal"
 import  ChartTemperature  from "@/app/weather/chartTemperature";
 import ChartWind from "@/app/weather/chartWind";
+import ChartPrecipitation from "@/app/weather/chartPrecipitation";
+import ChartTranspiration from "@/app/weather/chartTranspiration";
+import ChartAtmosphere from "@/app/weather/chartAtmosphere"
 
 interface SensorData {
   temp: number;
@@ -177,11 +180,13 @@ export default function WeatherClient({
       <MoveableScrollAreaVertical className="flex-1 bg-gray-200 text-gray-800 px-13 w-screen hide-scrollbar overflow-y-auto shadow-md cursor-grab select-none">
 
         { /* Weather Instruments */}
-        <div className="relative w-full h-[65vh] lg:h-full py-10 bg-gray-400 overflow-hidden shadow-xl flex flex-col items-center justify-center">
-          <div>
-            <h1 className="bg-gray-300/40 py-4 my-6 rounded-xl text-xl font-bold text-center">Aktuelle Wetterdaten</h1>
-            <div className="p-10 bg-gray-300/40 rounded-xl flex flex-row gap-10 justify-center">
+        <div className="relative w-full h-[65vh] lg:h-full bg-gray-400 overflow-hidden shadow-xl flex flex-col items-center justify-center">
+<div>
+            <div className="w-full">
+              <h1 className="bg-gray-300/40 py-4 rounded-xl text-xl font-bold text-center">Aktuelle Wetterdaten</h1>
+            </div>
 
+            <div className=" bg-gray-300/40 mt-4 rounded-xl flex flex-row gap-10 justify-center">
               <div className="flex justify-center items-center">
                 <Thermometer temperature_2m={c_temperature_2m} apparentTemperature={c_apparentTemperature} />
               </div>
@@ -260,13 +265,33 @@ export default function WeatherClient({
                 </div>
               </div>
             </div>
-          </div>
+ </div>         
         </div>
+
+        
         <div>
           <h3 className="text-lg font-bold my-3 text-center">Tägliche Wetterprognose</h3>
         </div>
         <ChartTemperature data={weatherDataHourly} />
         <ChartWind data={weatherDataHourly} />
+        <ChartPrecipitation data={weatherDataHourly} />
+        <ChartTranspiration data={weatherDataHourly} />
+        <div className="p-4">
+        <p><strong>ET0 FAO (mm/h):</strong> Er zeigt an, wie viel Wasser unter den gegebenen
+        Wetterbedingungen maximal verdunsten würde (theoretischer Wasserbedarf).</p>
+        <p><strong>Evapotranspiration (mm/h):</strong> Dies ist die modellierte reale Verdunstung von Boden und Pflanzen 
+        unter den aktuellen Gegebenheiten.<br />
+        <p><strong>Defizit zu ET0 (mm/h):</strong> Die Differenz zwischen dem potenziellen Bedarf (ET0) und der tatsächlichen Verdunstung. 
+        Ein hohes Defizit signalisiert, dass die Pflanze ihren Bedarf nicht voll decken kann.</p>
+        <p><strong>VPD (Vapour Pressure Deficit (kPa)):</strong>misst die „Saugkraft“ der Luft. 
+        Je höher dieser Wert (in kPa), desto trockener ist die Luft und desto mehr Stress entsteht für die Pflanze.</p>
+        Die farbige <strong>Heatmap</strong> im Hintergrund übersetzt diesen VPD-Wert in ein direktes Stress-Signal, 
+        von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot).</p>
+        <p><strong>Zusammenhang:</strong> Steigt der VPD-Wert stark an, erhöht sich der Druck auf die Pflanze. 
+        Wenn gleichzeitig die tatsächliche Verdunstung hinter der potenziellen ET0 zurückbleibt, wächst das Defizit – 
+        ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.</p>
+       </div>
+        <ChartAtmosphere data={weatherDataHourly} dailyData={weatherDataDaily} />
 
         { /* Daily Weather Date Table */}
         <MoveableScrollAreaHorizontal className="bg-gray-400 flex flex-row gap-1 p-2 w-full overflow-x-auto no-scrollbar">

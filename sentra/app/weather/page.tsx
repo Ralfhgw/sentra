@@ -82,8 +82,8 @@ function processHourlyData(hourlyData: HourlyDataInput | null) {
 }
 
 async function getWeatherData() {
-    const lat = 52.52;
-    const lon = 13.405;
+    const lat = 3.52;
+    const lon = 60.405;
     const params = {
         latitude: lat,
         longitude: lon,

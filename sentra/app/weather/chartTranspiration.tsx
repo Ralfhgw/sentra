@@ -52,13 +52,13 @@ type ChartPoint = {
   time: number;
   evapotranspiration: number | null;
   et0_fao_evapotranspiration: number | null;
-  et_deficit: number | null;
   vapour_pressure_deficit: number | null;
   vpd_band: number;
   vpd_color: string;
   vpd_stress_label: string;
 };
 
+// Wandelt einen Zeitstempel in einen String wie 2024-03-07 um. 
 function toDayKey(ts: number): string {
   const d = new Date(ts);
   const y = d.getFullYear();
@@ -67,6 +67,7 @@ function toDayKey(ts: number): string {
   return `${y}-${m}-${day}`;
 }
 
+// Formatiert den Zeitstempel für die Anzeige unter dem Chart (z. B. 07.03.).
 function formatDayAxis(ts: number): string {
   return new Date(ts).toLocaleDateString("de-DE", {
     day: "2-digit",
@@ -74,6 +75,7 @@ function formatDayAxis(ts: number): string {
   });
 }
 
+// Je nachdem, wie hoch der VPD-Wert ist (Lufttrockenheit), gibt die Funktion eine Farbe und ein Label zurück.
 function getVpdStressMeta(vpd: number | null): { color: string; label: string } {
   if (vpd === null) return { color: "rgba(148,163,184,0)", label: "keine Daten" };
   if (vpd < 0.4) return { color: "#38BDF8", label: "sehr feucht" };
@@ -83,11 +85,12 @@ function getVpdStressMeta(vpd: number | null): { color: string; label: string } 
   return { color: "#EF4444", label: "sehr hoch (Stress)" };
 }
 
+// Diese Funktionen berechnen dynamisch die Skalierung der Y-Achsen. Sie schauen sich die Min/Max-Werte der Daten an und entscheiden, ob die Achse in 0.2er, 0.5er oder 1er Schritten beschriftet werden soll, damit das Chart immer "sauber" aussieht.
 function buildEtYAxisConfig(
   data: ChartPoint[]
 ): { yTicks: number[]; yDomain: [number, number] } {
   const values = data
-    .flatMap((d) => [d.evapotranspiration, d.et0_fao_evapotranspiration, d.et_deficit])
+    .flatMap((d) => [d.evapotranspiration, d.et0_fao_evapotranspiration])
     .filter((v): v is number => Number.isFinite(v));
 
   if (values.length === 0) {
@@ -117,6 +120,7 @@ function buildEtYAxisConfig(
   };
 }
 
+// Diese Funktionen berechnen dynamisch die Skalierung der Y-Achsen. Sie schauen sich die Min/Max-Werte der Daten an und entscheiden, ob die Achse in 0.2er, 0.5er oder 1er Schritten beschriftet werden soll, damit das Chart immer "sauber" aussieht.
 function buildVpdYAxisConfig(
   data: ChartPoint[]
 ): { yTicks: number[]; yDomain: [number, number] } {
@@ -139,12 +143,15 @@ function buildVpdYAxisConfig(
   return { yTicks, yDomain: [0, Number(max.toFixed(2))] };
 }
 
+// Sicherheitsfunktion. Sie prüft, ob ein Wert eine echte Zahl ist (kein NaN oder null). 
+// Wenn nicht, gibt sie null zurück, damit das Chart nicht abstürzt.
 function toFinite(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return value;
 }
 
 export default function ChartTranspiration({ data }: ChartTranspirationProps) {
+  // Hier wird für jeden Datenpunkt das Defizit berechnet (et0 - et) und die Stress-Farbe via getVpdStressMeta zugewiesen.
   const chartData = useMemo<ChartPoint[]>(
     () =>
       [...(data ?? [])]
@@ -172,6 +179,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
     [data]
   );
 
+  // Filtert die Daten so, dass nur der jeweils erste Datenpunkt eines neuen Tages übrig bleibt. Das verhindert, dass die X-Achse mit 24 Stunden-Beschriftungen pro Tag überladen wird.
   const dayTicks = useMemo<number[]>(() => {
     const seen = new Set<string>();
     return chartData
@@ -195,6 +203,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
     payload?: ChartPoint;
   };
 
+  // Dies ist eine Custom-Komponente für einen Bar (Balken). Anstatt normale Balken zu zeichnen, füllt sie den Hintergrund des Charts mit der Stress-Farbe (z.B. rot, wenn es zu trocken ist).
   function renderVpdHeatShape({
     x = 0,
     y = 0,
@@ -231,7 +240,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                 fill="#fbfcfd"
                 fillOpacity={0.15}
               />
-
+              {/* Hier werden Farbverläufe definiert (etActualFill, etDeficitFill), damit die Flächen im Chart nach unten hin sanft transparent auslaufen. */}
               <defs>
                 <linearGradient id="etActualFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#22C55E" stopOpacity={0.34} />
@@ -305,8 +314,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                 itemSorter={(item) => {
                   if (item.dataKey === "et0_fao_evapotranspiration") return 0;
                   if (item.dataKey === "evapotranspiration") return 1;
-                  if (item.dataKey === "et_deficit") return 2;
-                  if (item.dataKey === "vapour_pressure_deficit") return 3;
+                  if (item.dataKey === "vapour_pressure_deficit") return 2;
                   return 99;
                 }}
               />
@@ -367,42 +375,21 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                 isAnimationActive={false}
                 shape={renderVpdHeatShape}
               />
-
+{
               <Area
                 type="monotone"
                 dataKey="evapotranspiration"
-                stackId="etStack" // Gleiche ID wie Defizit
-                name="Aktuelle ET"
+                stackId="etStack"
+                name="Evatranspiration"
                 stroke="#22C55E"
                 fill="url(#etActualFill)"
                 connectNulls
-              />
-
-              <Area
-                type="monotone"
-                dataKey="et_deficit"
-                stackId="etStack" // Gleiche ID wie ET
-                name="Defizit zu ET0"
-                stroke="#4a31da"
-                fill="url(#etDeficitFill)"
-                fillOpacity={0.5}
-                connectNulls
-              />
+              />}
 
               <Line
                 type="monotone"
                 dataKey="et0_fao_evapotranspiration"
-                name="ET0 (Referenz)"
-                stroke="#d8dfe9"
-                strokeDasharray="5 5"
-                dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#22C55E" }}
-              />
-
-              <Line
-                type="monotone"
-                dataKey="et0_fao_evapotranspiration"
-                name="ET0 FAO"
+                name="ETo FAO (Referenz-Evapotranspiration)"
                 stroke="#F59E0B"
                 strokeDasharray="5 3"
                 strokeWidth={1.8}
@@ -413,8 +400,9 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
               <ReferenceLine
                 yAxisId="vpd"
                 y={1.2}
-                stroke="#F97316"
+                stroke="#EF4444"
                 strokeDasharray="4 4"
+                strokeWidth={1.8}
                 ifOverflow="extendDomain"
               />
               <ReferenceLine
@@ -422,6 +410,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                 y={1.6}
                 stroke="#EF4444"
                 strokeDasharray="4 4"
+                strokeWidth={1.8}
                 ifOverflow="extendDomain"
               />
 
@@ -429,7 +418,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                 yAxisId="vpd"
                 type="monotone"
                 dataKey="vapour_pressure_deficit"
-                name="VPD"
+                name="VPD (Vapour Pressure Deficit)"
                 stroke="#EF4444"
                 strokeWidth={2}
                 dot={false}

@@ -3,11 +3,9 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
-import { RegisterResponse } from "@/types/typesRegister"
-import { MoveableScrollArea } from "@/components/CompMovableScrollAreaVertical"
+import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import axios from "axios";
 
-const apiHost = process.env.NEXT_PUBLIC_AUTH_HOST;
 
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
 
@@ -35,28 +33,24 @@ export default function RegisterClient() {
     const language: "en" | "de" = lang === "de" ? "de" : "en";
     const t = registerTranslations[language];
 
+    type RegisterRouteResponse = {
+        success: boolean;
+        userId?: string;
+        error?: string;
+    };
+
     async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
         setLoading(true);
-        const body = { username, email, password };
-        console.log("Body to send: ", body)
-        console.log("API Host: ", apiHost)
+        setError(null);
+
         try {
-            const response = await axios.post<RegisterResponse>(`${apiHost}/users/register`, body, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-            console.log("RegisterClient: ", response)
-            if (response.status < 200 || response.status >= 300) {
-                throw new Error(`API returned error ${response.status}`);
-            }
-            if (response.status >= 200 && response.status < 300) {
-                console.log("RegisterClient: Create location data.")
-                console.log("Register response:", response.data);
-                const userId = response.data.id;
-                await axios.post("/api/register", {
-                    userId,
+            const response = await axios.post<RegisterRouteResponse>(
+                "/api/register",
+                {
+                    username,
+                    email,
+                    password,
                     lang: language,
                     lat,
                     lon,
@@ -64,19 +58,34 @@ export default function RegisterClient() {
                     wea,
                     mtx,
                     rtc,
-                });
-                router.push("/login");
+                },
+                {
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+            if (!response.data.success) {
+                throw new Error(response.data.error ?? "Registration failed");
             }
-        } catch (e) {
-            console.error("RegisterClient: ", e);
-            setError("Registration failed!");
+
+            router.push("/login");
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                const msg =
+                    (e.response?.data as { error?: string } | undefined)?.error ?? e.message;
+                setError(msg);
+                console.error("Register error:", e.response?.status, e.response?.data);
+            } else {
+                setError("Registration failed!");
+                console.error("Register error:", e);
+            }
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     return (
         <div className="w-full h-full bg-gray-500 flex items-center justify-center">
-            <MoveableScrollArea className="h-full sm:h-150 max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
+            <MoveableScrollAreaVertical className="h-full sm:h-150 max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
 
                 {/* Left: Karte und Koordinaten */}
                 <div className="p-10 relative bg-gray-900 text-white flex flex-col justify-between">
@@ -214,7 +223,7 @@ export default function RegisterClient() {
                         </div>
                     </form>
                 </div>
-            </MoveableScrollArea>
+            </MoveableScrollAreaVertical>
         </div>
     );
 }

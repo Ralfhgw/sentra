@@ -45,3 +45,6 @@ Import der Tabelle
 ##### Starten von next.js
 ##### Start nextjs mit "npm run dev -- -H 0.0.0.0"
 
+ZUsätzliche Streams
+https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
+

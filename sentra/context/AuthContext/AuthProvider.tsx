@@ -10,6 +10,48 @@ if (!API_HOST) {
   throw new Error("AUTH_HOST not configured");
 }
 
+type AuthResponse = {
+  accessToken?: string;
+  user?: {
+    id?: string | number;
+    user_name?: string;
+    email?: string;
+  };
+  error?: string;
+};
+
+function decodeUserFromToken(token: string) {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded)) as { id?: string | number };
+
+    if (!payload?.id) return null;
+    return { id: String(payload.id) };
+  } catch {
+    return null;
+  }
+}
+
+function getUserFromAuthResponse(data: AuthResponse) {
+  if (data.user?.id) {
+    return {
+      id: String(data.user.id),
+      user_name: data.user.user_name,
+      email: data.user.email,
+    };
+  }
+
+  if (data.accessToken) {
+    return decodeUserFromToken(data.accessToken);
+  }
+
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
@@ -17,18 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
-  // Prüfe Authentifizierung über Cookie beim Laden
   useEffect(() => {
     async function checkAuth() {
       dispatch({ type: "SET_LOADING" });
       try {
-        const response = await axios.get(`${API_HOST}/users/me`, { withCredentials: true });
-        const user = response.data;
-        if (user && user.id) {
-          dispatch({
-            type: "LOGIN_USER",
-            payload: user,
-          });
+        const refreshRes = await axios.post<AuthResponse>(
+          `${API_HOST}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        const user = getUserFromAuthResponse(refreshRes.data);
+        if (user) {
+          dispatch({ type: "LOGIN_USER", payload: user });
         } else {
           dispatch({ type: "LOGOUT_USER" });
         }
@@ -36,49 +79,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "LOGOUT_USER" });
       }
     }
+
     checkAuth();
   }, []);
 
-  async function login(email: string, password: string) {
+  async function login(identifier: string, password: string) {
     dispatch({ type: "SET_LOADING" });
 
-    try {
-      await axios.post(`${API_HOST}/users/login`, { email, password }, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
+    const normalized = identifier.trim();
+    const payload = normalized.includes("@")
+      ? { email: normalized, password }
+      : { user_name: normalized, password };
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      const response = await axios.get(`${API_HOST}/users/me`, { withCredentials: true });
-      const user = response.data;
+    try {
+      const loginRes = await axios.post<AuthResponse>(
+        `${API_HOST}/api/auth/login`,
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+
+      const user = getUserFromAuthResponse(loginRes.data);
       if (user) {
-        dispatch({
-          type: "LOGIN_USER",
-          payload: user,
-        });
+        dispatch({ type: "LOGIN_USER", payload: user });
       } else {
-        dispatch({
-          type: "SET_ERROR",
-          payload: "Login failed. Please try again",
-        });
+        dispatch({ type: "SET_ERROR", payload: "Login failed. Please try again" });
       }
     } catch (err) {
-      console.error(err);
-      dispatch({
-        type: "SET_ERROR",
-        payload: "Login failed. Please try again",
-      });
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data;
+        const apiError =
+          typeof data === "string"
+            ? data
+            : data && typeof data === "object" && "error" in data
+              ? String((data as { error?: string }).error)
+              : undefined;
+
+        console.error("Login error:", err.response?.status, data, err.message);
+        dispatch({
+          type: "SET_ERROR",
+          payload: apiError ?? (err.code === "ERR_NETWORK"
+            ? "Auth server not reachable or CORS blocked."
+            : "Login failed. Please try again"),
+        });
+      } else {
+        dispatch({ type: "SET_ERROR", payload: "Login failed. Please try again" });
+      }
     }
   }
 
-async function logout() {
-  try {
-    await axios.post(`${API_HOST}/users/logout`, {}, { withCredentials: true });
-  } catch (err) {
-    console.error("Logout failed", err);
+  async function logout() {
+    try {
+      await axios.post(`${API_HOST}/api/auth/logout`, {}, { withCredentials: true });
+    } catch {
+      // Fallback: local logout even if endpoint fails
+    }
+    dispatch({ type: "LOGOUT_USER" });
   }
-  dispatch({ type: "LOGOUT_USER" });
-}
 
   return (
     <AuthContext

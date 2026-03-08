@@ -1,10 +1,7 @@
 export type User = {
   id: string;
-  userId: string;
-  userName: string;
-  token: string;
-  firstName: string;
-  lastName: string;
+  user_name?: string;
+  email?: string;
 };
 
 export type AuthContextState = {
@@ -14,6 +11,6 @@ export type AuthContextState = {
 };
 
 export type AuthContextType = AuthContextState & {
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (identifier: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 };

@@ -274,23 +274,23 @@ export default function WeatherClient({
         </div>
         <ChartTemperature data={weatherDataHourly} />
         <ChartWind data={weatherDataHourly} />
+
+        <div className="p-4 space-y-3">
+  <p>
+    Dieser Chart zeigt die Wasserzufuhr durch <strong>Niederschlag</strong> und setzt diese in Bezug zur atmosphärischen Sättigung. Die Balken geben die absolute Regenmenge in Millimetern an, während die <strong>Niederschlagswahrscheinlichkeit</strong> in Prozent prognostiziert, wie sicher dieses Ereignis eintritt. Ergänzt wird dies durch die <strong>Luftfeuchtigkeit</strong>: Sie gibt an, wie viel Prozent des maximal möglichen Wasserdampfs die Luft aktuell enthält. Eine hohe Luftfeuchtigkeit in Kombination mit Niederschlag reduziert den Wasserbedarf der Pflanzen drastisch, während eine sinkende Feuchtigkeit trotz hoher Regenwahrscheinlichkeit auf eine schnelle Abtrocknung hindeuten kann. Das Zusammenspiel dieser Werte hilft dabei, kommende Wetterereignisse besser einzuschätzen und die <strong>natürliche Bewässerung</strong> optimal in die Planung einzubeziehen, um Überwässerung oder Trockenphasen zu vermeiden.
+  </p>
+</div>
+
         <ChartPrecipitation data={weatherDataHourly} />
+
+        <div className="p-4 space-y-3">
+<p>
+  Dieser Chart visualisiert das Zusammenspiel von Wasserbedarf und Pflanzenstress. Während die <strong>ET0 (FAO-Methode)</strong> den maximalen theoretischen Wasserbedarf unter aktuellen Wetterbedingungen angibt, zeigt die <strong>Evapotranspiration</strong> die real modellierte Verdunstung von Boden und Pflanzen. Die Differenz dieser Werte verdeutlicht das aktuelle Defizit. Ergänzend misst der <strong>VPD (Vapour Pressure Deficit)</strong> die Saugkraft der Luft: Je höher dieser Wert in kPa, desto trockener ist die Luft und desto größer der Stress für die Pflanze. Die farbige <strong>Heatmap</strong> im Hintergrund dient dabei als direktes Signal – von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot). Steigt der VPD stark an und bleibt die reale Verdunstung hinter der ET0 zurück, ist dies ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.
+</p>
+
+        </div>
         <ChartTranspiration data={weatherDataHourly} />
-        <div className="p-4">
-        <p><strong>ET0 FAO (mm/h):</strong> Er zeigt an, wie viel Wasser unter den gegebenen
-        Wetterbedingungen maximal verdunsten würde (theoretischer Wasserbedarf).</p>
-        <p><strong>Evapotranspiration (mm/h):</strong> Dies ist die modellierte reale Verdunstung von Boden und Pflanzen 
-        unter den aktuellen Gegebenheiten.<br />
-        <p><strong>Defizit zu ET0 (mm/h):</strong> Die Differenz zwischen dem potenziellen Bedarf (ET0) und der tatsächlichen Verdunstung. 
-        Ein hohes Defizit signalisiert, dass die Pflanze ihren Bedarf nicht voll decken kann.</p>
-        <p><strong>VPD (Vapour Pressure Deficit (kPa)):</strong>misst die „Saugkraft“ der Luft. 
-        Je höher dieser Wert (in kPa), desto trockener ist die Luft und desto mehr Stress entsteht für die Pflanze.</p>
-        Die farbige <strong>Heatmap</strong> im Hintergrund übersetzt diesen VPD-Wert in ein direktes Stress-Signal, 
-        von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot).</p>
-        <p><strong>Zusammenhang:</strong> Steigt der VPD-Wert stark an, erhöht sich der Druck auf die Pflanze. 
-        Wenn gleichzeitig die tatsächliche Verdunstung hinter der potenziellen ET0 zurückbleibt, wächst das Defizit – 
-        ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.</p>
-       </div>
+
         <ChartAtmosphere data={weatherDataHourly} dailyData={weatherDataDaily} />
 
         { /* Daily Weather Date Table */}
@@ -456,7 +456,7 @@ export default function WeatherClient({
                       {/* Evapotrans */}
                       <div className="h-12 p-2 flex flex-col items-center justify-center">
                         <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
-                        <span className="text-sm font-bold font-sans">{item.evapotranspiration ?? 0} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
+                        <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
                       </div>
                     </div>
                   );
@@ -516,7 +516,7 @@ export default function WeatherClient({
                       {/* Niederschlag */}
                       <div className="h-12 p-2 flex flex-col items-center justify-center">
                         <span className="text-xs text-gray-500">Niederschlag</span>
-                        <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {item.precipitation ?? 0} mm</span>
+                        <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
                       </div>
                       {/* Wind Speed / Direction */}
                       <div className="h-12 p-2 flex flex-col items-center justify-center">
@@ -536,7 +536,7 @@ export default function WeatherClient({
                       {/* Evapotrans */}
                       <div className="h-12 p-2 flex flex-col items-center justify-center">
                         <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
-                        <span className="text-sm font-bold font-sans">{item.evapotranspiration} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
+                        <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
                       </div>
                     </div>
                   );

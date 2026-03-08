@@ -1,4 +1,6 @@
-const weatherCodeToIcon = {
+type IconSet = { day: string; night: string };
+
+const weatherCodeToIcon: Record<number, IconSet> = {
   0: { day: "wi-day-sunny", night: "wi-night-clear" },
   1: { day: "wi-day-sunny-overcast", night: "wi-night-partly-cloudy" },
   2: { day: "wi-day-cloudy", night: "wi-night-alt-cloudy" },
@@ -29,16 +31,27 @@ const weatherCodeToIcon = {
   99: { day: "wi-day-thunderstorm", night: "wi-night-alt-thunderstorm" },
 };
 
-export default function WeatherIcon({ code, isDay = 1, size = 48, showName = false }) {
-  const iconSet = weatherCodeToIcon[code] || { day: "wi-na", night: "wi-na" };
+type WeatherIconProps = {
+  code: number;
+  isDay?: boolean | 0 | 1;
+  size?: number;
+  showName?: boolean;
+};
+
+export default function WeatherIcon({
+  code,
+  isDay = 1,
+  size = 48,
+  showName = false,
+}: WeatherIconProps) {
+  const iconSet = weatherCodeToIcon[code] ?? { day: "wi-na", night: "wi-na" };
   const iconClass = isDay ? iconSet.day : iconSet.night;
   const iconName = iconClass.replace(/^wi-/, "");
+
   return (
     <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
       <i className={`wi ${iconClass}`} style={{ fontSize: size }} />
-      {showName && (
-        <span style={{ fontSize: 10, color: "#888" }}>{iconName}</span>
-      )}
+      {showName && <span style={{ fontSize: 10, color: "#888" }}>{iconName}</span>}
     </span>
   );
 }

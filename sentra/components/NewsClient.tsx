@@ -77,7 +77,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
             Alle
           </button>
 
-          {uniqueDates.slice().reverse().map(date => (
+          {uniqueDates.slice().map(date => (
             <button
               key={date}
               onClick={() => setSelectedDate(date)}

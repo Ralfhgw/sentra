@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     ResponsiveContainer,
     ComposedChart,
@@ -201,6 +201,24 @@ function buildDailyWeatherCodeMap(dailyData: WeatherDaily): Map<string, number |
 }
 
 export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProps) {
+
+    const [showWeatherIcons, setShowWeatherIcons] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(min-width: 700px)");
+
+        const update = () => {
+            setShowWeatherIcons(mediaQuery.matches);
+        };
+
+        update();
+        mediaQuery.addEventListener("change", update);
+
+        return () => {
+            mediaQuery.removeEventListener("change", update);
+        };
+    }, []);
+
     const dailyCodeByDay = useMemo(() => buildDailyWeatherCodeMap(dailyData), [dailyData]);
 
     const chartData = useMemo<ChartPoint[]>(() => {
@@ -404,17 +422,19 @@ export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProp
                                 activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#F59E0B" }}
                             />
                             {/* Weather Icon */}
-                            <Line
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="icon_anchor"
-                                stroke="none"
-                                legendType="none"
-                                tooltipType="none"
-                                isAnimationActive={false}
-                                activeDot={false}
-                                dot={(props) => <WeatherCodeDot {...(props as IconDotProps)} />}
-                            />
+{showWeatherIcons && (
+    <Line
+        yAxisId="left"
+        type="monotone"
+        dataKey="icon_anchor"
+        stroke="none"
+        legendType="none"
+        tooltipType="none"
+        isAnimationActive={false}
+        activeDot={false}
+        dot={(props) => <WeatherCodeDot {...(props as IconDotProps)} />}
+    />
+)}
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>

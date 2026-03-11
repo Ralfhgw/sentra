@@ -1,7 +1,7 @@
 export type WebcamsClientProps = {
   channels: any[];
   userChannels: any[];
-  error?: string;
+
 };
 
 export type Channel = {
@@ -13,10 +13,11 @@ export type Channel = {
   sendername: string | null;
   stream_url: string | null;
   created_at: string | null;
+
 };
 
 export type WebcamClientProps = {
   channels: Channel[];
   userChannels: any[];
-  error?: string;
+
 };

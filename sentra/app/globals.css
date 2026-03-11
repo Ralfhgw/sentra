@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-  /*  * { outline: 1px solid red; } */
+  /*  * { outline: 1px solid blue; } */
 
 @keyframes spin {
   100% {
@@ -99,13 +99,13 @@ xl: – ab 1280px (große Desktops)
 
 .markdown th,
 .markdown td {
-  border: 1px solid #d1d5db; /* Tailwind: gray-300 */
+  border: 1px solid #d1d5db; 
   padding: 0.5em 1em;
   text-align: left;
 }
 
 .markdown th {
-  background: #f3f4f6; /* Tailwind: gray-100 */
+  background: #f3f4f6;
   font-weight: bold;
 }
 
@@ -119,14 +119,14 @@ xl: – ab 1280px (große Desktops)
   }
 }
 
-/* In deiner CSS Datei */
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none; 
   }
   .no-scrollbar {
-    -ms-overflow-style: none; /* IE, Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
   }
 }
 

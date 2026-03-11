@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { LoginTranslation } from "@/types/translations";
+import Image from "next/image";
 
 interface LoginFormProps {
   translations: { [key: string]: LoginTranslation };
@@ -40,8 +41,8 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
   }
 
   return (
-    <div className="w-full h-full bg-gray-500 flex items-center justify-center">
-      <div className="w-full max-w-3xl max-h-295 bg-gray-800 grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="w-full h-full bg-gray-400 flex flex-col items-center justify-center">
+      <div className="w-full max-w-3xl max-h-295 bg-blue-900 grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Left Illustration */}
         <div className="p-4 bg-gray-900 text-white relative flex-col justify-between hidden md:flex">
@@ -183,12 +184,12 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
         </div>
 
         {/* Right Form */}
-        <div className="p-4 md:p-10 flex flex-col justify-center text-white relative h-full min-h-0">
+        <div className="p-4 md:p-10 bg-gray-800 flex flex-col justify-center text-white relative h-full min-h-0">
           <h1 className="mb-5 mt-3 ml-4 text-4xl text-orange-400 font-bold md:hidden">
             {t.title}
             <sup className="ml-1 text-base align-top">&copy;</sup>
           </h1>
-          
+
           {/* Language Button */}
           <div className="h-9 mb-1 flex justify-end">
             <select
@@ -250,7 +251,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 checked={agreed}
                 onChange={e => setAgreed(e.target.checked)}
               />
-              <span className="text-gray-500">
+              <span className="text-gray-400">
                 {t.agreement}{" "}
                 <a
                   href={language === "de" ? "/terms/de" : "/terms/en"}
@@ -260,7 +261,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 >
                   {t.terms}
                 </a>
-                {" "}und{" "}
+                {" "}&{" "}
                 <a
                   href={language === "de" ? "/privacy/de" : "/privacy/en"}
                   target="_blank"
@@ -287,6 +288,151 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
           </form>
         </div>
       </div>
-    </div>
+
+      <div className=" flex flex-row flex-wrap gap-5 m-10">
+        {/* Logo OpenMeteo */}
+        <a
+          href="https://open-meteo.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+          <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+            <Image
+              src="/logo-open-meteo.png"
+              alt="Open Meteo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
+          </div>
+        </a>
+        {/* Logo GPT Image 1.5 */}
+        <a
+          href="https://developers.openai.com/cookbook/examples/multimodal/image-gen-1.5-prompting_guide/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-gpt-image1-5.png"
+            alt="GPT Image 1.5"
+            width={80}
+            height={80}
+            className="object-contain"
+          />
+        </div>
+        </a>
+        {/* Logo Tailwind CSS */}
+        <a
+          href="https://tailwindcss.com//"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-tailwind-css.png"
+            alt="Tailwind CSS"
+            width={80}
+            height={80}
+            className="object-contain"
+          />
+        </div>
+        </a>
+        {/* Logo Next.js */}
+        <a
+          href="https://nextjs.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-nextjs.svg"
+            alt="Next.js"
+            width={80}
+            height={80}
+            className="object-contain"
+            style={{ filter: 'grayscale(100%)' }}
+          />
+        </div>
+        </a>
+        {/* Logo Serpapi */}
+        <a
+          href="https://serpapi.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-serpapi.png"
+            alt="Serpapi"
+            width={80}
+            height={80}
+            className="object-contain"
+            style={{ filter: 'grayscale(100%)' }}
+          />
+        </div>
+        </a>
+        {/* Logo Cloudinary */}
+        <a
+          href="https://cloudinary.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-cloudinary.png"
+            alt="Cloudinary"
+            width={80}
+            height={80}
+            className="object-contain"
+            style={{ filter: 'grayscale(100%)' }}
+          />
+        </div>
+        </a>
+        {/* Logo Mosquitto */}
+        <a
+          href="https://mosquitto.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-mosquitto.png"
+            alt="Mosquitto"
+            width={80}
+            height={80}
+            className="object-contain"
+            style={{ filter: 'grayscale(100%)' }}
+          />
+        </div>
+        </a>
+        {/* Logo MediaMTX */}
+        <a
+          href="https://github.com/bluenviron/mediamtx"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block transition group"
+        >
+        <div className="h-20 w-20 p-1 rounded-xl border border-gray-700 shadow-md flex items-center justify-center transition-colors duration-300 group-hover:bg-gray-700">
+          <Image
+            src="/logo-mediamtx.svg"
+            alt="MediaMTX"
+            width={80}
+            height={80}
+            className="object-contain"
+            style={{ filter: 'grayscale(100%)' }}
+          />
+        </div>
+        </a>
+      </div>
+      
+    </div >
   );
 }

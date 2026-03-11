@@ -79,6 +79,9 @@ export type WeatherClientProps = {
     weatherDataHourly: HourlyDataItem[];
     weatherDataDaily: WeatherDaily;
     elevation?: number | null;
+    lat?: number | null;
+    lon?: number | null;
+    town?: string | null;
 };
 
 export interface weatherDataCurrent {

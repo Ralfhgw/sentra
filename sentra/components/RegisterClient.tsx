@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import axios from "axios";
+import Image from "next/image";
 
 
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
@@ -84,7 +85,7 @@ export default function RegisterClient() {
     }
 
     return (
-        <div className="w-full h-full bg-gray-500 flex items-center justify-center">
+        <div className="w-full h-full bg-gray-400 flex items-center justify-center">
             <MoveableScrollAreaVertical className="h-full sm:h-150 max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
 
                 {/* Left: Karte und Koordinaten */}
@@ -225,5 +226,6 @@ export default function RegisterClient() {
                 </div>
             </MoveableScrollAreaVertical>
         </div>
+        
     );
 }

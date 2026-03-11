@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className="m-0">
         <AuthProvider>
           <SettingsProvider>
-          <div className="w-full min-h-screen flex justify-center">
+          <div className="w-screen min-h-screen flex justify-center">
             {/* Mit Rahmen auf Desktop */}
             <div className="relative w-full min-h-screen box-border hidden lg:block"
               style={{
@@ -35,8 +35,8 @@ export default function RootLayout({
             >
               {/* Eck-Buttons nur wenn user angemeldet */}
               <Corners />
-              <div className="absolute inset-0.5 flex justify-center overflow-hidden font-serif no-scrollbar">
-                <main className="mt-0 w-full min-h-full flex justify-center no-scrollbar">
+              <div className="absolute inset-0.5 flex justify-center overflow-auto font-serif hide-scrollbar">
+                <main className="mt-0 w-full min-h-full flex justify-center hide-scrollbar">
                   {children}
                 </main>
               </div>
@@ -45,8 +45,8 @@ export default function RootLayout({
             {/* Ohne Rahmen auf Mobile */}
             <div className="relative w-full min-h-screen box-border lg:hidden">
               <CompBurgerMenu />
-              <div className="relative w-full h-full flex justify-center font-serif no-scrollbar">
-                <main className="mt-0 w-full h-full flex justify-center no-scrollbar">
+              <div className="relative w-full h-full flex justify-center font-serif hide-scrollbar">
+                <main className="mt-0 w-full h-full flex justify-center hide-scrollbar">
                   {children}
                 </main>
               </div>

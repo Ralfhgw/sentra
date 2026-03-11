@@ -25,76 +25,6 @@ Sensor-Leistungsdaten
 | Luftfeuchtigkeit | 0 bis 100 % RH     | ±3 %          |
 | Luftdruck        | 300 bis 1100 hPa   | ±1.0 hPa      |
 
-```
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-
-// --- KONFIGURATION ---
-const char* ssid = "<ssid>";
-const char* password = "<password>";
-const char* mqtt_server = "<MQTT-Server>"; 
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-Adafruit_BME280 bme;
-
-void setup() {
-  Serial.begin(115200);
-  Wire.begin(D2, D1); // I2C Pins
-
-  if (!bme.begin(0x77)) {
-    Serial.println("BME280 nicht gefunden!");
-    while (1);
-  }
-
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  
-  client.setServer(mqtt_server, 1883);
-}
-
-void reconnect() {
-  while (!client.connected()) {
-    Serial.print("Versuche MQTT Verbindung...");
-    if (client.connect("ESP8266_Environment")) {
-      Serial.println("verbunden");
-    } else {
-      Serial.print("Fehlgeschlagen, rc=");
-      Serial.print(client.state());
-      delay(5000);
-    }
-  }
-}
-
-void loop() {
-  if (!client.connected()) reconnect();
-  client.loop();
-
-  // 1. Daten auslesen
-  float t = bme.readTemperature();
-  float h = bme.readHumidity();
-  float p = bme.readPressure() / 100.0F; // Umrechnung in hPa
-
-  // 2. JSON-String bauen (einfach für Next.js zu parsen)
-  String payload = "{";
-  payload += "\"temp\":" + String(t) + ",";
-  payload += "\"hum\":" + String(h) + ",";
-  payload += "\"pres\":" + String(p);
-  payload += "}";
-
-  // 3. An Mosquitto senden
-  Serial.print("Publish payload: ");
-  Serial.println(payload);
-  client.publish("indoor/sensor/climate", payload.c_str(), true);
-
-  delay(20000); // 20 Sekunden Pause
-}
-```
 
 ![BME280 OLED ESP32](./BME280-OLED-ESP32.png)
 
@@ -111,6 +41,75 @@ Zusammengefasst:
 Der mediaMTX Server übernimmt das Empfangen, Umwandeln und Bereitstellen von Live-Video-Streams, sodass diese im Web-Frontend oder anderen Clients angezeigt werden können.
 https://github.com/jnk22/kodinerds-iptv?tab=readme-ov-file
 https://github.com/iptv-org/iptv/tree/master/streams
+
+Webcam Link http://localhost:8888/cam/index.m3u8
+
+Github mit TV Kanälen
+https://github.com/jnk22/kodinerds-iptv.git
+
+https://zdf-hls-18.akamaized.net/hls/live/2016501/dach/high/master.m3u8
+https://sdn-global-live-streaming-packager-cache-aka.3qsdn.com/26658/26658_264_live.m3u8
+https://0d26a00dfbb1.airspace-cdn.cbsivideo.com/mtvg18ef/master/mtvg18ef.m3u8
+https://1000338copo-app2749759488.r53.cdn.tv1.eu/1000518lf/1000338copo/live/app2749759488/w2928771075/live247.smil/playlist.m3u8
+https://zdf-hls-15.akamaized.net/hls/live/2016498/de/high/master.m3u8
+https://mcdn.daserste.de/daserste/de/master.m3u8
+https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
+https://berlin.alex.cam/stream.m3u8
+https://sydneybeach.cam/stream.m3u8
+http://194.203.232.201/mjpg/tc2.mjpg
+
+rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0
+
+rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0#backchannel=0
+
+https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
+http://content.jwplatform.com/manifests/vM7nH0Kl.m3u8
+https://devimages.apple.com.edgekey.net/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8
+
+4K-Webcam in Villars-sur-Glâne (Kanton Freiburg) in der Schweiz.
+https://live.143b.ch/cam/flux/ts:abr.m3u8
+
+https://www.wirelesshack.org/best-free-m3u-playlist-urls.html
+
+Best Free M3U Playlist URLs 2026
+Öffne die Playlist in VLC und exportiere diese in eine Datei.
+
+IPTV Org M3U Playlist URL:
+https://iptv-org.github.io/iptv/index.m3u
+Samsung TV Plus M3U Playlist URL:
+https://apsattv.com/ssungusa.m3u
+EPGHub M3U Playlist URL:
+https://epghub.xyz/
+XUMO M3U Playlist URL:
+https://www.apsattv.com/xumo.m3u
+Local Now M3U Playlist URL:
+https://www.apsattv.com/localnow.m3u
+LG Channels M3U Playlist URL:
+https://www.apsattv.com/lg.m3u
+Pluto TV M3U Playlist URL:
+https://i.mjh.nz/PlutoTV/all.m3u8
+The Roku Channel M3U Playlist URL:
+https://www.apsattv.com/rok.m3u
+Redbox TV M3U Playlist URL:
+https://www.apsattv.com/redbox.m3u
+DistroTV M3U Playlist URL:
+https://www.apsattv.com/distro.m3u
+Xiaomi M3U Playlist URL:
+https://www.apsattv.com/xiaomi.m3u
+Free2ViewTV M3U Playlist URL:
+https://od.lk/s/MzJfMTY2NzU4NDVf/Free2ViewTV-2021-Master.m3u
+Free-TV: M3U Playlist URL
+https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
+TheTVApp M3U Playlist URL
+https://tvpass.org/playlist/m3u
+Genre-Specific Playlists URLs (IPTV-org)
+IPTV-org also has specific categories that can be added directly
+
+Sports: https://iptv-org.github.io/iptv/categories/sports.m3u
+Movies: https://iptv-org.github.io/iptv/categories/movies.m3u
+News: https://iptv-org.github.io/iptv/categories/news.m3u
+Documentary: https://iptv-org.github.io/iptv/categories/documentary.m3u
+Music: https://iptv-org.github.io/iptv/categories/music.m3u
 
 ## Events
 #### Geospatial Event Intelligence

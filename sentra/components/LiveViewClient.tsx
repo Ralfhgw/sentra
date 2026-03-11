@@ -117,7 +117,7 @@ type UserChannel = {
   name: string
 };
 
-export default function WebcamClient({ channels, userChannels, error }: WebcamClientProps) {
+export default function WebcamClient({ channels, userChannels }: WebcamClientProps) {
   console.log("LiveViewClient userChannels: ", userChannels)
 
   const [layoutId, setLayoutId] = useState<keyof typeof LAYOUT_CONFIGS>(10);
@@ -191,16 +191,11 @@ export default function WebcamClient({ channels, userChannels, error }: WebcamCl
   return (
 
     <div className="flex justify-center items-center w-full relative">
-      {error && (
-        <div className="absolute top-0 left-0 w-full bg-red-100 text-red-700 p-4 z-50">
-          {error}
-        </div>
-      )}
 
       {/* Configuration POPUP Window*/}
       {popupCell !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-white rounded shadow-lg p-6 min-w-75">
+          <div className="bg-gray-300 rounded shadow-lg p-6 min-w-75">
             <h2 className="text-lg font-bold mb-4">Kanal zuweisen</h2>
             {/* Gruppenfilter */}
             <div className="mb-4">

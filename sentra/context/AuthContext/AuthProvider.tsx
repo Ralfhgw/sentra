@@ -27,10 +27,15 @@ function decodeUserFromToken(token: string) {
 
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const payload = JSON.parse(atob(padded)) as { id?: string | number };
+    const payload = JSON.parse(atob(padded)) as {
+      sub?: string | number;
+      id?: string | number;
+    };
 
-    if (!payload?.id) return null;
-    return { id: String(payload.id) };
+    const userId = payload.sub ?? payload.id;
+    if (!userId) return null;
+
+    return { id: String(userId) };
   } catch {
     return null;
   }

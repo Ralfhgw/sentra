@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getLocationFromCoords } from "./reverseGeoCode";
 import { getEvents } from "./getEvents";
+import { getBackgroundImage } from "./getBackgroundImage";
 
 type RegisterPayload = {
   username?: string;
@@ -201,6 +202,8 @@ export async function POST(req: NextRequest) {
         await getEvents(userId, loc.town, dayString);
       }
     }
+
+   await getBackgroundImage(userId, lat, lon);
 
     return NextResponse.json({ success: true, userId });
   } catch (err) {

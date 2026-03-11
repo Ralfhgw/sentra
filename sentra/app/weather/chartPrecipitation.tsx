@@ -1,5 +1,5 @@
 "use client";
-
+import type { ComponentProps } from "react";
 import { useMemo } from "react";
 import {
   ResponsiveContainer,
@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   Legend,
   Tooltip,
+  Bar,
 } from "recharts";
 import type { HourlyDataItem } from "@/types/typesWeather";
 
@@ -45,6 +46,8 @@ const styles = {
 type ChartPrecipitationProps = {
   data: HourlyDataItem[];
 };
+
+type LegendFormatter = NonNullable<ComponentProps<typeof Legend>["formatter"]>;
 
 type ChartPoint = {
   time: number;
@@ -87,6 +90,32 @@ function buildPrecipYAxisConfig(
   return { yTicks, yDomain: [0, max] };
 }
 
+const LEGEND_COLORS: Record<string, string> = {
+  precipitation: "#34d399",
+  precipitation_probability: "#38bdf8",
+  humidity: "#fb7185",
+};
+
+const LEGEND_LABELS: Record<string, string> = {
+  precipitation: "Niederschlag",
+  precipitation_probability: "Niederschlagswahrscheinlichkeit",
+  humidity: "Luftfeuchtigkeit",
+};
+
+const legendFormatter: LegendFormatter = (value, entry) => {
+  const rawKey = entry?.dataKey;
+  const key =
+    typeof rawKey === "string" || typeof rawKey === "number"
+      ? String(rawKey)
+      : String(value);
+
+  return (
+    <span style={{ color: LEGEND_COLORS[key] ?? "#d8dfe9", fontWeight: 600 }}>
+      {LEGEND_LABELS[key] ?? String(value)}
+    </span>
+  );
+};
+
 export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
   const chartData = useMemo<ChartPoint[]>(
     () =>
@@ -125,17 +154,29 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
   return (
     <div style={styles.grid}>
       <section style={styles.card}>
-        <h2 style={styles.cardTitle}>Niederschlag mm und Wahrscheinlichkeit %</h2>
+        <h2 style={styles.cardTitle}>Niederschlag und Luftfeuchtigkeit</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN}>
+            <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN} barCategoryGap="24%">
+              <defs>
+                <linearGradient id="precipBarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#34d399" stopOpacity={0.96} />
+                  <stop offset="100%" stopColor="#059669" stopOpacity={0.52} />
+                </linearGradient>
+                <linearGradient id="probLineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#93c5fd" />
+                  <stop offset="100%" stopColor="#38bdf8" />
+                </linearGradient>
+                <linearGradient id="humidityLineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#fda4af" />
+                  <stop offset="100%" stopColor="#fb7185" />
+                </linearGradient>
+              </defs>
               <CartesianGrid
-                stroke="#d4d5d6"
-                strokeOpacity={0.25}
-                strokeDasharray="4 4"
-                vertical
-                fill="#2f3949"
-                fillOpacity={0.35}
+                stroke="#cbd5e1"
+                strokeOpacity={0.16}
+                strokeDasharray="2 6"
+                vertical={false}
               />
 
               <XAxis
@@ -155,14 +196,14 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 width={54}
                 ticks={yTicks}
                 domain={yDomain}
-                tick={{ fill: "#2d8d50", fontSize: 14 }}
+                tick={{ fill: "#d8dfe9", fontSize: 14 }}
                 axisLine={true}
                 tickLine={true}
                 label={{
                   value: "mm",
                   angle: -90,
                   position: "insideLeft",
-                  fill: "#2d8d50",
+                  fill: "#d8dfe9",
                   fontSize: 14,
                 }}
               />
@@ -185,12 +226,13 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 iconType="line"
                 height={36}
                 wrapperStyle={{ paddingTop: 8, color: "#d8dfe9", fontSize: 14 }}
-                                itemSorter={(item) => {
+                itemSorter={(item) => {
                   if (item.dataKey === "precipitation") return 0;
                   if (item.dataKey === "precipitation_probability") return 1;
                   if (item.dataKey === "humidity") return 2;
                   return 99;
                 }}
+                formatter={legendFormatter}
               />
 
               <Tooltip
@@ -199,9 +241,9 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 contentStyle={{
                   background: "rgba(11,18,32,0.92)",
                   border: "1px solid rgba(148,163,184,0.35)",
-                  borderRadius: 10,
+                  borderRadius: 12,
                   color: "#e2e8f0",
-                  boxShadow: "0 8px 24px rgba(2,6,23,0.45)",
+                  boxShadow: "0 10px 26px rgba(2,6,23,0.5)",
                   fontSize: 11,
                   padding: "8px 10px",
                 }}
@@ -225,44 +267,52 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 formatter={(value, name) => {
                   const num = typeof value === "number" ? value : Number(value);
                   if (!Number.isFinite(num)) return ["-", String(name)];
-                  if (name === "Niederschlagswahrscheinlichkeit") {
+                  if (name === "Niederschlagswahrscheinlichkeit" || name === "Luftfeuchtigkeit") {
                     return [`${num.toFixed(0)} %`, String(name)];
                   }
-                  return [`${num.toFixed(1)} mm`, String(name)];
+                  if (name === "Niederschlag") {
+                    return [`${num.toFixed(1)} mm`, String(name)];
+                  }
+                  return [num.toFixed(1), String(name)];
                 }}
               />
 
-              <Line
+              <Bar
                 yAxisId="left"
-                type="monotone"
                 dataKey="precipitation"
                 name="Niederschlag"
-                stroke="#2d8d50"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#22C55E" }}
+                fill="url(#precipBarGradient)"
+                barSize={10}
+                radius={[6, 6, 0, 0]}
+                isAnimationActive
+                animationDuration={900}
               />
-
               <Line
                 yAxisId="right"
                 type="monotone"
                 dataKey="precipitation_probability"
                 name="Niederschlagswahrscheinlichkeit"
-                stroke="#a5e6bd"
-                strokeWidth={2}
+                stroke="url(#probLineGradient)"
+                strokeWidth={2.4}
                 dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#86EFAC" }}
+                connectNulls
+                isAnimationActive
+                animationDuration={1000}
+                activeDot={{ r: 3, strokeWidth: 2, stroke: "#0b1220", fill: "#7dd3fc" }}
               />
 
-               <Line
+              <Line
                 yAxisId="right"
                 type="monotone"
                 dataKey="humidity"
                 name="Luftfeuchtigkeit"
-                stroke="#d1737b"
-                strokeWidth={2}
+                stroke="url(#humidityLineGradient)"
+                strokeWidth={2.3}
                 dot={false}
-                activeDot={{ r: 2, strokeWidth: 3, stroke: "#0b1220", fill: "#86EFAC" }}
+                connectNulls
+                isAnimationActive
+                animationDuration={1050}
+                activeDot={{ r: 3, strokeWidth: 2, stroke: "#0b1220", fill: "#fda4af" }}
               />
             </ComposedChart>
           </ResponsiveContainer>

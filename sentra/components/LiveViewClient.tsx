@@ -124,24 +124,25 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
   const config = LAYOUT_CONFIGS[layoutId];
   const [showMenu, setShowMenu] = useState(false);
   const [popupCell, setPopupCell] = useState<number | null>(null);
-  const [groupFilter, setGroupFilter] = useState<string>("");
   const [customUrl, setCustomUrl] = useState("");
   const [customName, setCustomName] = useState("");
-  const [selectedUrl, setSelectedUrl] = useState("");
+  const [selectedUrl, setSelectedUrl] = useState<string>("");
   const [selectedName, setSelectedName] = useState("");
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+
   const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
     typeof userChannels === "string"
       ? JSON.parse(userChannels)
       : userChannels ?? []
   );
+  const [locationFilter, setLocationFilter] = useState<string>("");
 
-  // Extract all groups from channel list
-  const groups = Array.from(new Set(channels.map(ch => ch.group).filter(Boolean)));
+  // Extract all location from channel list
+  const locations = Array.from(new Set(channels.map(ch => ch.location).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
   // Create filtered list
-  const filteredChannels = groupFilter
-    ? channels.filter(ch => ch.group === groupFilter)
+  const filteredChannels = locationFilter
+    ? channels.filter(ch => ch.location === locationFilter)
     : channels;
 
   // Save channelassignment
@@ -202,13 +203,13 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
               <label className="block text-sm mb-1">Gruppe filtern:</label>
               <select
                 className="w-full p-2 border rounded"
-                value={groupFilter}
-                onChange={e => setGroupFilter(e.target.value)}
+                value={locationFilter ?? ""}
+                onChange={e => setLocationFilter(e.target.value)}
               >
-                <option value="">Alle Gruppen</option>
-                {groups.map((group) => (
-                  <option key={group as string} value={group as string}>
-                    {group}
+                <option value="">Alle Orte</option>
+                {locations.map(location => (
+                  <option key={location || ""} value={location || ""}>
+                    {location || "Unbekannt"}
                   </option>
                 ))}
               </select>
@@ -217,19 +218,21 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
             {/* Auswahl aus gefilterten Channels */}
             <select
               className="w-full mb-4 p-2 border rounded"
-              value={selectedUrl ?? ""}
+              value={selectedUrl || ""}
               onChange={e => {
                 setSelectedUrl(e.target.value);
                 const selected = filteredChannels.find(ch => ch.stream_url === e.target.value);
-                setSelectedName(selected?.tvg_name ?? "");
+                setSelectedName(selected?.channel ?? "");
               }}
             >
               <option value="">Bitte wählen...</option>
-              {filteredChannels.map((ch) => (
-                <option key={ch.id} value={ch.stream_url ?? ""}>
-                  {ch.tvg_name} ({ch.sendername})
-                </option>
-              ))}
+              {filteredChannels
+                .sort((a, b) => (a.channel || "").localeCompare(b.channel || ""))
+                .map(ch => (
+                  <option key={ch.id} value={ch.stream_url ?? ""}>
+                    {ch.channel}
+                  </option>
+                ))}
             </select>
             {/* Eigener Stream */}
             <input

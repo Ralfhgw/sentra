@@ -21,6 +21,7 @@ $ npm install mqtt
 $ npm install hls.js
 $ npm install recharts
 $ npm install --save-dev @types/recharts
+$ npm install react-swipeable-list
 ```
 
 ##### Open Port in WSL

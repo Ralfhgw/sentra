@@ -245,7 +245,7 @@ export default function WeatherClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-4 no-scrollbar shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
         { /* Weather Instruments Monitor*/}
         <div className="hidden lg:flex relative w-full h-full rounded-xl overflow-hidden shadow-xl items-center justify-center" style={{ background: skyBackground }}>

@@ -1,0 +1,136 @@
+import { getJson } from "serpapi";
+import sql from "@/utils/db";
+import type { GoogleEventsParams, EventData } from "@/types/typesRegister";
+
+const { SERPAPI_KEY } = process.env;
+
+if (!SERPAPI_KEY) {
+    throw new Error("Fehlende SERPAPI-ENV-Variablen – prüfe deine .env");
+}
+
+async function fetchGoogleEvents({
+    town,
+    dayString,
+    apiKey,
+    hl = "de",
+    gl = "de",
+}: GoogleEventsParams): Promise<EventData[]> {
+    try {
+        const data = await getJson({
+            engine: "google_events",
+            q: `Events in ${town}`,
+            htichips: `date:${dayString}`,
+            google_domain: "google.de",
+            hl,
+            gl,
+            location: town,
+            api_key: apiKey,
+        });
+
+        const events = data.events_results || [];
+        return events;
+    } catch (error) {
+        console.error("SerpApi-Fehler:", error);
+        return [];
+    }
+}
+
+function filterEventData(event: EventData) {
+    return {
+        title: event.title || "",
+        date: typeof event.date === "object" ? JSON.stringify(event.date) : (event.date || ""),
+        address: event.address ? JSON.stringify(event.address) : null,
+        link: event.link || null,
+        description: event.description || null,
+        image: event.thumbnail || event.image || null,
+    };
+}
+
+function formatDate(date: string): string {
+    if (!date) return "";
+    try {
+        const obj = JSON.parse(date);
+        if (obj.when) return obj.when;
+        if (obj.start_date) return obj.start_date;
+    } catch {
+        const d = new Date(date);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString("de-DE", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+        return date;
+    }
+    return date;
+}
+
+async function storeEventData(userId: string, events: EventData[], date: string) {
+    const today = new Date();
+    const todayString = today.toISOString().slice(0, 10);
+
+    try {
+        await sql`
+        DELETE FROM events 
+        WHERE user_id = ${userId}
+        AND date < ${todayString}
+    `;
+    } catch (error) {
+        console.error("Fehler beim Löschen alter Events:", error);
+    }
+    const domain = "https://serpapi.com/"
+    for (const event of events) {
+        const filtered = filterEventData(event);
+
+        // Speichere das übergebene Datum (ISO-Format)
+        const isoDate = date;
+
+        let newDescription = filtered.description || "";
+        if (filtered.date) {
+            newDescription += `\n[Original date: ${formatDate(filtered.date)}]`;
+        }
+
+        await sql`
+            INSERT INTO events (user_id, title, date, address, link, description, image, domain)
+            VALUES (
+                ${userId}, 
+                ${filtered.title}, 
+                ${isoDate}, 
+                ${filtered.address}, 
+                ${filtered.link}, 
+                ${newDescription}, 
+                ${filtered.image},
+                ${domain}
+            )
+        `;
+    }
+    // Duplikate löschen (UUID! ctid statt min(id))
+    await sql`
+      DELETE FROM events e
+      USING events e2
+      WHERE
+        e.user_id = ${userId}
+        AND e.title = e2.title
+        AND e.date = e2.date
+        AND e.user_id = e2.user_id
+        AND e.ctid > e2.ctid
+    `;
+}
+
+export async function getEvents(userId: string, town: string, dayString: string) {
+    try {
+        const googleEvents = await fetchGoogleEvents({
+            town,
+            dayString,
+            apiKey: SERPAPI_KEY!,
+        });
+
+        await storeEventData(userId, googleEvents, dayString);
+        console.log(`Events für User ${userId} gespeichert.`);
+    } catch (err) {
+        console.error(`Fehler bei User ${userId}:`, err);
+    }
+}

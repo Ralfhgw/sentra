@@ -1,65 +1,30 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import WebcamClient from "@/components/LiveViewClient";
 import sql from "@/utils/db";
-import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
+import { getAuthenticatedUserWithSettingsFromCookies } from "@/utils/serverAuth";
 import type { Channel } from "@/types/typesLiveView";
-
-type UserChannel = {
-  url: string;
-  name: string;
-};
-
-type UserChannelsValue = UserChannel[] | string | null;
-
-function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 async function getWebcams() {
   try {
-    const { userId: user_id } = await getAuthenticatedUserFromCookies();
-    const [channelsResult, settingsRows] = await Promise.all([
-      sql<Channel[]>`
-        SELECT
-          id::text AS id,
-          tvg_name,
-          tvg_id,
-          "group",
-          logo_url,
-          sendername,
-          stream_url,
-          created_at::text AS created_at
-        FROM channels
-        ORDER BY created_at DESC
-      `,
-      sql<{ user_channels: UserChannelsValue }[]>`
-        SELECT channels AS user_channels
-        FROM user_settings
-        WHERE user_id = ${user_id}::uuid
-        LIMIT 1
-      `,
-    ]);
+    const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
 
-    const rawUserChannels = settingsRows[0]?.user_channels ?? null;
-    const userChannels = normalizeUserChannels(rawUserChannels);
-
-    console.log("LiveView raw user_channels:", rawUserChannels);
-    console.log("LiveView normalized userChannels:", userChannels);
+    const channelsResult = await sql<Channel[]>`
+      SELECT
+        id::text AS id,
+        tvg_name,
+        tvg_id,
+        "group",
+        location,
+        channel,
+        stream_url,
+        created_at::text AS created_at
+      FROM channels
+      ORDER BY created_at DESC
+    `;
 
     return {
       channels: Array.from(channelsResult),
-      userChannels,
+      userChannels: settings.channels,
       error: undefined as string | undefined,
     };
   } catch (err) {
@@ -67,7 +32,7 @@ async function getWebcams() {
 
     return {
       channels: [] as Channel[],
-      userChannels: [] as UserChannel[],
+      userChannels: [],
       error: "Fehler beim Laden der Webcams.",
     };
   }

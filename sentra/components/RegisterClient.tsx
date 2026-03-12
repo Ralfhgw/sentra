@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { registerTranslations } from "@/types/translations";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import axios from "axios";
-import Image from "next/image";
 
 
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });

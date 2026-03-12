@@ -1,43 +1,187 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useAuth } from "@/context/AuthContext";
 
 type Lang = "en" | "de";
 
+type UserChannel = {
+  url: string;
+  name: string;
+};
+
+type EventUrls = {
+  url: string;
+};
+
+type UserSettings = {
+  lang: Lang;
+  lat: number | null;
+  lon: number | null;
+  displayName: string | null;
+  town: string | null;
+  county: string | null;
+  state: string | null;
+  country: string | null;
+  country_code: string | null;
+  channels: UserChannel[];
+  event_urls: EventUrls[];
+  evt: boolean;
+  wea: boolean;
+  mtx: boolean;
+  rtc: boolean;
+  s_indoor: boolean;
+  s_outdoor: boolean;
+  s_cal_temp: number | null;
+  s_cal_humidity: number | null;
+  s_cal_pressure: number | null;
+};
+
+type SetSettingsAction =
+  | UserSettings
+  | ((current: UserSettings) => UserSettings);
+
 type SettingsContextType = {
+  settings: UserSettings;
+  setSettings: (value: SetSettingsAction) => void;
   lang: Lang;
   setLang: (lang: Lang) => void;
+  refreshSettings: () => Promise<void>;
+};
+
+const defaultSettings: UserSettings = {
+  lang: "en",
+  lat: null,
+  lon: null,
+  displayName: null,
+  town: null,
+  county: null,
+  state: null,
+  country: null,
+  country_code: null,
+  channels: [],
+  event_urls: [],
+  evt: false,
+  wea: false,
+  mtx: false,
+  rtc: false,
+  s_indoor: false,
+  s_outdoor: false,
+  s_cal_temp: null,
+  s_cal_humidity: null,
+  s_cal_pressure: null,
+};
+
+type SettingsResponse = {
+  settings?: UserSettings;
+  lang?: Lang;
+  error?: string;
 };
 
 const SettingsContext = createContext<SettingsContextType>({
+  settings: defaultSettings,
+  setSettings: () => {},
   lang: "en",
   setLang: () => {},
+  refreshSettings: async () => {},
 });
+
+function toUserSettings(data: SettingsResponse): UserSettings {
+  return {
+    ...defaultSettings,
+    ...data.settings,
+  };
+}
 
 export function SettingsProvider({
   children,
-  initialLang = "en",
+  initialSettings = defaultSettings,
 }: {
   children: React.ReactNode;
-  initialLang?: Lang;
+  initialSettings?: UserSettings;
 }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
+  const [settings, setSettings] = useState<UserSettings>(initialSettings);
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchLang() {
-      if (user && user.id) {
-        const res = await fetch(`/api/user/lang?userId=${user.id}`);
-        const data = await res.json();
-        if (data.lang) setLang(data.lang);
-      }
+  const refreshSettings = useCallback(async () => {
+    if (!user?.id) {
+      return;
     }
-    fetchLang();
-  }, [user]);
+
+    const res = await fetch("/api/user/lang", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error("User-Settings konnten nicht geladen werden.");
+    }
+
+    const data = (await res.json()) as SettingsResponse;
+    setSettings(toUserSettings(data));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetch("/api/user/lang", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("User-Settings konnten nicht geladen werden.");
+        }
+
+        return res.json() as Promise<SettingsResponse>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setSettings(toUserSettings(data));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Fehler beim Laden der User-Settings:", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const currentSettings = user?.id ? settings : defaultSettings;
+
+  function setLang(lang: Lang) {
+    setSettings((current) => ({
+      ...current,
+      lang,
+    }));
+  }
 
   return (
-    <SettingsContext.Provider value={{ lang, setLang }}>
+    <SettingsContext.Provider
+      value={{
+        settings: currentSettings,
+        setSettings,
+        lang: currentSettings.lang,
+        setLang,
+        refreshSettings,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

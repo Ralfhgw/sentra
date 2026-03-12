@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import sql from "@/utils/db";
 import type { NextRequest, NextResponse } from "next/server";
 
 type CookieValue = {
@@ -26,10 +27,87 @@ type RefreshResponse = {
   error?: string;
 };
 
+type UserChannel = {
+  url: string;
+  name: string;
+};
+
+type UserChannelsValue = UserChannel[] | string | null;
+
+type UserSettingsRow = {
+  lang: string | null;
+  lat: number | string | null;
+  lon: number | string | null;
+  display_name: string | null;
+  town: string | null;
+  county: string | null;
+  state: string | null;
+  country: string | null;
+  country_code: string | null;
+  channels: UserChannelsValue;
+  evt: boolean | null;
+  wea: boolean | null;
+  mtx: boolean | null;
+  rtc: boolean | null;
+  s_indoor: boolean | null;
+  s_outdoor: boolean | null;
+  s_cal_temp: number | string | null;
+  s_cal_humidity: number | string | null;
+  s_cal_pressure: number | string | null;
+};
+
+export type UserSettings = {
+  lang: "en" | "de";
+  lat: number | null;
+  lon: number | null;
+  displayName: string | null;
+  town: string | null;
+  county: string | null;
+  state: string | null;
+  country: string | null;
+  countryCode: string | null;
+  channels: UserChannel[];
+  evt: boolean;
+  wea: boolean;
+  mtx: boolean;
+  rtc: boolean;
+  sIndoor: boolean;
+  sOutdoor: boolean;
+  sCalTemp: number | null;
+  sCalHumidity: number | null;
+  sCalPressure: number | null;
+};
+
+export const defaultUserSettings: UserSettings = {
+  lang: "en",
+  lat: null,
+  lon: null,
+  displayName: null,
+  town: null,
+  county: null,
+  state: null,
+  country: null,
+  countryCode: null,
+  channels: [],
+  evt: false,
+  wea: false,
+  mtx: false,
+  rtc: false,
+  sIndoor: false,
+  sOutdoor: false,
+  sCalTemp: null,
+  sCalHumidity: null,
+  sCalPressure: null,
+};
+
 export type ServerAuthResult = {
   userId: string;
   accessToken: string;
   refreshedAccessToken?: string;
+};
+
+export type ServerAuthWithSettingsResult = ServerAuthResult & {
+  settings: UserSettings;
 };
 
 function getAuthHost() {
@@ -64,6 +142,86 @@ function getUserIdFromToken(accessToken: string) {
   }
 
   return String(userId);
+}
+
+function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function normalizeNumber(value: number | string | null | undefined) {
+  if (value == null) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function getUserSettings(userId: string): Promise<UserSettings> {
+  const [row] = await sql<UserSettingsRow[]>`
+    SELECT
+      lang,
+      lat::float8 AS lat,
+      lon::float8 AS lon,
+      display_name,
+      town,
+      county,
+      state,
+      country,
+      country_code,
+      channels,
+      evt,
+      wea,
+      mtx,
+      rtc,
+      s_indoor,
+      s_outdoor,
+      s_cal_temp::float8 AS s_cal_temp,
+      s_cal_humidity::float8 AS s_cal_humidity,
+      s_cal_pressure::float8 AS s_cal_pressure
+    FROM user_settings
+    WHERE user_id = ${userId}::uuid
+    LIMIT 1
+  `;
+
+  if (!row) {
+    return defaultUserSettings;
+  }
+
+  return {
+    lang: row.lang === "de" ? "de" : "en",
+    lat: normalizeNumber(row.lat),
+    lon: normalizeNumber(row.lon),
+    displayName: row.display_name,
+    town: row.town,
+    county: row.county,
+    state: row.state,
+    country: row.country,
+    countryCode: row.country_code,
+    channels: normalizeUserChannels(row.channels),
+    evt: row.evt ?? false,
+    wea: row.wea ?? false,
+    mtx: row.mtx ?? false,
+    rtc: row.rtc ?? false,
+    sIndoor: row.s_indoor ?? false,
+    sOutdoor: row.s_outdoor ?? false,
+    sCalTemp: normalizeNumber(row.s_cal_temp),
+    sCalHumidity: normalizeNumber(row.s_cal_humidity),
+    sCalPressure: normalizeNumber(row.s_cal_pressure),
+  };
 }
 
 async function requestRefreshedAccessToken(refreshToken: string) {
@@ -126,6 +284,28 @@ export async function getAuthenticatedUserFromCookies() {
 
 export async function getAuthenticatedUserFromRequest(req: NextRequest) {
   return authenticateWithCookies(req.cookies);
+}
+
+export async function getAuthenticatedUserWithSettingsFromCookies(): Promise<ServerAuthWithSettingsResult> {
+  const auth = await getAuthenticatedUserFromCookies();
+  const settings = await getUserSettings(auth.userId);
+
+  return {
+    ...auth,
+    settings,
+  };
+}
+
+export async function getAuthenticatedUserWithSettingsFromRequest(
+  req: NextRequest
+): Promise<ServerAuthWithSettingsResult> {
+  const auth = await getAuthenticatedUserFromRequest(req);
+  const settings = await getUserSettings(auth.userId);
+
+  return {
+    ...auth,
+    settings,
+  };
 }
 
 export function applyRefreshedAccessToken(

@@ -1,7 +1,14 @@
 "use client";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { useEffect } from "react";
 
 const markerIcon = new L.Icon({
   iconUrl: "/marker-icon.png",
@@ -18,6 +25,16 @@ interface MapSelectorProps {
   onChange: (lat: number, lon: number) => void;
 }
 
+function MapViewUpdater({ lat, lon }: { lat: number; lon: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([lat, lon], map.getZoom(), { animate: false });
+  }, [map, lat, lon]);
+
+  return null;
+}
+
 function LocationMarker({ lat, lon, onChange }: MapSelectorProps) {
   useMapEvents({
     click(e) {
@@ -29,20 +46,18 @@ function LocationMarker({ lat, lon, onChange }: MapSelectorProps) {
 }
 
 export default function MapSelector({ lat, lon, onChange }: MapSelectorProps) {
-
   return (
     <div className="w-full h-full" style={{ minHeight: 300 }}>
       <MapContainer
-        key={`${lat},${lon}`}
         center={[lat, lon]}
         zoom={12}
         style={{ width: "100%", height: "100%", zIndex: 1 }}
-
       >
         <TileLayer
           attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapViewUpdater lat={lat} lon={lon} />
         <LocationMarker lat={lat} lon={lon} onChange={onChange} />
       </MapContainer>
     </div>

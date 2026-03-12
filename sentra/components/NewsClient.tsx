@@ -27,10 +27,12 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [openedMeaningIdx, setOpenedMeaningIdx] = useState<number | null>(null);
   const [openedEventIdx, setOpenedEventIdx] = useState<number | null>(null);
+  const [openedDetailIdx, setOpenedDetailIdx] = useState<number | null>(null);
+  const [eventList, setEventList] = useState(events);
 
   // Alle einzigartigen Datumswerte (im Format "DD.MM.") aus den Events extrahieren
   const uniqueDates = Array.from(
-    new Set(events.map(e => {
+    new Set(eventList.map(e => {
       const d = new Date(e.date);
       return !isNaN(d.getTime()) ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : e.date;
     }))
@@ -38,12 +40,12 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
 
   // Events nach ausgewähltem Datum filtern
   const filteredEvents = selectedDate
-    ? events.filter(e => {
+    ? eventList.filter(e => {
       const d = new Date(e.date);
       const eventDate = !isNaN(d.getTime()) ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : e.date;
       return eventDate === selectedDate;
     })
-    : events;
+    : eventList;
 
 
   return (
@@ -174,7 +176,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
       </div>
 
       {/* Right <div> */}
-      <MoveableScrollAreaVertical className="flex-1 bg-gray-200  rounded-xl text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 rounded-xl text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
         {/* Events am Standort */}
         <h1 className="text-xl lg:text-2xl my-6 text-center font-extrabold text-gray-700 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
           Events am Standort
@@ -188,13 +190,12 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
               return (
                 <li
                   key={idx}
-                  className={`p-2 border-b flex flex-row 
-                  transition-all duration-200 cursor-pointer ${isOpened ? "" : "hover:bg-gray-100"}`}
+                  className={`p-2 border-b flex flex-row transition-all duration-200 cursor-pointer ${isOpened ? "" : "hover:bg-gray-100"}`}
                 >
                   {/* Event-Image */}
                   <div
                     className={`mx-4 rounded-lg shadow-md relative flex items-center justify-center 
-                    transition-all duration-200 ${isOpened ? "w-22 h-22" : " w-10 h-10"} my-auto`}
+                transition-all duration-200 ${isOpened ? "w-22 h-22" : " w-10 h-10"} my-auto`}
                     onClick={() => setOpenedEventIdx(isOpened ? null : idx)}
                     tabIndex={0}
                     role="button"
@@ -215,13 +216,18 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
                     )}
                   </div>
 
-
-                  <div className="flex-1 text-sm">
+                  {/* Description */}
+                  <div
+                    className="bg-blue-300 flex-1 text-sm cursor-pointer"
+                    onClick={() => setOpenedDetailIdx(openedDetailIdx === idx ? null : idx)}
+                  >
                     {/* Event-Title */}
                     <h2 className="text-sm font-bold text-gray-700">{event.title}</h2>
+                    {formatAddress(event.address)}
                     {/* Event-Date */}
                     <div className="text-gray-700">
-                      <span className="font-semibold text-gray-700">Datum:</span> {event.date
+                      <span className="font-semibold text-gray-700">Datum:</span>{" "}
+                      {event.date
                         ? new Date(event.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })
                         : ""}
                     </div>
@@ -232,10 +238,6 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
                         {/* Event-Domain */}
                         <div className="text-gray-700 mb-1">
                           <span className="font-semibold">Domain:</span> {event.domain}
-                        </div>
-                        {/* Event-Address */}
-                        <div className="mb-1">
-                          <span className="font-semibold">Ort:</span> {formatAddress(event.address)}
                         </div>
                         {/* Event-Description */}
                         {event.description && (
@@ -256,6 +258,32 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
                       </>
                     )}
                   </div>
+
+                  {/* Detail-Div nur beim geklickten Element */}
+                  {openedDetailIdx === idx && (
+                    <div
+                      className="flex items-center justify-center bg-white rounded-xl shadow-lg cursor-pointer"
+                      onClick={async () => {
+                        console.log("Event:", event);
+                        if (!event.id) {
+
+                          alert("Event hat keine ID!");
+                          return;
+                        }
+                        try {
+                          await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+                          setEventList(prev => prev.filter(e => e.id !== event.id));
+                          setOpenedDetailIdx(null);
+                        } catch (err) {
+                          console.error(err);
+                          alert("Fehler beim Löschen!");
+                        }
+                      }}
+                      title="Event löschen"
+                    >
+                      <h2 className="font-bold">Event löschen</h2>
+                    </div>
+                  )}
                 </li>
               );
             })}

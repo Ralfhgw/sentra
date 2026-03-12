@@ -10,7 +10,7 @@ async function getNews(): Promise<NewsClientProps> {
     console.log("NewsServer UserId:", user_id);
 
     const eventsData = sql<Event[]>`
-      SELECT title, date, address, link, description, image, domain
+      SELECT id, title, date, address, link, description, image, domain
       FROM events
       WHERE user_id = ${user_id}
       ORDER BY date ASC

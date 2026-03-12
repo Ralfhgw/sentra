@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import sql from "@/utils/db";
+import {
+  applyRefreshedAccessToken,
+  getAuthenticatedUserWithSettingsFromRequest,
+} from "@/utils/serverAuth";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) {
-    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  let auth;
+
+  try {
+    auth = await getAuthenticatedUserWithSettingsFromRequest(req);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Nicht eingeloggt";
+
+    return NextResponse.json({ error: message }, { status: 401 });
   }
 
-  const result = await sql`
-    SELECT lang FROM user_settings WHERE user_id = ${userId}
-  `;
-  if (result.length === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  return NextResponse.json({ lang: result[0].lang });
+  const response = NextResponse.json({
+    settings: auth.settings,
+    lang: auth.settings.lang,
+  });
+
+  return applyRefreshedAccessToken(response, auth);
 }

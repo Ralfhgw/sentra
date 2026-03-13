@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({
           type: "SET_ERROR",
           payload: apiError ?? (err.code === "ERR_NETWORK"
-            ? "Auth server not reachable or CORS blocked."
+            ? "Auth server or CORS not reachable."
             : "Login failed. Please try again"),
         });
       } else {

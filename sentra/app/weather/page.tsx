@@ -85,27 +85,44 @@ function processHourlyData(hourlyData: HourlyDataInput | null) {
 }
 
 async function getAuthenticatedUserId() {
-  const { userId } = await getAuthenticatedUserFromCookies();
-  return userId;
+    const { userId } = await getAuthenticatedUserFromCookies();
+    return userId;
 }
 
 async function getWeatherData() {
     const userId = await getAuthenticatedUserId();
     console.log("WeatherServer UserId:", userId);
-    const [row] = await sql<{ lat: number | null; lon: number | null; town: string | null }[]>`
-    SELECT lat::float8 AS lat, lon::float8 AS lon, town
-    FROM user_settings
-    WHERE user_id = ${userId}::uuid
-    LIMIT 1
+    const [row] = await sql<{
+        lat: number | null;
+        lon: number | null;
+        town: string | null;
+        s_cal_temp: number | null;
+        s_cal_humidity: number | null;
+        s_cal_pressure: number | null;
+    }[]>`
+    SELECT
+      lat::float8 AS lat,
+      lon::float8 AS lon,
+      town,
+      s_cal_temp,
+      s_cal_humidity,
+      s_cal_pressure
+      FROM user_settings
+      WHERE user_id = ${userId}::uuid
+      LIMIT 1
 `;
 
     if (!row || row.lat == null || row.lon == null) {
         throw new Error("Keine Koordinaten in user_settings gefunden.");
     }
 
-    const { lat, lon, town } = row;
+    const { lat, lon, town, s_cal_temp, s_cal_humidity, s_cal_pressure } = row;
     console.log("WeatherServer UserId:", userId);
-
+console.log("DB Offset Werte:", {
+  s_cal_temp,
+  s_cal_humidity,
+  s_cal_pressure
+});
 
 
     /*     const lat = 3.52;
@@ -186,6 +203,9 @@ async function getWeatherData() {
         lat,
         lon,
         town,
+        s_cal_temp: s_cal_temp !== null ? Number(s_cal_temp) : 0,
+        s_cal_humidity: s_cal_humidity !== null ? Number(s_cal_humidity) : 0,
+        s_cal_pressure: s_cal_pressure !== null ? Number(s_cal_pressure) : 0,
         current: current
             ? {
                 time: new Date((Number(current.time()) + utcOffsetSeconds) * 1000),
@@ -278,6 +298,9 @@ export default async function WeatherPage() {
                     lat={weatherData.lat}
                     lon={weatherData.lon}
                     town={weatherData.town}
+                    s_cal_temp={weatherData.s_cal_temp}
+                    s_cal_humidity={weatherData.s_cal_humidity}
+                    s_cal_pressure={weatherData.s_cal_pressure}
                 />
             </ProtectedRoute>
         </main>

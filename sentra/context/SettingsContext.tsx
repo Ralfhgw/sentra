@@ -73,9 +73,9 @@ const defaultSettings: UserSettings = {
   rtc: false,
   s_indoor: false,
   s_outdoor: false,
-  s_cal_temp: null,
-  s_cal_humidity: null,
-  s_cal_pressure: null,
+  s_cal_temp: 0,
+  s_cal_humidity: 0,
+  s_cal_pressure: 0,
 };
 
 type SettingsResponse = {

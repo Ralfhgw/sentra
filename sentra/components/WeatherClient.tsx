@@ -50,9 +50,10 @@ export default function WeatherClient({
   weatherDataHourly,
   weatherDataDaily,
   elevation,
-  lat,
-  lon,
   town,
+  s_cal_temp,
+  s_cal_humidity,
+  s_cal_pressure,
 }: WeatherClientProps) {
   console.log("WeatherClient Elevation:", elevation);
 
@@ -90,34 +91,48 @@ export default function WeatherClient({
 
   // Update MQTT data every 15 minutes
   useEffect(() => {
-    async function fetchSensorData() {
-      try {
-        const response = await fetch('/api/sensor');
-        const result = await response.json();
+async function fetchSensorData() {
+  try {
+    const response = await fetch('/api/sensor');
+    const result = await response.json();
 
-        if (result.wert) {
-          // Wir initialisieren das Objekt inklusive der neuen Status-Felder
-          const newSensorData: DualSensorState = {
-            indoor: null,
-            outdoor: null,
-            indoorStatus: result.wert.indoorStatus || "offline",
-            outdoorStatus: result.wert.outdoorStatus || "offline"
-          };
+    if (result.wert) {
+      const newSensorData: DualSensorState = {
+        indoor: null,
+        outdoor: null,
+        indoorStatus: result.wert.indoorStatus || "offline",
+        outdoorStatus: result.wert.outdoorStatus || "offline"
+      };
 
-          // Parsen der Klima-Daten (JSON-Strings vom ESP)
-          if (result.wert.indoor) {
-            try { newSensorData.indoor = JSON.parse(result.wert.indoor); } catch (e) { console.error("Parse Error Indoor", e); }
+      if (result.wert.indoor) {
+        try {
+          newSensorData.indoor = JSON.parse(result.wert.indoor);
+          if (newSensorData.indoor) {
+            newSensorData.indoor.temp -= s_cal_temp;
+            if (typeof newSensorData.indoor.dew === "number") newSensorData.indoor.dew -= s_cal_temp;
+            newSensorData.indoor.hum -= s_cal_humidity;
+            newSensorData.indoor.pres -= s_cal_pressure;
           }
-          if (result.wert.outdoor) {
-            try { newSensorData.outdoor = JSON.parse(result.wert.outdoor); } catch (e) { console.error("Parse Error Outdoor", e); }
-          }
-
-          setSensorValues(newSensorData);
-        }
-      } catch (error) {
-        console.error("Fehler beim Laden der Sensordaten:", error);
+        } catch (e) { console.error("Parse Error Indoor", e); }
       }
+      if (result.wert.outdoor) {
+        try {
+          newSensorData.outdoor = JSON.parse(result.wert.outdoor);
+          if (newSensorData.outdoor) {
+            newSensorData.outdoor.temp += s_cal_temp;
+            if (typeof newSensorData.outdoor.dew === "number") newSensorData.outdoor.dew += s_cal_temp;
+            newSensorData.outdoor.hum += s_cal_humidity;
+            newSensorData.outdoor.pres -= s_cal_pressure;
+          }
+        } catch (e) { console.error("Parse Error Outdoor", e); }
+      }
+
+      setSensorValues(newSensorData);
     }
+  } catch (error) {
+    console.error("Fehler beim Laden der Sensordaten:", error);
+  }
+}
 
     fetchSensorData();
     const intervalId = window.setInterval(fetchSensorData, 60 * 1000); // 1 Minute Intervall
@@ -245,6 +260,8 @@ export default function WeatherClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
+      <div>
+</div>
       <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
         { /* Weather Instruments Monitor*/}

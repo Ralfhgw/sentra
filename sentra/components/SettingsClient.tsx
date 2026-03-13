@@ -1,12 +1,27 @@
 "use client";
 import { Settings, SettingsClientProps } from "@/types/typesSettings";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useSettings } from "@/context/SettingsContext";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
-/* import "leaflet/dist/leaflet.css"; */
+/*  import "leaflet/dist/leaflet.css";  */
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
 
+interface SensorData {
+  temp: number;
+  hum: number;
+  pres: number;
+  dew?: number;
+}
+
+type SensorStatus = "online" | "offline" | null;
+
+interface DualSensorState {
+  indoor: SensorData | null;
+  outdoor: SensorData | null;
+  indoorStatus?: SensorStatus;
+  outdoorStatus?: SensorStatus;
+}
 
 export default function SettingsClient({ initialSettings }: SettingsClientProps) {
 
@@ -14,6 +29,75 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string>("");
+  const [sensorValues, setSensorValues] = useState<DualSensorState>({ indoor: null, outdoor: null });
+  const [calTemp, setCalTemp] = useState<number | null>(null);
+  const [calHumidity, setCalHumidity] = useState<number | null>(null);
+  const [calPressure, setCalPressure] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function fetchSensorData() {
+      try {
+        const response = await fetch('/api/sensor');
+        const result = await response.json();
+
+        if (result.wert) {
+          const newSensorData: DualSensorState = {
+            indoor: null,
+            outdoor: null,
+            indoorStatus: result.wert.indoorStatus || "offline",
+            outdoorStatus: result.wert.outdoorStatus || "offline"
+          };
+
+          if (result.wert.indoor) {
+            try { newSensorData.indoor = JSON.parse(result.wert.indoor); } catch (e) { console.error("Parse Error Indoor", e); }
+          }
+          if (result.wert.outdoor) {
+            try { newSensorData.outdoor = JSON.parse(result.wert.outdoor); } catch (e) { console.error("Parse Error Outdoor", e); }
+          }
+
+          setSensorValues(newSensorData);
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden der Sensordaten:", error);
+      }
+    }
+
+    fetchSensorData();
+    // Optional: Wenn du regelmäßig aktualisieren willst, Intervall aktivieren:
+    // const intervalId = window.setInterval(fetchSensorData, 60 * 1000);
+    // return () => window.clearInterval(intervalId);
+  }, []);
+
+  const handleCalculateOffset = () => {
+    if (
+      sensorValues.indoor &&
+      sensorValues.outdoor &&
+      sensorValues.indoorStatus === "online" &&
+      sensorValues.outdoorStatus === "online"
+    ) {
+      // Temperatur
+      const avgTemp = (sensorValues.indoor.temp + sensorValues.outdoor.temp) / 2;
+      const offsetTemp = Math.round((sensorValues.indoor.temp - avgTemp) * 1000) / 1000;
+      setCalTemp(offsetTemp);
+
+      // Luftfeuchtigkeit
+      const avgHum = (sensorValues.indoor.hum + sensorValues.outdoor.hum) / 2;
+      const offsetHum = Math.round((sensorValues.indoor.hum - avgHum) * 1000) / 1000;
+      setCalHumidity(offsetHum);
+
+      // Luftdruck
+      const avgPres = (sensorValues.indoor.pres + sensorValues.outdoor.pres) / 2;
+      const offsetPres = Math.round((sensorValues.indoor.pres - avgPres) * 1000) / 1000;
+      setCalPressure(offsetPres);
+
+      setSettings(prev => ({
+        ...prev,
+        s_cal_temp: offsetTemp,
+        s_cal_humidity: offsetHum,
+        s_cal_pressure: offsetPres
+      }));
+    }
+  };
 
   console.log("User Settings:", userSettings);
   console.log("Lang:", userSettings.lang);
@@ -58,10 +142,32 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     rtc: userSettings.rtc,
     s_indoor: userSettings.s_indoor,
     s_outdoor: userSettings.s_outdoor,
-    s_cal_temp: userSettings.s_cal_temp ?? initialSettings.s_cal_temp,
-    s_cal_humidity: userSettings.s_cal_humidity ?? initialSettings.s_cal_humidity,
-    s_cal_pressure: userSettings.s_cal_pressure ?? initialSettings.s_cal_pressure,
+s_cal_temp: typeof userSettings.s_cal_temp === "number"
+  ? userSettings.s_cal_temp
+  : Number(initialSettings.s_cal_temp),
+s_cal_humidity: typeof userSettings.s_cal_humidity === "number"
+  ? userSettings.s_cal_humidity
+  : Number(initialSettings.s_cal_humidity),
+s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
+  ? userSettings.s_cal_pressure
+  : Number(initialSettings.s_cal_pressure),
   });
+
+  const [urlInput, setUrlInput] = useState("");
+  const [urls, setUrls] = useState<string[]>(
+    Array.isArray(userSettings.event_urls) ? userSettings.event_urls.map(e => e.url) : []
+  );
+
+  const handleAddUrl = () => {
+    if (urlInput.trim() && !urls.includes(urlInput.trim())) {
+      setUrls([...urls, urlInput.trim()]);
+      setUrlInput("");
+    }
+  };
+
+  const handleRemoveUrl = (url: string) => {
+    setUrls(urls.filter(u => u !== url));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -105,12 +211,12 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             handleSave();
           }}
         >
-          <div className="flex flex-row gap-6 items-center">
+          <div className="flex flex-row items-center">
             {/* MapSelector */}
-            <div className="w-full flex flex-col items-center">
-              <label className="font-semibold mb-2">Neue Standortwahl mit Klick in Karte:</label>
-              <div className="w-100 h-100 rounded-lg overflow-hidden border border-gray-300 shadow-sm bg-red-100">
-                <MapSelector
+            <div className="bg-red-300 flex flex-col items-center">
+              <label className="font-semibold">Neue Standortwahl mit Klick in Karte:</label>
+              <div className="w-100 h-100 rounded-lg overflow-hidden border border-gray-300 shadow-sm">
+                {/*       <MapSelector
                   lat={settings.lat ?? 52.520008}
                   lon={settings.lon ?? 13.404954}
                   onChange={async (lat, lon) => {
@@ -136,12 +242,12 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       setError("Standortdaten konnten nicht geladen werden.");
                     }
                   }}
-                />
+                /> */}
               </div>
             </div>
 
             {/* InfoBox */}
-            <div className="text-center text-sm bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-blue-300 text-left text-sm rounded-lg shadow-sm border border-gray-200">
               <b>Lat:</b>{" "}
               {typeof settings.lat === "number"
                 ? settings.lat.toFixed(6)
@@ -158,36 +264,42 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               <br />
               <b>Bundesland:</b> {settings.state || "Unbekannt"}
               <br />
-              <b>Land:</b> {settings.country || "Unbekannt"}
-            
-            <b>Event-URLs:</b>
-            <ul>
-              {Array.isArray(userSettings.event_urls) && userSettings.event_urls.length > 0
-                ? userSettings.event_urls.map((entry, idx) => (
-                  <li key={idx}>{entry.url}</li>
-                ))
-                : <li>Keine Event-URLs</li>
-              }
-            </ul>
-            <b>EVT:</b> {String(userSettings.evt)}<br />
-            <b>WEA:</b> {String(userSettings.wea)}<br />
-            <b>MTX:</b> {String(userSettings.mtx)}<br />
-            <b>RTC:</b> {String(userSettings.rtc)}<br />
-            <b>Sensor Indoor:</b> {String(userSettings.s_indoor)}<br />
-            <b>Sensor Outdoor:</b> {String(userSettings.s_outdoor)}<br />
-            <b>Sensor Kalibrierung Temperatur:</b> {String(userSettings.s_cal_temp)}<br />
-            <b>Sensor Kalibrierung Feuchte:</b> {String(userSettings.s_cal_humidity)}<br />
-            <b>Sensor Kalibrierung Druck:</b> {String(userSettings.s_cal_pressure)}<br />
+              <b>Land:</b> {settings.country || "Unbekannt"}<br />
+
+              <b>Event-URLs:</b>
+              <ul>
+                {urls.length > 0
+                  ? urls.map((url, idx) => (
+                    <li
+                      key={idx}
+                      className="break-all cursor-pointer hover:text-red-600"
+                      title="Klicken zum Löschen"
+                      onClick={() => handleRemoveUrl(url)}
+                    >
+                      {url}
+                    </li>
+                  ))
+                  : <li>Keine Event-URLs</li>
+                }
+              </ul>
+              <b>EVT:</b> {String(userSettings.evt)}<br />
+              <b>WEA:</b> {String(userSettings.wea)}<br />
+              <b>MTX:</b> {String(userSettings.mtx)}<br />
+              <b>RTC:</b> {String(userSettings.rtc)}<br />
+              <b>Sensor Indoor:</b> {String(userSettings.s_indoor)}<br />
+              <b>Sensor Outdoor:</b> {String(userSettings.s_outdoor)}<br />
+              <b>Temperatur Offset:</b> {typeof settings.s_cal_temp === "number" ? settings.s_cal_temp.toFixed(2) : "-"}<br />
+              <b>Feuchte Offset:</b> {typeof settings.s_cal_humidity === "number" ? settings.s_cal_humidity.toFixed(2) : "-"}<br />
+              <b>Druck Offset:</b> {typeof settings.s_cal_pressure === "number" ? settings.s_cal_pressure.toFixed(2) : "-"}<br />
+            </div>
           </div>
-          </div>
 
-
-
-          <div className="w-full max-w-xl mt-6">
+          {/* EventsURLs */}
+          <div className="bg-green-300 w-full max-w-xl">
             <h1 className="font-semibold text-2xl">Eventportale</h1>
             <label className="block font-semibold mb-1">Weitere API-URLs hinzufügen:</label>
             <div className="flex gap-2">
-                             <input
+              <input
                 type="url"
                 className="flex-1 border border-gray-300 rounded px-2 py-1"
                 placeholder="https://example.com/api"
@@ -195,7 +307,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                 onChange={e => setUrlInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleAddUrl(); }}
               />
-                           <button
+              <button
                 type="button"
                 className="px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
                 onClick={handleAddUrl}
@@ -205,33 +317,71 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               </button>
             </div>
 
-            
-            <div className="mt-3">
-              <span className="font-semibold">Konfigurierte URLs (Löschen mit Klick auf Link):</span>
-              <ul className="list-disc list-inside mt-1">
-                {/*                 {urls.map((url, idx) => (
-                  <li
-                    key={idx}
-                    className={`break-all ${url !== DEFAULT_URL ? "cursor-pointer hover:text-red-600" : "text-gray-400"}`}
-                    title={url !== DEFAULT_URL ? "Klicken zum Löschen" : "Standard-URL kann nicht gelöscht werden"}
-                    onClick={
-                      url !== DEFAULT_URL
-                        ? async () => {
-                          const newUrls = urls.filter(u => u !== url);
-                          setUrls(newUrls);
-                          if (typeof saveEventUrls === "function") {
-                            await saveEventUrls(newUrls);
-                          }
-                        }
-                        : undefined
-                    }
-                    style={url === DEFAULT_URL ? { pointerEvents: "none" } : {}}
-                  >
-                    {url}
-                  </li>
-                ))} */}
-              </ul>
+          </div>
+
+          {/* Anzeige Indoor */}
+          <div
+            className={`bg-red-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "border-transparent"
+              }`}
+          >
+            <div className="flex justify-between items-center">
+              <h4 className="font-bold text-lg">Sensor Innen</h4>
+              {sensorValues.indoorStatus === "offline" && (
+                <span className="text-red-600 font-black text-xs">OFFLINE</span>
+              )}
             </div>
+
+            {sensorValues.indoor ? (
+              <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
+                <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+              </div>
+            ) : (
+              <p>Warte auf Innensensor...</p>
+            )}
+          </div>
+          {/* Anzeige Outdoor */}
+          <div
+            className={`bg-yellow-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-white/30 border-transparent"
+              }`}
+          >
+            <div className="flex justify-between items-center">
+              <h4 className="font-bold text-lg">Sensor Außen</h4>
+              {sensorValues.outdoorStatus === "offline" && (
+                <span className="text-red-600 font-black text-xs">OFFLINE</span>
+              )}
+            </div>
+
+            {sensorValues.outdoor ? (
+              <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
+                <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+              </div>
+            ) : (
+              <p>Warte auf Außensensor...</p>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center">
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={handleCalculateOffset}
+              disabled={
+                !(
+                  sensorValues.indoor &&
+                  sensorValues.outdoor &&
+                  sensorValues.indoorStatus === "online" &&
+                  sensorValues.outdoorStatus === "online"
+                )
+              }
+            >
+              Offset berechnen
+            </button>
           </div>
 
           <button

@@ -1,11 +1,53 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SettingsClient from "@/components/SettingsClient";
+import sql from "@/utils/db";
+import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
 import { defaultSettings } from "@/types/typesSettings";
 
-export default function SettingsPage() {
+interface UserSettingsRow {
+  lang: string;
+  lat: number | null;
+  lon: number | null;
+  displayName: string | null;
+  town: string | null;
+  county: string | null;
+  state: string | null;
+  country: string | null;
+  country_code: string | null;
+  channels: []; // oder den richtigen Typ
+  event_urls: []; // oder den richtigen Typ
+  evt: boolean;
+  wea: boolean;
+  mtx: boolean;
+  rtc: boolean;
+  s_indoor: boolean;
+  s_outdoor: boolean;
+  s_cal_temp: number | null;
+  s_cal_humidity: number | null;
+  s_cal_pressure: number | null;
+}
+
+async function getSettings() {
+  const { userId } = await getAuthenticatedUserFromCookies();
+  const [row] = await sql<UserSettingsRow[]>`
+  SELECT * FROM user_settings WHERE user_id = ${userId}::uuid LIMIT 1
+`;
+  return row
+    ? {
+      ...defaultSettings,
+      ...row,
+      s_cal_temp: row.s_cal_temp !== null ? Number(row.s_cal_temp) : 0,
+      s_cal_humidity: row.s_cal_humidity !== null ? Number(row.s_cal_humidity) : 0,
+      s_cal_pressure: row.s_cal_pressure !== null ? Number(row.s_cal_pressure) : 0,
+    }
+    : defaultSettings;
+}
+
+export default async function SettingsPage() {
+  const initialSettings = await getSettings();
   return (
     <ProtectedRoute>
-      <SettingsClient initialSettings={defaultSettings} />
+      <SettingsClient initialSettings={initialSettings} />
     </ProtectedRoute>
   );
 }

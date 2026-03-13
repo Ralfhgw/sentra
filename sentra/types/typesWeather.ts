@@ -82,6 +82,9 @@ export type WeatherClientProps = {
     lat?: number | null;
     lon?: number | null;
     town?: string | null;
+    s_cal_temp: number;
+    s_cal_humidity: number;
+    s_cal_pressure: number;
 };
 
 export interface weatherDataCurrent {

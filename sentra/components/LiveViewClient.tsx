@@ -114,7 +114,8 @@ const LAYOUT_CONFIGS = {
 
 type UserChannel = {
   url: string;
-  name: string
+  name: string;
+  location?: string;
 };
 
 export default function WebcamClient({ channels, userChannels }: WebcamClientProps) {
@@ -131,27 +132,57 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
   const [dragFrom, setDragFrom] = useState<number | null>(null);
 
   const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
-    typeof userChannels === "string"
+    (typeof userChannels === "string"
       ? JSON.parse(userChannels)
       : userChannels ?? []
+    ).map((entry: UserChannel) => {
+      const matchedChannel = channels.find((ch) => ch.stream_url === entry.url);
+      return {
+        ...entry,
+        location: entry.location ?? matchedChannel?.location ?? "",
+      };
+    })
   );
   const [locationFilter, setLocationFilter] = useState<string>("");
+  const [channelSearchTerm, setChannelSearchTerm] = useState("");
 
   // Extract all location from channel list
   const locations = Array.from(new Set(channels.map(ch => ch.location).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
   // Create filtered list
-  const filteredChannels = locationFilter
+  const locationFilteredChannels = locationFilter
     ? channels.filter(ch => ch.location === locationFilter)
     : channels;
+
+  const filteredChannels = locationFilteredChannels.filter(ch => {
+    if (!channelSearchTerm.trim()) return true;
+
+    const searchTerms = channelSearchTerm
+      .toLowerCase()
+      .split(" ")
+      .map(term => term.trim())
+      .filter(Boolean);
+
+    const searchText = [ch.channel, ch.location, ch.stream_url]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchTerms.every(term => searchText.includes(term));
+  });
 
   // Save channelassignment
   const handleAssignChannel = async () => {
     const newChannels = [...currentUserChannels];
     if (customUrl) {
-      newChannels[popupCell!] = { name: customName, url: customUrl };
+      newChannels[popupCell!] = { name: customName, url: customUrl, location: "" };
     } else {
-      newChannels[popupCell!] = { name: selectedName, url: selectedUrl };
+      const selected = filteredChannels.find(ch => ch.stream_url === selectedUrl);
+      newChannels[popupCell!] = {
+        name: selectedName,
+        url: selectedUrl,
+        location: selected?.location ?? "",
+      };
     }
     console.log("LiveViewClient newChannels: newChannels:", newChannels);
 
@@ -180,7 +211,7 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
     if (dragFrom === null || dragFrom === toIdx) return;
 
     const size = Math.max(config.cells.length, currentUserChannels.length);
-    const next = Array.from({ length: size }, (_, i) => currentUserChannels[i] ?? { name: "", url: "" });
+    const next = Array.from({ length: size }, (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" });
 
     [next[dragFrom], next[toIdx]] = [next[toIdx], next[dragFrom]];
 
@@ -196,7 +227,7 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
       {/* Configuration POPUP Window*/}
       {popupCell !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-gray-300 rounded shadow-lg p-6 min-w-75">
+          <div className="bg-gray-300 rounded shadow-lg p-6 w-150">
             <h2 className="text-lg font-bold mb-4">Kanal zuweisen</h2>
             {/* Gruppenfilter */}
             <div className="mb-4">
@@ -216,6 +247,13 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
             </div>
 
             {/* Auswahl aus gefilterten Channels */}
+            <input
+              type="text"
+              placeholder="Suchbegriff eingeben (z. B. Name oder Ort)"
+              value={channelSearchTerm}
+              onChange={e => setChannelSearchTerm(e.target.value)}
+              className="w-full mb-2 p-2 border rounded"
+            />
             <select
               className="w-full mb-4 p-2 border rounded"
               value={selectedUrl || ""}
@@ -263,6 +301,34 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
         </div>
       )}
 
+      {/* Grid Layout Button */}
+      <div className="h-full border-b border-gray-300 bg-black">
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="mt-3 mx-1 bg-gray-500 px-4 py-1.5 rounded border border-gray-700 text-xs text-gray-100 hover:bg-gray-800 transition flex items-center gap-3"
+          >
+            Raster: {layoutId} Ansicht
+            <span className={`text-[8px] transition-transform ${showMenu ? "rotate-180" : ""}`}>▼</span>
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 mt-2 p-1.5 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50">
+              {(Object.keys(LAYOUT_CONFIGS) as unknown as (keyof typeof LAYOUT_CONFIGS)[]).map((id) => (
+                <button
+                  key={id}
+                  onClick={() => { setLayoutId(id); setShowMenu(false); }}
+                  className={`w-full p-2 text-left rounded text-xs transition mb-0.5 ${layoutId === id ? "bg-orange-600/20 text-orange-500 font-bold" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    }`}
+                >
+                  {id} Fenster
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Video Grid */}
       <div
         className="w-[80%] h-full grid gap-px bg-blue-300 border border-gray-800"
@@ -295,38 +361,14 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
               isHuge={cell.span.includes("col-span-4")}
               isLarge={cell.span.includes("col-span-2")}
               channel={cell.id + 1}
+              channelName={currentUserChannels[idx]?.name ?? ""}
+              location={currentUserChannels[idx]?.location ?? ""}
             />
           </div>
         ))}
       </div>
 
-      {/* Grid Layout Button */}
-      <div className="h-full border-b border-gray-300 bg-black">
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="mt-3 mx-1 bg-gray-500 px-4 py-1.5 rounded border border-gray-700 text-xs text-gray-100 hover:bg-gray-800 transition flex items-center gap-3"
-          >
-            Raster: {layoutId} Ansicht
-            <span className={`text-[8px] transition-transform ${showMenu ? "rotate-180" : ""}`}>▼</span>
-          </button>
 
-          {showMenu && (
-            <div className="absolute right-0 mt-2 p-1.5 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50">
-              {(Object.keys(LAYOUT_CONFIGS) as unknown as (keyof typeof LAYOUT_CONFIGS)[]).map((id) => (
-                <button
-                  key={id}
-                  onClick={() => { setLayoutId(id); setShowMenu(false); }}
-                  className={`w-full p-2 text-left rounded text-xs transition mb-0.5 ${layoutId === id ? "bg-orange-600/20 text-orange-500 font-bold" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                    }`}
-                >
-                  {id} Fenster
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

@@ -6,12 +6,16 @@ type WebcamItemProps = {
     isHuge?: boolean;
     isLarge: boolean;
     channel: number;
+        channelName?: string;
+    location?: string;
 };
 export default function WebcamItem({
     url,
     isHuge,
     isLarge,
     channel,
+        channelName,
+    location,
 }: WebcamItemProps) {
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -153,7 +157,7 @@ export default function WebcamItem({
 
             {/* Activ channel indicator if hover */}
             <div className="absolute top-1 left-2 text-xs bg-gray-300 text-gray/90 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Channel: {channel} - URL: {url}
+                Slot: {channel} - Channel: {channelName || "-"} - Location: {location || "-"} - URL: {url || "-"}
             </div>
         </div>
     );

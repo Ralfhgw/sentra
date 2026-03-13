@@ -28,22 +28,22 @@ interface DualSensorState {
   outdoorStatus?: SensorStatus;
 }
 
-  // Hilfsfunktionen (außerhalb oder innerhalb der Komponente definieren)
-  const clamp = (value: number, min = 0, max = 1) =>
-    Math.min(max, Math.max(min, value));
+// Hilfsfunktionen (außerhalb oder innerhalb der Komponente definieren)
+const clamp = (value: number, min = 0, max = 1) =>
+  Math.min(max, Math.max(min, value));
 
-  const mix = (from: number, to: number, t: number) =>
-    Math.round(from + (to - from) * t);
+const mix = (from: number, to: number, t: number) =>
+  Math.round(from + (to - from) * t);
 
-  const mixColor = (
-    from: readonly [number, number, number],
-    to: readonly [number, number, number],
-    t: number
-  ): [number, number, number] => [
-      mix(from[0], to[0], t),
-      mix(from[1], to[1], t),
-      mix(from[2], to[2], t),
-    ];
+const mixColor = (
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  t: number
+): [number, number, number] => [
+    mix(from[0], to[0], t),
+    mix(from[1], to[1], t),
+    mix(from[2], to[2], t),
+  ];
 
 export default function WeatherClient({
   weatherDataCurrent,
@@ -89,50 +89,66 @@ export default function WeatherClient({
       : [];
   }, [weatherDataDaily]);
 
+
+
   // Update MQTT data every 15 minutes
   useEffect(() => {
-async function fetchSensorData() {
-  try {
-    const response = await fetch('/api/sensor');
-    const result = await response.json();
+    async function fetchSensorData() {
+      try {
+        const response = await fetch('/api/sensor');
+        const result = await response.json();
 
-    if (result.wert) {
-      const newSensorData: DualSensorState = {
-        indoor: null,
-        outdoor: null,
-        indoorStatus: result.wert.indoorStatus || "offline",
-        outdoorStatus: result.wert.outdoorStatus || "offline"
-      };
+        if (result.wert) {
+          const newSensorData: DualSensorState = {
+            indoor: null,
+            outdoor: null,
+            indoorStatus: result.wert.indoorStatus || "offline",
+            outdoorStatus: result.wert.outdoorStatus || "offline"
+          };
 
-      if (result.wert.indoor) {
-        try {
-          newSensorData.indoor = JSON.parse(result.wert.indoor);
-          if (newSensorData.indoor) {
-            newSensorData.indoor.temp -= s_cal_temp;
-            if (typeof newSensorData.indoor.dew === "number") newSensorData.indoor.dew -= s_cal_temp;
-            newSensorData.indoor.hum -= s_cal_humidity;
-            newSensorData.indoor.pres -= s_cal_pressure;
+          if (result.wert.indoor) {
+            try {
+              console.log("calTemp:", s_cal_temp);
+              console.log("calHumidity:", s_cal_humidity);
+              console.log("calPressure:", s_cal_pressure);
+
+
+
+              newSensorData.indoor = JSON.parse(result.wert.indoor);
+/*               console.log("indoor.temp:",newSensorData.indoor.temp)
+              console.log("indoor.dew:",newSensorData.indoor.dew)
+              console.log("indoor.hum:",newSensorData.indoor.hum)
+              console.log("indoor.pres:",newSensorData.indoor.pres) */
+              if (newSensorData.indoor) {
+                newSensorData.indoor.temp -= s_cal_temp;
+                if (typeof newSensorData.indoor.dew === "number") newSensorData.indoor.dew -= s_cal_temp;
+                newSensorData.indoor.hum -= s_cal_humidity;
+                newSensorData.indoor.pres -= s_cal_pressure;
+              }
+            } catch (e) { console.error("Parse Error Indoor", e); }
           }
-        } catch (e) { console.error("Parse Error Indoor", e); }
-      }
-      if (result.wert.outdoor) {
-        try {
-          newSensorData.outdoor = JSON.parse(result.wert.outdoor);
-          if (newSensorData.outdoor) {
-            newSensorData.outdoor.temp += s_cal_temp;
-            if (typeof newSensorData.outdoor.dew === "number") newSensorData.outdoor.dew += s_cal_temp;
-            newSensorData.outdoor.hum += s_cal_humidity;
-            newSensorData.outdoor.pres -= s_cal_pressure;
+          if (result.wert.outdoor) {
+            try {
+              newSensorData.outdoor = JSON.parse(result.wert.outdoor);
+/*               console.log("outdoor.temp:",newSensorData.outdoor.temp)
+              console.log("outdoor.dew:",newSensorData.outdoor.dew)
+              console.log("outdoor.hum:",newSensorData.outdoor.hum)
+              console.log("outdoor.pres:",newSensorData.outdoor.pres) */
+              if (newSensorData.outdoor) {
+                newSensorData.outdoor.temp += s_cal_temp;
+                if (typeof newSensorData.outdoor.dew === "number") newSensorData.outdoor.dew += s_cal_temp;
+                newSensorData.outdoor.hum += s_cal_humidity;
+                newSensorData.outdoor.pres -= s_cal_pressure;
+              }
+            } catch (e) { console.error("Parse Error Outdoor", e); }
           }
-        } catch (e) { console.error("Parse Error Outdoor", e); }
-      }
 
-      setSensorValues(newSensorData);
+          setSensorValues(newSensorData);
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden der Sensordaten:", error);
+      }
     }
-  } catch (error) {
-    console.error("Fehler beim Laden der Sensordaten:", error);
-  }
-}
 
     fetchSensorData();
     const intervalId = window.setInterval(fetchSensorData, 60 * 1000); // 1 Minute Intervall
@@ -261,7 +277,7 @@ async function fetchSensorData() {
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
       <div>
-</div>
+      </div>
       <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
         { /* Weather Instruments Monitor*/}

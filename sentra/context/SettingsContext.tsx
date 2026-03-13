@@ -79,7 +79,29 @@ const defaultSettings: UserSettings = {
 };
 
 type SettingsResponse = {
-  settings?: UserSettings;
+  settings?:
+    | UserSettings
+    | {
+        lang?: Lang;
+        lat?: number | null;
+        lon?: number | null;
+        displayName?: string | null;
+        town?: string | null;
+        county?: string | null;
+        state?: string | null;
+        country?: string | null;
+        countryCode?: string | null;
+        channels?: UserChannel[];
+        evt?: boolean;
+        wea?: boolean;
+        mtx?: boolean;
+        rtc?: boolean;
+        sIndoor?: boolean;
+        sOutdoor?: boolean;
+        sCalTemp?: number | null;
+        sCalHumidity?: number | null;
+        sCalPressure?: number | null;
+      };
   lang?: Lang;
   error?: string;
 };
@@ -93,9 +115,53 @@ const SettingsContext = createContext<SettingsContextType>({
 });
 
 function toUserSettings(data: SettingsResponse): UserSettings {
+  const responseSettings = data.settings;
+
+  if (!responseSettings) {
+    return defaultSettings;
+  }
+
+  const camelCaseSettings = responseSettings as {
+    displayName?: string | null;
+    countryCode?: string | null;
+    sIndoor?: boolean;
+    sOutdoor?: boolean;
+    sCalTemp?: number | null;
+    sCalHumidity?: number | null;
+    sCalPressure?: number | null;
+  };
+
   return {
     ...defaultSettings,
-    ...data.settings,
+    ...responseSettings,
+    displayName:
+      responseSettings.displayName ??
+      responseSettings.display_name ??
+      defaultSettings.displayName,
+    country_code:
+      responseSettings.country_code ??
+      camelCaseSettings.countryCode ??
+      defaultSettings.country_code,
+    s_indoor:
+      responseSettings.s_indoor ??
+      camelCaseSettings.sIndoor ??
+      defaultSettings.s_indoor,
+    s_outdoor:
+      responseSettings.s_outdoor ??
+      camelCaseSettings.sOutdoor ??
+      defaultSettings.s_outdoor,
+    s_cal_temp:
+      responseSettings.s_cal_temp ??
+      camelCaseSettings.sCalTemp ??
+      defaultSettings.s_cal_temp,
+    s_cal_humidity:
+      responseSettings.s_cal_humidity ??
+      camelCaseSettings.sCalHumidity ??
+      defaultSettings.s_cal_humidity,
+    s_cal_pressure:
+      responseSettings.s_cal_pressure ??
+      camelCaseSettings.sCalPressure ??
+      defaultSettings.s_cal_pressure,
   };
 }
 

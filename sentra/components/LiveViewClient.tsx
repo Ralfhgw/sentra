@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { WebcamClientProps } from "@/types/typesLiveView"
 import WebcamItem from "./LiveViewItem";
 
@@ -146,6 +146,19 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
   const [locationFilter, setLocationFilter] = useState<string>("");
   const [channelSearchTerm, setChannelSearchTerm] = useState("");
 
+  const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
+
+  useEffect(() => {
+    const updateViewport = () => setViewportWidth(window.innerWidth);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  const responsiveCols = viewportWidth < 640 ? 1 : viewportWidth < 1024 ? Math.min(2, config.cols) : config.cols;
+  const useCompactSpans = viewportWidth < 640;
+
   // Extract all location from channel list
   const locations = Array.from(new Set(channels.map(ch => ch.location).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
@@ -222,7 +235,7 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
 
   return (
 
-    <div className="flex justify-center items-center w-full relative">
+    <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch w-full relative gap-2 md:gap-0">
 
       {/* Configuration POPUP Window*/}
       {popupCell !== null && (
@@ -302,7 +315,7 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
       )}
 
       {/* Grid Layout Button */}
-      <div className="h-full border-b border-gray-300 bg-black">
+      <div className="w-full md:w-auto border-b md:border-b-0 md:border-r border-gray-300 bg-black">
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -331,9 +344,9 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
 
       {/* Video Grid */}
       <div
-        className="w-[80%] h-full grid gap-px bg-blue-300 border border-gray-800"
+        className="w-full md:w-[80%] h-full grid gap-px bg-blue-300 border border-gray-800"
         style={{
-          gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
+          gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
           gridAutoRows: "minmax(0, 1fr)",
           gridAutoFlow: "dense",
         }}
@@ -342,7 +355,7 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
         {config.cells.map((cell, idx) => (
           <div
             key={`cell-${idx}-${cell.id ?? "empty"}`}
-            className={`${cell.span} relative bg-black border border-gray-900/50 group overflow-hidden`}
+            className={`${useCompactSpans ? "col-span-1 row-span-1" : cell.span.replace(/col-span-(\d+)/, (_, span) => `col-span-${Math.min(Number(span), responsiveCols)}`)} relative bg-black border border-gray-900/50 group overflow-hidden`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => void handleDropOnSlot(idx)}
             onDoubleClick={() => setPopupCell(idx)}

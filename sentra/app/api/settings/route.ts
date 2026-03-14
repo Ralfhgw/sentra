@@ -26,6 +26,14 @@ export async function POST(req: NextRequest) {
       s_cal_pressure: data.s_cal_pressure ?? 0,
     };
 
+const [oldSettings] = await sql`
+  SELECT lat, lon FROM user_settings WHERE user_id = ${userId}
+`;
+
+const latChanged = oldSettings?.lat !== safeData.lat;
+const lonChanged = oldSettings?.lon !== safeData.lon;
+const locationChanged = latChanged || lonChanged;
+
     const result = await sql`
       UPDATE user_settings
       SET
@@ -54,7 +62,7 @@ export async function POST(req: NextRequest) {
     console.log("Update-Result:", result);
 
     // Events von SerpApi für die nächsten 2 Tage holen und speichern
-    if (safeData.town) {
+    if (locationChanged && safeData.town) {
       for (let i = 0; i < 2; i++) {
         const date = new Date();
         date.setDate(date.getDate() + i);

@@ -287,6 +287,20 @@ export default async function WeatherPage() {
 
     const processedHourlyData = processHourlyData(weatherData.hourly);
 
+    // Kontrollausgabe aller Werte
+    console.log({
+      weatherDataCurrent: weatherData.current,
+      weatherDataHourly: processedHourlyData,
+      weatherDataDaily: weatherData.daily,
+      elevation: weatherData.elevation,
+      lat: weatherData.lat,
+      lon: weatherData.lon,
+      town: weatherData.town,
+      s_cal_temp: weatherData.s_cal_temp,
+      s_cal_humidity: weatherData.s_cal_humidity,
+      s_cal_pressure: weatherData.s_cal_pressure,
+    });
+
     return (
         <main>
             <ProtectedRoute>

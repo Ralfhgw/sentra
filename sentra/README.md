@@ -45,7 +45,7 @@ Der mediaMTX Server übernimmt das Empfangen, Umwandeln und Bereitstellen von Li
 Dieser Befehl lädt die neuesten Kanaldaten aus dem iptv-org/database Repository in dein lokales Projekt. Danach hast du Zugriff auf Tausende von korrekten tvg-ids, Kategorien (group) und logo_urls in Form von lokalen JSON/CSV-Dateien im Ordner /data oder /api.
 ```npm run playlist:update```: Prüft die Stream-URLs in den Quelldateien auf Erreichbarkeit.
 ```npm run playlist:generate```: Erstellt aus den Rohdaten im /streams Ordner die finalen .m3u-Dateien, die du auf GitHub siehst.
-Die Playlisten liegen im Ordner /streams
+Die Playlisten liegen im Ordner /streams 
 
 Erstellen der csv Dateien in WSL Ubuntu:
 $ python3 -m venv .venv

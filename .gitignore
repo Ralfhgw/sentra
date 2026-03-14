@@ -1,3 +1,4 @@
-microservice/mosquitto/data/mosquitto.db
-documents
+microservice
 authServer
+documents
+.github

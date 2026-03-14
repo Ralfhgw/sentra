@@ -5,7 +5,7 @@ import sql from "@/utils/db";
 const { SERPAPI_KEY } = process.env;
 
 if (!SERPAPI_KEY) {
-    throw new Error("Fehlende SERPAPI-ENV-Variablen – prüfe deine .env");
+    throw new Error("Fehlende SERPAPI_KEY-Variable – prüfe deine .env");
 }
 
 // Function fetchGoogleEvents() ==> return events[]

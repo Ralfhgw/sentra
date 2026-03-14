@@ -5,7 +5,7 @@ import type { GoogleEventsParams, EventData } from "@/types/typesRegister";
 const { SERPAPI_KEY } = process.env;
 
 if (!SERPAPI_KEY) {
-    throw new Error("Fehlende SERPAPI-ENV-Variablen – prüfe deine .env");
+    throw new Error("Fehlende SERPAPI_KEY-Variable – prüfe deine .env");
 }
 
 async function fetchGoogleEvents({

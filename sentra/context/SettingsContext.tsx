@@ -135,33 +135,38 @@ function toUserSettings(data: SettingsResponse): UserSettings {
     ...defaultSettings,
     ...responseSettings,
     displayName:
-      responseSettings.displayName ??
-      responseSettings.display_name ??
-      defaultSettings.displayName,
-    country_code:
-      responseSettings.country_code ??
-      camelCaseSettings.countryCode ??
-      defaultSettings.country_code,
-    s_indoor:
-      responseSettings.s_indoor ??
-      camelCaseSettings.sIndoor ??
-      defaultSettings.s_indoor,
-    s_outdoor:
-      responseSettings.s_outdoor ??
-      camelCaseSettings.sOutdoor ??
-      defaultSettings.s_outdoor,
-    s_cal_temp:
-      responseSettings.s_cal_temp ??
-      camelCaseSettings.sCalTemp ??
-      defaultSettings.s_cal_temp,
-    s_cal_humidity:
-      responseSettings.s_cal_humidity ??
-      camelCaseSettings.sCalHumidity ??
-      defaultSettings.s_cal_humidity,
-    s_cal_pressure:
-      responseSettings.s_cal_pressure ??
-      camelCaseSettings.sCalPressure ??
-      defaultSettings.s_cal_pressure,
+responseSettings.displayName ??
+(responseSettings as Record<string, unknown>)["display_name"] as string ??
+defaultSettings.displayName,
+country_code:
+  (responseSettings as Record<string, unknown>)["countryCode"] as string ??
+  (responseSettings as Record<string, unknown>)["country_code"] as string ??
+  defaultSettings.country_code,
+
+s_indoor:
+  (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??
+  (responseSettings as Record<string, unknown>)["s_indoor"] as boolean ??
+  defaultSettings.s_indoor,
+
+s_outdoor:
+  (responseSettings as Record<string, unknown>)["sOutdoor"] as boolean ??
+  (responseSettings as Record<string, unknown>)["s_outdoor"] as boolean ??
+  defaultSettings.s_outdoor,
+
+s_cal_temp:
+  (responseSettings as Record<string, unknown>)["sCalTemp"] as number ??
+  (responseSettings as Record<string, unknown>)["s_cal_temp"] as number ??
+  defaultSettings.s_cal_temp,
+
+s_cal_humidity:
+  (responseSettings as Record<string, unknown>)["sCalHumidity"] as number ??
+  (responseSettings as Record<string, unknown>)["s_cal_humidity"] as number ??
+  defaultSettings.s_cal_humidity,
+
+s_cal_pressure:
+  (responseSettings as Record<string, unknown>)["sCalPressure"] as number ??
+  (responseSettings as Record<string, unknown>)["s_cal_pressure"] as number ??
+  defaultSettings.s_cal_pressure,
   };
 }
 

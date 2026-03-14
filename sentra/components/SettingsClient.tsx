@@ -142,15 +142,15 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     rtc: userSettings.rtc,
     s_indoor: userSettings.s_indoor,
     s_outdoor: userSettings.s_outdoor,
-s_cal_temp: typeof userSettings.s_cal_temp === "number"
-  ? userSettings.s_cal_temp
-  : Number(initialSettings.s_cal_temp),
-s_cal_humidity: typeof userSettings.s_cal_humidity === "number"
-  ? userSettings.s_cal_humidity
-  : Number(initialSettings.s_cal_humidity),
-s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
-  ? userSettings.s_cal_pressure
-  : Number(initialSettings.s_cal_pressure),
+    s_cal_temp: typeof userSettings.s_cal_temp === "number"
+      ? userSettings.s_cal_temp
+      : Number(initialSettings.s_cal_temp),
+    s_cal_humidity: typeof userSettings.s_cal_humidity === "number"
+      ? userSettings.s_cal_humidity
+      : Number(initialSettings.s_cal_humidity),
+    s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
+      ? userSettings.s_cal_pressure
+      : Number(initialSettings.s_cal_pressure),
   });
 
   const [urlInput, setUrlInput] = useState("");
@@ -174,6 +174,7 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
     setError("");
     setStatus("idle");
     try {
+      // Speichern der user_settings
       const response = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -194,11 +195,30 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
     }
   };
 
+  // Fetch Locationdaten, wenn in der Karte geklickt wird.
   async function fetchLocationData(lat: number, lon: number) {
     const res = await fetch(`api/settings/reverseGeoCode?lat=${lat}&lon=${lon}`);
     if (!res.ok) throw new Error("Fehler beim Abrufen der Standortdaten");
     return res.json();
   }
+
+function hasUnsavedChanges() {
+  return (
+    settings.s_indoor !== initialSettings.s_indoor ||
+    settings.s_outdoor !== initialSettings.s_outdoor ||
+    settings.lat !== initialSettings.lat ||
+    settings.lon !== initialSettings.lon ||
+    settings.town !== initialSettings.town ||
+    settings.county !== initialSettings.county ||
+    settings.state !== initialSettings.state ||
+    settings.country !== initialSettings.country ||
+    settings.country_code !== initialSettings.country_code ||
+    // ... weitere Felder nach Bedarf
+    settings.s_cal_temp !== initialSettings.s_cal_temp ||
+    settings.s_cal_humidity !== initialSettings.s_cal_humidity ||
+    settings.s_cal_pressure !== initialSettings.s_cal_pressure
+  );
+}
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
@@ -216,7 +236,7 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
             <div className="bg-red-300 flex flex-col items-center">
               <label className="font-semibold">Neue Standortwahl mit Klick in Karte:</label>
               <div className="w-100 h-100 rounded-lg overflow-hidden border border-gray-300 shadow-sm">
-                {/*       <MapSelector
+                <MapSelector
                   lat={settings.lat ?? 52.520008}
                   lon={settings.lon ?? 13.404954}
                   onChange={async (lat, lon) => {
@@ -242,7 +262,7 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
                       setError("Standortdaten konnten nicht geladen werden.");
                     }
                   }}
-                /> */}
+                />
               </div>
             </div>
 
@@ -286,8 +306,8 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
               <b>WEA:</b> {String(userSettings.wea)}<br />
               <b>MTX:</b> {String(userSettings.mtx)}<br />
               <b>RTC:</b> {String(userSettings.rtc)}<br />
-              <b>Sensor Indoor:</b> {String(userSettings.s_indoor)}<br />
-              <b>Sensor Outdoor:</b> {String(userSettings.s_outdoor)}<br />
+              <b>Sensor Indoor:</b> {String(settings.s_indoor)}<br />
+              <b>Sensor Outdoor:</b> {String(settings.s_outdoor)}<br />
               <b>Temperatur Offset:</b> {typeof settings.s_cal_temp === "number" ? settings.s_cal_temp.toFixed(2) : "-"}<br />
               <b>Feuchte Offset:</b> {typeof settings.s_cal_humidity === "number" ? settings.s_cal_humidity.toFixed(2) : "-"}<br />
               <b>Druck Offset:</b> {typeof settings.s_cal_pressure === "number" ? settings.s_cal_pressure.toFixed(2) : "-"}<br />
@@ -316,81 +336,119 @@ s_cal_pressure: typeof userSettings.s_cal_pressure === "number"
                 Hinzufügen
               </button>
             </div>
+          </div>
 
+          <div className="flex gap-4 mb-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.s_indoor}
+                onChange={e =>
+                  setSettings(prev => ({
+                    ...prev,
+                    s_indoor: e.target.checked
+                  }))
+                }
+              />
+              Sensor Innen anzeigen
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.s_outdoor}
+                onChange={e =>
+                  setSettings(prev => ({
+                    ...prev,
+                    s_outdoor: e.target.checked
+                  }))
+                }
+              />
+              Sensor Außen anzeigen
+            </label>
           </div>
 
           {/* Anzeige Indoor */}
-          <div
-            className={`bg-red-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "border-transparent"
-              }`}
-          >
-            <div className="flex justify-between items-center">
-              <h4 className="font-bold text-lg">Sensor Innen</h4>
-              {sensorValues.indoorStatus === "offline" && (
-                <span className="text-red-600 font-black text-xs">OFFLINE</span>
-              )}
-            </div>
-
-            {sensorValues.indoor ? (
-              <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
-                <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
-                {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
-                <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
-                <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
-              </div>
-            ) : (
-              <p>Warte auf Innensensor...</p>
-            )}
-          </div>
-          {/* Anzeige Outdoor */}
-          <div
-            className={`bg-yellow-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-white/30 border-transparent"
-              }`}
-          >
-            <div className="flex justify-between items-center">
-              <h4 className="font-bold text-lg">Sensor Außen</h4>
-              {sensorValues.outdoorStatus === "offline" && (
-                <span className="text-red-600 font-black text-xs">OFFLINE</span>
-              )}
-            </div>
-
-            {sensorValues.outdoor ? (
-              <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
-                <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
-                {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
-                <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
-                <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
-              </div>
-            ) : (
-              <p>Warte auf Außensensor...</p>
-            )}
-          </div>
-
-          <div className="flex flex-col items-center">
-            <button
-              type="button"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={handleCalculateOffset}
-              disabled={
-                !(
-                  sensorValues.indoor &&
-                  sensorValues.outdoor &&
-                  sensorValues.indoorStatus === "online" &&
-                  sensorValues.outdoorStatus === "online"
-                )
-              }
+          {settings.s_indoor && (
+            <div
+              className={`bg-red-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "border-transparent"
+                }`}
             >
-              Offset berechnen
-            </button>
-          </div>
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-lg">Sensor Innen</h4>
+                {sensorValues.indoorStatus === "offline" && (
+                  <span className="text-red-600 font-black text-xs">OFFLINE</span>
+                )}
+              </div>
 
-          <button
-            type="submit"
-            className={`mt-4 px-6 py-2 rounded bg-amber-600 text-white 
-                font-bold shadow hover:bg-amber-700 transition ${saving ? "opacity-50 pointer-events-none" : ""}`} disabled={saving}
-          >
-            {saving ? "Speichere..." : "Speichern"}
-          </button>
+              {sensorValues.indoor ? (
+                <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
+                  <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                  {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                  <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                  <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                </div>
+              ) : (
+                <p>Warte auf Innensensor...</p>
+              )}
+            </div>
+          )}
+
+          {/* Anzeige Outdoor */}
+          {settings.s_outdoor && (
+            <div
+              className={`bg-yellow-300 w-90 shadow-sm transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-white/30 border-transparent"
+                }`}
+            >
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-lg">Sensor Außen</h4>
+                {sensorValues.outdoorStatus === "offline" && (
+                  <span className="text-red-600 font-black text-xs">OFFLINE</span>
+                )}
+              </div>
+
+              {sensorValues.outdoor ? (
+                <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
+                  <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                  {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                  <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                  <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                </div>
+              ) : (
+                <p>Warte auf Außensensor...</p>
+              )}
+            </div>
+          )}
+
+          {settings.s_outdoor && settings.s_indoor && (
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={handleCalculateOffset}
+                disabled={
+                  !(
+                    sensorValues.indoor &&
+                    sensorValues.outdoor &&
+                    sensorValues.indoorStatus === "online" &&
+                    sensorValues.outdoorStatus === "online"
+                  )
+                }
+              >
+                Offset berechnen
+              </button>
+            </div>
+          )}
+
+<button
+  type="submit"
+  className={`mt-4 px-6 py-2 rounded bg-amber-600 text-white font-bold shadow hover:bg-amber-700 transition
+    ${saving ? "opacity-50 pointer-events-none" : ""}
+    ${hasUnsavedChanges() ? "border-2 border-red-500" : ""}
+  `}
+  disabled={saving}
+>
+  {saving ? "Speichere..." : "Speichern"}
+</button>
           {status === "success" && (
             <div className="text-green-600 font-semibold mt-2">Erfolgreich gespeichert!</div>
           )}

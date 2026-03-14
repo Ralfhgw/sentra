@@ -118,7 +118,7 @@ type UserChannel = {
   location?: string;
 };
 
-export default function WebcamClient({ channels, userChannels }: WebcamClientProps) {
+export default function LiveViewClient({ channels, userChannels }: WebcamClientProps) {
   console.log("LiveViewClient userChannels: ", userChannels)
 
   const [layoutId, setLayoutId] = useState<keyof typeof LAYOUT_CONFIGS>(10);

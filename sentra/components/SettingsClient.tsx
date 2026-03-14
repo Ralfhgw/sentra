@@ -418,7 +418,8 @@ function hasUnsavedChanges() {
               )}
             </div>
           )}
-
+          
+          {/* Button Calculate Offset */}
           {settings.s_outdoor && settings.s_indoor && (
             <div className="flex flex-col items-center">
               <button

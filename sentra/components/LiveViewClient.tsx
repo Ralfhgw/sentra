@@ -160,7 +160,13 @@ export default function WebcamClient({ channels, userChannels }: WebcamClientPro
   const useCompactSpans = viewportWidth < 640;
 
   // Extract all location from channel list
-  const locations = Array.from(new Set(channels.map(ch => ch.location).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const locations = Array.from(
+    new Set(
+      channels
+        .map(ch => ch.location)
+        .filter((loc): loc is string => !!loc)
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
   // Create filtered list
   const locationFilteredChannels = locationFilter

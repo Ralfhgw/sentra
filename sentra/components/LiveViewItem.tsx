@@ -9,6 +9,32 @@ type WebcamItemProps = {
         channelName?: string;
     location?: string;
 };
+
+const getPlaybackUrl = (sourceUrl: string) => {
+    const normalizedUrl = sourceUrl.trim();
+
+    if (!normalizedUrl) {
+        return normalizedUrl;
+    }
+
+    if (
+        normalizedUrl.startsWith("/api/stream-proxy?url=") ||
+        normalizedUrl.includes("/api/stream-proxy?url=")
+    ) {
+        return normalizedUrl;
+    }
+
+    if (/^\/\//.test(normalizedUrl)) {
+        return `/api/stream-proxy?url=${encodeURIComponent(`http:${normalizedUrl}`)}`;
+    }
+
+    if (/^https?:\/\//i.test(normalizedUrl)) {
+        return `/api/stream-proxy?url=${encodeURIComponent(normalizedUrl)}`;
+    }
+
+    return normalizedUrl;
+};
+
 export default function WebcamItem({
     url,
     isHuge,
@@ -28,14 +54,15 @@ export default function WebcamItem({
         const video = videoRef.current;
         if (!video || !url) return;
         let hls: Hls | undefined;
+        const playbackUrl = getPlaybackUrl(url);
 
         if (Hls.isSupported()) {
             hls = new Hls({ capLevelToPlayerSize: true });
-            hls.loadSource(url);
+            hls.loadSource(playbackUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => { }));
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = url;
+            video.src = playbackUrl;
         }
 
         return () => hls?.destroy();

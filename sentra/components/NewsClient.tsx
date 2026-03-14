@@ -30,11 +30,15 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
   const [openedDetailIdx, setOpenedDetailIdx] = useState<number | null>(null);
   const [eventList, setEventList] = useState(events);
 
-  // Alle einzigartigen Datumswerte (im Format "DD.MM.") aus den Events extrahieren
   const uniqueDates = Array.from(
     new Set(eventList.map(e => {
       const d = new Date(e.date);
-      return !isNaN(d.getTime()) ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : e.date;
+      if (!isNaN(d.getTime())) {
+        const day = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+        const weekday = d.toLocaleDateString("de-DE", { weekday: "short" });
+        return `${weekday} ${day}`;
+      }
+      return e.date;
     }))
   );
 
@@ -42,8 +46,12 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
   const filteredEvents = selectedDate
     ? eventList.filter(e => {
       const d = new Date(e.date);
-      const eventDate = !isNaN(d.getTime()) ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : e.date;
-      return eventDate === selectedDate;
+      if (!isNaN(d.getTime())) {
+        const day = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+        const weekday = d.toLocaleDateString("de-DE", { weekday: "short" });
+        return `${weekday} ${day}` === selectedDate;
+      }
+      return e.date === selectedDate;
     })
     : eventList;
 
@@ -218,7 +226,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
 
                   {/* Description */}
                   <div
-                    className="bg-blue-300 flex-1 text-sm cursor-pointer"
+                    className={`p-3 bg-gray-300/50 flex-1 text-sm cursor-pointer rounded-l-xl ${openedDetailIdx === idx ? "" : "rounded-r-xl"}`}
                     onClick={() => setOpenedDetailIdx(openedDetailIdx === idx ? null : idx)}
                   >
                     {/* Event-Title */}
@@ -262,7 +270,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
                   {/* Detail-Div nur beim geklickten Element */}
                   {openedDetailIdx === idx && (
                     <div
-                      className="flex items-center justify-center bg-white rounded-xl shadow-lg cursor-pointer"
+                      className="p-4 rounded-r-xl flex items-center justify-center bg-blue-600 shadow-lg cursor-pointer"
                       onClick={async () => {
                         console.log("Event:", event);
                         if (!event.id) {
@@ -281,7 +289,7 @@ export default function NewsClient({ events, dayMeanings, error }: NewsClientPro
                       }}
                       title="Event löschen"
                     >
-                      <h2 className="font-bold">Event löschen</h2>
+                      <h2 className="font-bold text-2xl">🗑️</h2>
                     </div>
                   )}
                 </li>

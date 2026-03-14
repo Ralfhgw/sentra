@@ -1,0 +1,33 @@
+name: Deploy sentra
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: sentra/
+
+      - name: Build
+        run: npm run build
+        working-directory: sentra/
+
+      # - name: Deploy to Server
+      #   if: success()
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      #   run: |
+      #     # Deployment steps

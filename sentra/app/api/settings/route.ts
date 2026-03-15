@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
     const safeData = {
       ...data,
       country_code: data.country_code ?? null,
-      channels: data.channels ?? [],
       event_urls: data.event_urls ?? [],
       evt: data.evt ?? false,
       wea: data.wea ?? false,
@@ -45,7 +44,6 @@ const locationChanged = latChanged || lonChanged;
         state = ${safeData.state},
         country = ${safeData.country},
         country_code = ${safeData.country_code},
-        channels = ${JSON.stringify(safeData.channels)},
         event_urls = ${JSON.stringify(safeData.event_urls)},
         evt = ${safeData.evt},
         wea = ${safeData.wea},

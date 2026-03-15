@@ -14,7 +14,7 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
   // Get Background Image
-  useEffect(() => {
+/*   useEffect(() => {
     async function fetchImageUrl() {
       if (auth && auth.user) {
         const res = await fetch(`/api/startpage?userId=${auth.user.id}`);
@@ -23,7 +23,7 @@ export default function Home() {
       }
     }
     fetchImageUrl();
-  }, [auth]);
+  }, [auth]); */
 
   const handleToggle = () => setInfoVisible((v) => !v);
 

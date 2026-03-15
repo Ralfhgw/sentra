@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import WebcamClient from "@/components/LiveViewClient";
 import sql from "@/utils/db";
@@ -46,7 +46,9 @@ export default async function Webcams() {
     <>
       <ProtectedRoute>
         <div className="fixed inset-0 bg-gray-400 -z-10" />
-        <WebcamClient channels={channels} userChannels={userChannels} />
+        <Suspense fallback={<div>Loading...</div>}>
+          <WebcamClient channels={channels} userChannels={userChannels} />
+        </Suspense>
       </ProtectedRoute>
     </>
   );

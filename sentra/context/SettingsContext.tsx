@@ -121,16 +121,6 @@ function toUserSettings(data: SettingsResponse): UserSettings {
     return defaultSettings;
   }
 
-  const camelCaseSettings = responseSettings as {
-    displayName?: string | null;
-    countryCode?: string | null;
-    sIndoor?: boolean;
-    sOutdoor?: boolean;
-    sCalTemp?: number | null;
-    sCalHumidity?: number | null;
-    sCalPressure?: number | null;
-  };
-
   return {
     ...defaultSettings,
     ...responseSettings,

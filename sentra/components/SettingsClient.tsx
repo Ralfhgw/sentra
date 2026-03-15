@@ -39,6 +39,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   // Fill Settings with Context data
   useEffect(() => {
     if (userSettings) {
+          const eventUrls = Array.isArray(userSettings.event_urls)
+        ? userSettings.event_urls.map(({ url }) => url)
+        : [];
       setSettings(prev => ({
         ...prev,
         lat: userSettings.lat,
@@ -57,11 +60,13 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         sCalTemp: userSettings.s_cal_temp,
         sCalHumidity: userSettings.s_cal_humidity,
         sCalPressure: userSettings.s_cal_pressure,
+        event_urls: eventUrls,
       }));
       setCompareSettings(prev => ({
         ...prev,
         lat: userSettings.lat,
         lon: userSettings.lon,
+        event_urls: eventUrls,
       }));
     }
   }, [userSettings]);
@@ -144,7 +149,6 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     Array.isArray(userSettings.event_urls) ? userSettings.event_urls.map(e => e.url) : []
   );
 
-  
   console.log("User Settings:", userSettings);
   console.log("Lang:", userSettings.lang);
   console.log("Lat:", userSettings.lat);
@@ -164,14 +168,16 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   console.log("sCalTemp:", userSettings.s_cal_temp);
   console.log("sCalHumidity:", userSettings.s_cal_humidity);
   console.log("sCalPressure:", userSettings.s_cal_pressure);
+  console.log("EventURLs:", userSettings.event_urls);
 
 
-  const handleAddUrl = () => {
-    if (urlInput.trim() && !urls.includes(urlInput.trim())) {
-      setUrls([...urls, urlInput.trim()]);
-      setUrlInput("");
-    }
-  };
+const handleAddUrl = () => {
+  if (urlInput.trim() && !urls.includes(urlInput.trim())) {
+    setUrls([...urls, urlInput.trim()]);
+    setUrlInput("");
+    console.log("Aktuelle URLs:", [...urls, urlInput.trim()]);
+  }
+};
 
   const handleRemoveUrl = (url: string) => {
     setUrls(urls.filter(u => u !== url));

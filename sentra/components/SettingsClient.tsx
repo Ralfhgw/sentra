@@ -31,15 +31,24 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string>("");
   const [sensorValues, setSensorValues] = useState<DualSensorState>({ indoor: null, outdoor: null });
+  const [borderColor, setBorderColor] = useState<"none" | "green" | "red">("none");
 
   // User Settings displayed in Formular
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [compareSettings, setCompareSettings] = useState<Settings>(initialSettings);
 
+  const normalizeUrls = (eventUrls: string[] | undefined) => {
+    if (!Array.isArray(eventUrls)) return [];
+    return eventUrls
+      .map((url) => url.trim())
+      .filter((url) => url.length > 0)
+      .sort();
+  };
+
   // Fill Settings with Context data
   useEffect(() => {
     if (userSettings) {
-          const eventUrls = Array.isArray(userSettings.event_urls)
+      const eventUrls = Array.isArray(userSettings.event_urls)
         ? userSettings.event_urls.map(({ url }) => url)
         : [];
       setSettings(prev => ({
@@ -66,6 +75,14 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         ...prev,
         lat: userSettings.lat,
         lon: userSettings.lon,
+        town: userSettings.town,
+        county: userSettings.county,
+        state: userSettings.state,
+        country: userSettings.country,
+        country_code: userSettings.country_code,
+        s_indoor: userSettings.s_indoor,
+        s_outdoor: userSettings.s_outdoor,
+
         event_urls: eventUrls,
       }));
     }
@@ -87,17 +104,20 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
           };
 
           if (result.wert.indoor) {
-            try { 
-              newSensorData.indoor = JSON.parse(result.wert.indoor); 
+            try {
+              newSensorData.indoor = JSON.parse(result.wert.indoor);
               console.log("newSensorData.indoor:", newSensorData.indoor);
-            } catch (e) { 
-              console.error("Parse Error Indoor", e); }
+            } catch (e) {
+              console.error("Parse Error Indoor", e);
+            }
           }
           if (result.wert.outdoor) {
-            try { newSensorData.outdoor = JSON.parse(result.wert.outdoor);
+            try {
+              newSensorData.outdoor = JSON.parse(result.wert.outdoor);
               console.log("newSensorData.outdoor:", newSensorData.outdoor);
-            } catch (e) { 
-              console.error("Parse Error Outdoor", e); }
+            } catch (e) {
+              console.error("Parse Error Outdoor", e);
+            }
           }
           setSensorValues(newSensorData);
         }
@@ -144,11 +164,6 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   // UseState -  List of Events
   const [urlInput, setUrlInput] = useState("");
 
-  // UseState - Display of Event list
-  const [urls, setUrls] = useState<string[]>(
-    Array.isArray(userSettings.event_urls) ? userSettings.event_urls.map(e => e.url) : []
-  );
-
   console.log("User Settings:", userSettings);
   console.log("Lang:", userSettings.lang);
   console.log("Lat:", userSettings.lat);
@@ -171,16 +186,30 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   console.log("EventURLs:", userSettings.event_urls);
 
 
-const handleAddUrl = () => {
-  if (urlInput.trim() && !urls.includes(urlInput.trim())) {
-    setUrls([...urls, urlInput.trim()]);
+  const handleAddUrl = () => {
+    const trimmedUrl = urlInput.trim();
+    if (!trimmedUrl) return;
+
+    setSettings((prev) => {
+      if (prev.event_urls.includes(trimmedUrl)) {
+        return prev;
+      }
+
+      const updatedUrls = [...prev.event_urls, trimmedUrl];
+      console.log("Aktuelle URLs:", updatedUrls);
+      return {
+        ...prev,
+        event_urls: updatedUrls,
+      };
+    });
     setUrlInput("");
-    console.log("Aktuelle URLs:", [...urls, urlInput.trim()]);
-  }
-};
+  };
 
   const handleRemoveUrl = (url: string) => {
-    setUrls(urls.filter(u => u !== url));
+    setSettings((prev) => ({
+      ...prev,
+      event_urls: prev.event_urls.filter((u) => u !== url),
+    }));
   };
 
   const handleSave = async () => {
@@ -195,13 +224,17 @@ const handleAddUrl = () => {
         body: JSON.stringify(settings),
       });
       if (!response.ok) throw new Error("Fehler beim Speichern!");
+      setCompareSettings(settings);
       setStatus("success");
+      setBorderColor("green");
+      setTimeout(() => setBorderColor("none"), 2000);
     } catch (e: unknown) {
       if (e instanceof Error) {
-        console.error("Fehler beim Abrufen der Standortdaten:", e.message);
-      } else {
-        console.error("Fehler beim Abrufen der Standortdaten:", e);
+        console.error("Fehler bei Datenspeicherung:", e.message);
       }
+      setStatus("error");
+      setBorderColor("red");
+      setTimeout(() => setBorderColor("none"), 2000);
       setError("Standortdaten konnten nicht geladen werden.");
       setStatus("error");
     } finally {
@@ -229,7 +262,9 @@ const handleAddUrl = () => {
       settings.country_code !== compareSettings.country_code ||
       settings.s_cal_temp !== compareSettings.s_cal_temp ||
       settings.s_cal_humidity !== compareSettings.s_cal_humidity ||
-      settings.s_cal_pressure !== compareSettings.s_cal_pressure
+      settings.s_cal_pressure !== compareSettings.s_cal_pressure ||
+      JSON.stringify(normalizeUrls(settings.event_urls)) !==
+      JSON.stringify(normalizeUrls(compareSettings.event_urls))
     );
   }
 
@@ -255,7 +290,7 @@ const handleAddUrl = () => {
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
             <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
-              {/*                       <MapSelector
+              <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -281,7 +316,7 @@ const handleAddUrl = () => {
                     setError("Standortdaten konnten nicht geladen werden.");
                   }
                 }}
-              />  */}
+              />
             </div>
             {/* Location Details */}
             <article className="w-100 h-100 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">
@@ -392,7 +427,7 @@ const handleAddUrl = () => {
                       onKeyDown={e => { if (e.key === "Enter") handleAddUrl(); }}
                     />
                   </div>
-                  <div>
+                  <div className="flex justify-center">
                     <button
                       type="button"
                       className="px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
@@ -406,10 +441,9 @@ const handleAddUrl = () => {
               </div>
               <label className="text-sm mb-3">Event URLs:</label>
               <ul>
-                {urls.length > 0
-                  ? urls.map((url, idx) => (
-                    <li
-                      key={idx}
+                {Array.isArray(settings.event_urls) && settings.event_urls.length > 0
+                  ? settings.event_urls.map((url, idx) => (
+                    <li key={idx}
                       className="break-all text-sm cursor-pointer hover:text-red-600"
                       title="Klicken zum Löschen"
                       onClick={() => handleRemoveUrl(url)}
@@ -515,7 +549,7 @@ const handleAddUrl = () => {
                 <div className="flex flex-col items-center">
                   <button
                     type="button"
-                    className="mt-2 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+                    className="mt-2 px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
                     onClick={handleCalculateOffset}
                     disabled={
                       !(
@@ -533,23 +567,29 @@ const handleAddUrl = () => {
             </article>
 
             {/* Form Handling */}
-            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 p-4 shadow-md">
+            <article
+              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-white/80 p-4 shadow-md
+    ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
+    transition-colors duration-300`}
+            >
               <button
                 type="submit"
-                className={`mt-4 px-6 py-2 rounded bg-amber-600 text-white font-bold shadow hover:bg-amber-700 transition
-            ${saving ? "opacity-50 pointer-events-none" : ""}
-            ${hasUnsavedChanges() ? "border-2 border-blue-500" : ""}
-            `}
+                className={`mt-4 px-6 py-1 rounded bg-amber-600 text-white shadow hover:bg-amber-700 transition
+                  ${saving ? "opacity-50 pointer-events-none" : ""}
+                  ${borderColor === "green"
+                    ? "border-3 border-green-600"
+                    : borderColor === "red"
+                      ? "border-3 border-red-600"
+                      : hasUnsavedChanges()
+                        ? "border-3 border-blue-500"
+                        : "border-3 border-white"
+                  }
+  transition-colors duration-300
+`}
                 disabled={saving}
               >
                 {saving ? "Speichere..." : "Speichern"}
               </button>
-              {status === "success" && (
-                <div className="text-green-600 font-semibold mt-2">Erfolgreich gespeichert!</div>
-              )}
-              {status === "error" && (
-                <div className="text-red-600 font-semibold mt-2">{error}</div>
-              )}
             </article>
           </div>
         </form>

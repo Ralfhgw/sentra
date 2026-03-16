@@ -106,6 +106,40 @@ type SettingsResponse = {
   error?: string;
 };
 
+function normalizeEventUrls(value: unknown): EventUrls[] {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return [];
+    }
+
+    if (typeof value[0] === "string") {
+      return value
+        .map((item) => String(item).trim())
+        .filter((url) => url.length > 0)
+        .map((url) => ({ url }));
+    }
+
+    return value
+      .map((item) => ({ url: String((item as { url?: unknown }).url ?? "").trim() }))
+      .filter((item) => item.url.length > 0);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return normalizeEventUrls(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
 const SettingsContext = createContext<SettingsContextType>({
   settings: defaultSettings,
   setSettings: () => {},
@@ -132,6 +166,8 @@ country_code:
   (responseSettings as Record<string, unknown>)["countryCode"] as string ??
   (responseSettings as Record<string, unknown>)["country_code"] as string ??
   defaultSettings.country_code,
+
+event_urls: normalizeEventUrls((responseSettings as Record<string, unknown>)["event_urls"]),
 
 s_indoor:
   (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??

@@ -176,7 +176,7 @@ export default function WeatherClient({
 
     // 0..1 Intensität (ab 8°C Differenz volle Farbe)
     const diff = Math.abs(outdoorDew - indoorDew);
-    const t = Math.min(diff / 8, 1);
+    const t = Math.min(diff / 12, 1);
 
     const from = { r: 229, g: 231, b: 235 }; // grau
     const to = isIndoorWarning
@@ -186,7 +186,7 @@ export default function WeatherClient({
     const lerp = (a: number, b: number, x: number) =>
       Math.round(a + (b - a) * x);
 
-    return `rgb(${lerp(from.r, to.r, t)}, ${lerp(from.g, to.g, t)}, ${lerp(from.b, to.b, t)})`;
+    return `rgb(${lerp(from.r, to.r, t)}, ${lerp(from.g, to.g, t)}, ${lerp(from.b, to.b, t)}, 0.3)`;
   })();
 
   // Current Data Set

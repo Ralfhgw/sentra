@@ -43,9 +43,5 @@ Export der Tabelle
 Import der Tabelle
 \copy day_meanings FROM '~/dci_training/websites/project_Abschlussprojekt_final/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
 
-##### Starten von next.js
-##### Start nextjs mit "npm run dev -- -H 0.0.0.0"
 
-ZUsätzliche Streams
-https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
 

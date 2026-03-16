@@ -32,6 +32,12 @@ type UserChannel = {
   name: string;
 };
 
+type EventUrl = {
+  url: string;
+};
+
+type EventUrlsValue = EventUrl[] | string[] | string | null;
+
 type UserChannelsValue = UserChannel[] | string | null;
 
 type UserSettingsRow = {
@@ -45,6 +51,7 @@ type UserSettingsRow = {
   country: string | null;
   country_code: string | null;
   channels: UserChannelsValue;
+  event_urls: EventUrlsValue;
   evt: boolean | null;
   wea: boolean | null;
   mtx: boolean | null;
@@ -67,6 +74,7 @@ export type UserSettings = {
   country: string | null;
   countryCode: string | null;
   channels: UserChannel[];
+  event_urls: EventUrl[];
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -89,6 +97,7 @@ export const defaultUserSettings: UserSettings = {
   country: null,
   countryCode: null,
   channels: [],
+  event_urls: [],
   evt: false,
   wea: false,
   mtx: false,
@@ -161,6 +170,36 @@ function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
   return [];
 }
 
+function normalizeEventUrls(value: EventUrlsValue): EventUrl[] {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return [];
+    }
+
+    if (typeof value[0] === "string") {
+      return (value as string[])
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0)
+        .map((url) => ({ url }));
+    }
+
+    return (value as EventUrl[])
+      .map((entry) => ({ url: String(entry?.url ?? "").trim() }))
+      .filter((entry) => entry.url.length > 0);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as EventUrlsValue;
+      return normalizeEventUrls(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
 function normalizeNumber(value: number | string | null | undefined) {
   if (value == null) {
     return null;
@@ -183,6 +222,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       country,
       country_code,
       channels,
+      event_urls,
       evt,
       wea,
       mtx,
@@ -212,6 +252,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     country: row.country,
     countryCode: row.country_code,
     channels: normalizeUserChannels(row.channels),
+    event_urls: normalizeEventUrls(row.event_urls),
     evt: row.evt ?? false,
     wea: row.wea ?? false,
     mtx: row.mtx ?? false,

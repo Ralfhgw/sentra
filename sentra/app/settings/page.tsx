@@ -46,8 +46,8 @@ async function getSettings() {
 export default async function SettingsPage() {
   const initialSettings = await getSettings();
   return (
-  
+    <ProtectedRoute>
       <SettingsClient initialSettings={initialSettings} />
-    
+    </ProtectedRoute>
   );
 }

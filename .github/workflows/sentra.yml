@@ -37,9 +37,18 @@ jobs:
         run: npm run build
         working-directory: sentra/
 
-      # - name: Deploy to Server
-      #   if: success()
-      #   env:
-      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      #   run: |
-      #     # Deployment steps
+      - name: Deploy to Server
+        if: success()
+        env:
+           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+           chmod 600 ~/.ssh/id_rsa
+           ssh -o StrictHostKeyChecking=no deploy@webschere.de "
+           cd ~/sentra
+           git reset --hard
+           git pull origin main
+           npm ci
+           npm run build
+           pm2 restart sentra || pm2 start npm --name sentra -- run start
+           "

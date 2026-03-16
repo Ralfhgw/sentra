@@ -53,9 +53,9 @@ CREATE TABLE "user_settings" (
     "rtc" boolean,
     "s_indoor" boolean,
     "s_outdoor" boolean,
-    "s_cal_temp" number,
-    "s_cal_humidity" number,
-    "s_cal_pressure" number,
+    "s_cal_temp" numeric(10,4),
+    "s_cal_humidity" numeric(10,4),
+    "s_cal_pressure" numeric(10,4),
     "created_at" timestamptz DEFAULT now(),
     "updated_at" timestamptz
 );
@@ -130,4 +130,4 @@ END;
 $$ LANGUAGE plpgsql;
 --SELECT * FROM get_days_for_date('2026-01-13');
 
-\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM './day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
+\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '/docker-entrypoint-initdb.d/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);

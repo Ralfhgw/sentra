@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+export const dynamic = 'force-dynamic';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import WebcamClient from "@/components/LiveViewClient";
 import sql from "@/utils/db";

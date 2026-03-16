@@ -34,17 +34,20 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - pg-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init_sentra.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./day_meanings_export.csv:/docker-entrypoint-initdb.d/day_meanings_export.csv
     ports:
       - "5432:5432" # Optional, falls Zugriff von außen benötigt
 
 volumes:
   pg-data:
 
-# docker compose down
+# docker compose down -v  (-v löschen der Datenbank)
 # docker compose up -d
+# docker compose logs db
 # docker logs mediamtx
 # docker-compose logs -f mediamtx
+# docker compose exec db psql -U dbuser -d sentra
 
 # docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v-v
 # indoor/sensor/climate {"temp":21.60,"hum":45.98,"pres":1028.83}

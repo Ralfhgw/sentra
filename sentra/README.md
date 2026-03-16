@@ -142,3 +142,76 @@ Für eine personalisierte Erweiterung des Informationsangebots sorgt die proprie
  
 
 
+Installation WebServer
+
+#### Create SSH Keys for deployment
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+ssh-keygen -t rsa -b 4096 -C "github-actions@sentra" -f sentra_deploy_key
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+cat sentra_deploy_key.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+In die Deploy Keys eines Repositories kommt ausschließlich der Public Key
+Der SSH_PRIVATE_KEY in den GitHub Secrets ist der „digitale Haustürschlüssel“, 
+den der GitHub-Bot (GitHub Actions) benutzt, um sich auf deinem Ubuntu-Server einzuloggen.
+
+#### Install node and npm
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v
+nmp -v
+sudo apt install -y git build-essential
+
+#### Create key pair (In die GitHub User Settings (SSH and GPG keys) kommt immer nur der Public Key, damit funktioniert der Clone
+ssh-keygen -t ed25519 -C "deploy@v124" -f ~/.ssh/id_ed25519
+cat id_ed25519.pub
+
+#### Clone repository
+git clone git@github.com:Ralfhgw/sentra.git
+
+#### Enable Firewall
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
+sudo ufw status
+
+#### Create Environment
+vi .env
+
+#### Increase swap space
+sudo swapoff /swapfile
+sudo rm /swapfile
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+export NODE_OPTIONS="--max-old-space-size=4096"
+echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.bashrc
+
+#### Build Sentra
+npm install
+npm run build
+npm run start
+
+#### Enable Sentra Startup during system bootup
+sudo npm install -g pm2
+pm2 start npm --name sentra -- run start
+pm2 status
+pm2 delete 0 (Another failed process)
+pm2 startup
+pm2 save
+
+#### Installing nginx
+sudo apt update
+sudo apt install nginx -y
+sudo systemctl status nginx
+sudo vi /etc/nginx/sites-available/sentra
+sudo ln -s /etc/nginx/sites-available/sentra /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d webschere.de

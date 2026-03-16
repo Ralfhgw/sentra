@@ -1,5 +1,4 @@
 microservice/.env
 microservice/mosquitto/data/mosquitto.db
-authServer
 documents
 .github

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NewsClient from "@/components/NewsClient";
 import sql from "@/utils/db";

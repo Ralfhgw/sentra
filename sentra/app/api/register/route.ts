@@ -111,25 +111,6 @@ export async function POST(req: NextRequest) {
 
   const userId = String(userIdRaw);
 
-  await sql`
-  INSERT INTO users (
-    id, user_name, hashed_password, email, is_active, email_verified, created_at, updated_at
-  ) VALUES (
-    ${userId}::uuid,
-    ${username},
-    ${"external_auth"},
-    ${email},
-    true,
-    true,
-    now(),
-    now()
-  )
-  ON CONFLICT (id) DO UPDATE SET
-    user_name = EXCLUDED.user_name,
-    email = EXCLUDED.email,
-    updated_at = now()
-`;
-
   try {
     const loc = await getLocationFromCoords(lat, lon);
 

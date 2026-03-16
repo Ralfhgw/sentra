@@ -38,21 +38,22 @@ jobs:
         working-directory: sentra/
 
 
-      - name: Deploy to Server
-        if: success()
-        env:
-           SSH_PRIVATE_KEY: "${{ secrets.SSH_PRIVATE_KEY }}"
-        run: |
-           mkdir -p ~/.ssh
-           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-           chmod 600 ~/.ssh/id_rsa
-           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deploy@webschere.de "
-           cd ~/sentra
-           git reset --hard
-           git pull origin main
-           cd sentra
-           ls -la
-           npm ci
-           npm run build
-           pm2 restart sentra || pm2 start npm --name sentra -- run start
-           "
+#      - name: Deploy to Server
+#        if: success()
+#        env:
+#           SSH_PRIVATE_KEY: "${{ secrets.SSH_PRIVATE_KEY }}"
+#        run: |
+#           mkdir -p ~/.ssh
+#           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deploy@webschere.de "
+#           cd ~/sentra
+#           git reset --hard
+#           git pull origin main
+#           cd sentra
+#           ls -la
+#           npm ci
+#           export NODE_OPTIONS='--max-old-space-size=4096'
+#           npm run build
+#           pm2 restart sentra || pm2 start npm --name sentra -- run start
+#           "

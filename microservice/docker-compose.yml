@@ -23,7 +23,24 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
-      
+
+  db:
+    image: postgres:15-alpine
+    container_name: microservice_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432" # Optional, falls Zugriff von außen benötigt
+
+volumes:
+  pg-data:
+
 # docker compose down
 # docker compose up -d
 # docker logs mediamtx

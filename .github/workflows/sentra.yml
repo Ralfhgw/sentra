@@ -37,10 +37,11 @@ jobs:
         run: npm run build
         working-directory: sentra/
 
+        
       - name: Deploy to Server
         if: success()
         env:
-           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+           SSH_PRIVATE_KEY: "${{ secrets.SSH_PRIVATE_KEY }}"
         run: |
            mkdir -p ~/.ssh
            echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa

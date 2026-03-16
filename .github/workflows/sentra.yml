@@ -45,7 +45,7 @@ jobs:
            mkdir -p ~/ssh
            echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
            chmod 600 ~/.ssh/id_rsa
-           ssh -o StrictHostKeyChecking=no deploy@webschere.de "
+           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deploy@webschere.de "
            cd ~/sentra
            git reset --hard
            git pull origin main

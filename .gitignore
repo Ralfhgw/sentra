@@ -2,3 +2,16 @@ microservice/.env
 microservice/mosquitto/data/mosquitto.db
 documents
 .github
+
+# node
+**/node_modules/
+
+# local env/config artifacts
+**/.env
+**/.env.local
+
+# windows metadata
+*.Zone.Identifier
+
+# logs
+*.log

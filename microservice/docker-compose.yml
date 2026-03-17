@@ -36,6 +36,7 @@ services:
       - pg-data:/var/lib/postgresql/data
       - ./init_sentra.sql:/docker-entrypoint-initdb.d/init.sql
       - ./day_meanings_export.csv:/docker-entrypoint-initdb.d/day_meanings_export.csv
+      - ./liveview_channels.csv:/docker-entrypoint-initdb.d/liveview_channels.csv
     ports:
       - "5432:5432" # Optional, falls Zugriff von außen benötigt
 

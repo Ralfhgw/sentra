@@ -2,23 +2,13 @@
 -- sentra=> \copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '~/dci_training/websites/project_Abschlussprojekt_final/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
 DROP TABLE IF EXISTS "users" CASCADE;
 
-DROP TABLE IF EXISTS "data" CASCADE;
-
 DROP TABLE IF EXISTS "user_settings" CASCADE;
 
 DROP TABLE IF EXISTS "events" CASCADE;
 
-DROP TABLE IF EXISTS "event_urls" CASCADE;
-
 DROP TABLE IF EXISTS "day_meanings" CASCADE;
 
-DROP TABLE IF EXISTS "weather_daily" CASCADE;
-
-DROP TABLE IF EXISTS "weather_hourly" CASCADE;
-
 DROP TABLE IF EXISTS "channels" CASCADE;
-
-DROP TABLE IF EXISTS "weather_descriptions" CASCADE;
 
 DROP FUNCTION IF EXISTS get_days_for_date (date);
 
@@ -131,3 +121,4 @@ $$ LANGUAGE plpgsql;
 --SELECT * FROM get_days_for_date('2026-01-13');
 
 \copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '/docker-entrypoint-initdb.d/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
+\copy channels (tvg_name, tvg_id, "group", location, channel, stream_url) FROM '/docker-entrypoint-initdb.d/liveview_channels.csv' WITH (FORMAT csv, HEADER true, DELIMITER ';', ENCODING 'UTF8');

@@ -184,14 +184,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-   await getBackgroundImage(userId, lat, lon);
+    try {
+      await getBackgroundImage(userId, lat, lon);
+    } catch (err) {
+      console.error("Register background bootstrap error:", err);
+    }
 
     return NextResponse.json({ success: true, userId });
   } catch (err) {
     console.error("Register bootstrap error:", err);
     return NextResponse.json(
-      { error: "User angelegt, aber lokale Initialisierung fehlgeschlagen.", userId },
-      { status: 500 }
+      {
+        success: true,
+        userId,
+        warning: "User angelegt, aber lokale Initialisierung fehlgeschlagen.",
+      },
+      { status: 200 }
     );
   }
 }

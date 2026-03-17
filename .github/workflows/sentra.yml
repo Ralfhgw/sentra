@@ -77,5 +77,9 @@ jobs:
             cd ~/sentra/sentra && npm ci --omit=dev
             cd ~/sentra/authServer && npm ci --omit=dev
 
-            pm2 restart sentra || pm2 start npm --name sentra --prefix ~/sentra/sentra -- run start
+            if pm2 describe sentra >/dev/null 2>&1; then
+              pm2 restart sentra --update-env
+            else
+              pm2 start npm --name sentra --cwd ~/sentra/sentra -- run start
+            fi
             "

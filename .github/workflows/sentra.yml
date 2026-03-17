@@ -61,7 +61,7 @@ jobs:
           ln -sf /data/sentra_build/.next ~/sentra/sentra/.next
           ln -sf /data/sentra_build/node_modules ~/sentra/sentra/node_modules
           "
-
+          
           rsync -az --delete -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" \
           sentra/.next/ deploy@webschere.de:/data/sentra_build/.next/
           rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" \

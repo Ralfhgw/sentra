@@ -63,7 +63,8 @@ jobs:
           rsync -az --delete -e "ssh -i ~/.ssh/id_rsa" \
             authServer/ deploy@webschere.de:~/sentra/authServer/
 
-          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa" \
+          # no --delete here: keep runtime-generated mosquitto files (data/log)
+          rsync -az -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ deploy@webschere.de:~/sentra/microservice/
 
       - name: Install runtime deps and restart services

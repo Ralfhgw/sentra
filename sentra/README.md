@@ -148,8 +148,10 @@ Installation WebServer
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 ssh-keygen -t rsa -b 4096 -C "github-actions@sentra" -f sentra_deploy_key
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
+Private Key: geheim, bleibt auf deinem Rechner / in GitHub Secrets.
+Public Key: darf auf den Server, um GitHub zu autorisieren.
+
+Public Key auf deinem Server autorisieren
 cat sentra_deploy_key.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 In die Deploy Keys eines Repositories kommt ausschließlich der Public Key

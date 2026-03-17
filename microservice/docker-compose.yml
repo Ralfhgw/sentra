@@ -52,3 +52,9 @@ volumes:
 
 # docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v-v
 # indoor/sensor/climate {"temp":21.60,"hum":45.98,"pres":1028.83}
+
+# Bei Sentra Problemen
+# pm2 restart sentra || pm2 start npm --name sentra --prefix ~/sentra/sentra -- run start
+# pm2 logs sentra
+# tail -f ~/.pm2/logs/sentra-out.log
+# tail -f ~/.pm2/logs/sentra-error.log

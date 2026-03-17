@@ -60,7 +60,7 @@ jobs:
           ln -sf /data/sentra_build/node_modules ~/sentra/sentra/node_modules
           "
           rsync -az --delete -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" sentra/.next/ deploy@webschere.de:/data/sentra_build/.next/
-          rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" sentra/package.json sentra/package-lock.json sentra/next.config.ts deploy@webschere.de:~/sentra/sentra/
+          rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" sentra/package.json sentra/package-lock.json sentra/next.config.mjs deploy@webschere.de:~/sentra/sentra/
           rsync -az --delete -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" authServer/ deploy@webschere.de:~/sentra/authServer/
           rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" microservice/ deploy@webschere.de:~/sentra/microservice/
 
@@ -77,7 +77,5 @@ jobs:
             cd ~/sentra/sentra && npm ci --omit=dev
             cd ~/sentra/authServer && npm ci --omit=dev
 
-            export NODE_OPTIONS='--max-old-space-size=4096'
-            npm run build --prefix ~/sentra/sentra
             pm2 restart sentra || pm2 start npm --name sentra --prefix ~/sentra/sentra -- run start
             "

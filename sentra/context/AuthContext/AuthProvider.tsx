@@ -4,11 +4,7 @@ import { AuthContext } from "./AuthContext";
 import { authReducer } from "./AuthReducer";
 import axios from "axios";
 
-const API_HOST = process.env.NEXT_PUBLIC_AUTH_HOST;
-
-if (!API_HOST) {
-  throw new Error("AUTH_HOST not configured");
-}
+const API_BASE = "/api/auth";
 
 type AuthResponse = {
   accessToken?: string;
@@ -69,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LOADING" });
       try {
         const refreshRes = await axios.post<AuthResponse>(
-          `${API_HOST}/api/auth/refresh`,
+          `${API_BASE}/refresh`,
           {},
           { withCredentials: true }
         );
@@ -98,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const loginRes = await axios.post<AuthResponse>(
-        `${API_HOST}/api/auth/login`,
+        `${API_BASE}/login`,
         payload,
         {
           headers: { "Content-Type": "application/json" },
@@ -137,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      await axios.post(`${API_HOST}/api/auth/logout`, {}, { withCredentials: true });
+      await axios.post(`${API_BASE}/logout`, {}, { withCredentials: true });
     } catch {
       // Fallback: local logout even if endpoint fails
     }

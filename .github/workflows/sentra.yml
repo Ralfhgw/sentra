@@ -18,14 +18,6 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       NEXT_TELEMETRY_DISABLED: "1"
-      SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      NEXT_PUBLIC_AUTH_HOST: ${{ secrets.NEXT_PUBLIC_AUTH_HOST }}
-      POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
       SERVER_HOST: webschere.de
       SERVER_USER: deploy
       SENTRA_SERVER_PATH: /home/deploy/sentra/sentra
@@ -43,6 +35,20 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: sentra/package-lock.json
+
+      - name: Write sentra build environment file
+        working-directory: sentra
+        run: |
+          cat > .env.production <<EOF
+          SERPAPI_KEY=${{ secrets.SERPAPI_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          NEXT_PUBLIC_AUTH_HOST=${{ secrets.NEXT_PUBLIC_AUTH_HOST }}
+          POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+          EOF
 
       - name: Install sentra dependencies
         working-directory: sentra
@@ -70,14 +76,17 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
 
-      - name: Ensure remote directories exist
+      - name: Prepare remote directories and clean sentra target
         run: |
-          ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" \
-            "mkdir -p '$SENTRA_SERVER_PATH' '$AUTH_SERVER_PATH' '$MICROSERVICE_PATH'"
+          ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
+          set -euo pipefail
+          mkdir -p "$SENTRA_SERVER_PATH" "$AUTH_SERVER_PATH" "$MICROSERVICE_PATH"
+          find "$SENTRA_SERVER_PATH" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
+          EOF
 
       - name: Upload sentra release and companion services
         run: |
-          rsync -az --delete \
+          rsync -az \
             --exclude '.env' \
             -e "ssh -i ~/.ssh/id_rsa" \
             "$RELEASE_DIR/" "$SERVER_USER@$SERVER_HOST:$SENTRA_SERVER_PATH/"
@@ -90,6 +99,8 @@ jobs:
 
           rsync -az --delete \
             --exclude '.env' \
+            --exclude 'mosquitto/data/' \
+            --exclude 'mosquitto/log/' \
             -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
 

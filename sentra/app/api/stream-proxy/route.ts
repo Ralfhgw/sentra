@@ -9,19 +9,20 @@ const MANIFEST_CONTENT_TYPES = [
 
 const ABSOLUTE_URL_PATTERN = /^https?:\/\//i;
 
-const rewriteUriAttribute = (line: string, baseUrl: URL, origin: string) => {
+const buildProxyPath = (resolvedUrl: string) => `/api/stream-proxy?url=${encodeURIComponent(resolvedUrl)}`;
+
+const rewriteUriAttribute = (line: string, baseUrl: URL) => {
   return line.replace(/URI="([^"]+)"/g, (_, uriValue: string) => {
     try {
       const resolved = new URL(uriValue, baseUrl).toString();
-      const proxied = `${origin}/api/stream-proxy?url=${encodeURIComponent(resolved)}`;
-      return `URI="${proxied}"`;
+      return `URI="${buildProxyPath(resolved)}"`;
     } catch {
       return `URI="${uriValue}"`;
     }
   });
 };
 
-const rewriteManifest = (manifest: string, baseUrl: URL, origin: string) => {
+const rewriteManifest = (manifest: string, baseUrl: URL) => {
   return manifest
     .split("\n")
     .map((line) => {
@@ -33,14 +34,14 @@ const rewriteManifest = (manifest: string, baseUrl: URL, origin: string) => {
 
       if (trimmed.startsWith("#")) {
         if (trimmed.includes('URI="')) {
-          return rewriteUriAttribute(line, baseUrl, origin);
+          return rewriteUriAttribute(line, baseUrl);
         }
         return line;
       }
 
       try {
         const resolved = new URL(trimmed, baseUrl).toString();
-        return `${origin}/api/stream-proxy?url=${encodeURIComponent(resolved)}`;
+        return buildProxyPath(resolved);
       } catch {
         return line;
       }
@@ -84,11 +85,7 @@ export async function GET(request: NextRequest) {
 
   if (isManifest) {
     const manifest = await upstream.text();
-    const rewrittenManifest = rewriteManifest(
-      manifest,
-      targetUrl,
-      request.nextUrl.origin
-    );
+    const rewrittenManifest = rewriteManifest(manifest, targetUrl);
 
     responseHeaders.set("Content-Type", "application/vnd.apple.mpegurl");
     return new NextResponse(rewrittenManifest, {

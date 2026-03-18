@@ -25,7 +25,7 @@ const getPlaybackUrl = (sourceUrl: string) => {
     }
 
     if (/^\/\//.test(normalizedUrl)) {
-        return `/api/stream-proxy?url=${encodeURIComponent(`http:${normalizedUrl}`)}`;
+        return `/api/stream-proxy?url=${encodeURIComponent(`https:${normalizedUrl}`)}`;
     }
 
     if (/^https?:\/\//i.test(normalizedUrl)) {

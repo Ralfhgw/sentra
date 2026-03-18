@@ -104,7 +104,7 @@ jobs:
             -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
 
-      - name: Install auth runtime deps and recreate sentra pm2 process
+      - name: Rebuild auth server and recreate sentra pm2 process
         run: |
           ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
           set -euo pipefail
@@ -113,7 +113,7 @@ jobs:
           export PORT=3000
 
           cd "$AUTH_SERVER_PATH"
-          npm ci --omit=dev
+          docker compose up -d --build --remove-orphans
 
           pm2 delete sentra || true
           pm2 start "$SENTRA_SERVER_PATH/server.js" --name sentra --cwd "$SENTRA_SERVER_PATH"

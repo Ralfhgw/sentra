@@ -5,11 +5,19 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-sentra-main
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NEXT_TELEMETRY_DISABLED: "1"
       SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
@@ -18,68 +26,89 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       NEXT_PUBLIC_AUTH_HOST: ${{ secrets.NEXT_PUBLIC_AUTH_HOST }}
       POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-
+      SERVER_HOST: webschere.de
+      SERVER_USER: deploy
+      SENTRA_SERVER_PATH: /home/deploy/sentra/sentra
+      AUTH_SERVER_PATH: /home/deploy/sentra/authServer
+      MICROSERVICE_PATH: /home/deploy/sentra/microservice
+      RELEASE_DIR: sentra-release
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: npm
+          cache-dependency-path: sentra/package-lock.json
 
       - name: Install sentra dependencies
+        working-directory: sentra
         run: npm ci
-        working-directory: sentra/
 
-      - name: Build sentra
+      - name: Build sentra standalone bundle
+        working-directory: sentra
         run: npm run build
-        working-directory: sentra/
 
+      - name: Assemble sentra release bundle
+        run: |
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR/.next"
+          cp -R sentra/.next/standalone/. "$RELEASE_DIR/"
+          cp -R sentra/.next/static "$RELEASE_DIR/.next/static"
+          cp -R sentra/public "$RELEASE_DIR/public"
+          cp sentra/package.json "$RELEASE_DIR/package.json"
 
       - name: Prepare SSH key
         env:
-          SSH_PRIVATE_KEY: "${{ secrets.SSH_PRIVATE_KEY }}"
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
 
-      - name: Upload build + services to server
-        if: success()
-        env:
-         SSH_OPTS: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      - name: Ensure remote directories exist
         run: |
-          ssh $SSH_OPTS -i ~/.ssh/id_rsa deploy@webschere.de "
-          mkdir -p /data/sentra_build
-          mkdir -p ~/sentra/sentra
-          rm -rf /data/sentra_build/.next
-          rm -rf /data/sentra_build/node_modules
-          ln -sf /data/sentra_build/.next ~/sentra/sentra/.next
-          ln -sf /data/sentra_build/node_modules ~/sentra/sentra/node_modules
-          "
-          rsync -az --delete -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" sentra/.next/ deploy@webschere.de:/data/sentra_build/.next/
-          rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" sentra/package.json sentra/package-lock.json sentra/next.config.mjs deploy@webschere.de:~/sentra/sentra/
-          rsync -az --delete -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" authServer/ deploy@webschere.de:~/sentra/authServer/
-          rsync -az -e "ssh $SSH_OPTS -i ~/.ssh/id_rsa" microservice/ deploy@webschere.de:~/sentra/microservice/
+          ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p '$SENTRA_SERVER_PATH' '$AUTH_SERVER_PATH' '$MICROSERVICE_PATH'"
 
-      - name: Install runtime deps and restart services
-        if: success()
-        env:
-          SSH_OPTS: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      - name: Upload sentra release and companion services
         run: |
-            ssh $SSH_OPTS -i ~/.ssh/id_rsa deploy@webschere.de "
-            mkdir -p /data/sentra_build
-            ln -sf /data/sentra_build/.next ~/sentra/sentra/.next
-            ln -sf /data/sentra_build/node_modules ~/sentra/sentra/node_modules
+          rsync -az --delete \
+            --exclude '.env' \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            "$RELEASE_DIR/" "$SERVER_USER@$SERVER_HOST:$SENTRA_SERVER_PATH/"
 
-            cd ~/sentra/sentra && npm ci --omit=dev
-            cd ~/sentra/authServer && npm ci --omit=dev
+          rsync -az --delete \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            authServer/ "$SERVER_USER@$SERVER_HOST:$AUTH_SERVER_PATH/"
 
-            if pm2 describe sentra >/dev/null 2>&1; then
-              pm2 restart sentra --update-env
-            else
-              pm2 start npm --name sentra --cwd ~/sentra/sentra -- run start
-            fi
-            "
+          rsync -az --delete \
+            --exclude '.env' \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
+
+      - name: Install auth runtime deps and restart sentra
+        run: |
+          ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
+          set -euo pipefail
+
+          export HOSTNAME=0.0.0.0
+          export PORT=3000
+
+          cd "$AUTH_SERVER_PATH"
+          npm ci --omit=dev
+
+          cd "$SENTRA_SERVER_PATH"
+          if pm2 describe sentra >/dev/null 2>&1; then
+            pm2 restart sentra --update-env
+          else
+            pm2 start server.js --name sentra --cwd "$SENTRA_SERVER_PATH"
+          fi
+          pm2 save
+          EOF

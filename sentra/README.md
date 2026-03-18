@@ -198,14 +198,20 @@ npm install
 npm run build
 npm run start
 
+#### GitHub Actions deployment (build on GitHub, no Next.js build on the server)
+Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und überträgt anschließend nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
+Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert.
+Damit das funktioniert, muss `sentra/next.config.mjs` `output: "standalone"` setzen und die folgenden GitHub-Secrets müssen vorhanden sein: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `JWT_SECRET`, `NEXT_PUBLIC_AUTH_HOST`, `POSTGRES_URL`.
+
 #### Enable Sentra Startup during system bootup
 sudo npm install -g pm2
 pm2 status
 pm2 delete 0 (Another failed process)
 pm2 delete sentra
 cd /home/deploy/sentra/sentra
-pm2 start npm --name sentra -- run start
+HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name sentra --cwd /home/deploy/sentra/sentra
 pm2 save
+pm2 restart sentra --update-env
 
 #### Installing nginx
 sudo apt update

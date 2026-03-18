@@ -9,7 +9,7 @@ interface LoginFormProps {
   translations: { [key: string]: LoginTranslation };
   defaultLanguage?: "en" | "de";
 }
-
+//TODO Login soll nur mit email erfolgen
 export default function LoginForm({ translations, defaultLanguage = "en" }: LoginFormProps) {
   const [language, setLanguage] = useState<"en" | "de">(defaultLanguage);
   const [username, setUsername] = useState("");

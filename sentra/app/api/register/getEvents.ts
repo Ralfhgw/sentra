@@ -114,14 +114,14 @@ async function storeEventData(userId: string, events: EventData[], date: string)
         `;
     }
     await sql`
-        DELETE FROM events
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM events
-            WHERE user_id = ${userId}
-            GROUP BY title, date, user_id
-        )
-        AND user_id = ${userId}
+        DELETE FROM events e
+        USING events e2
+        WHERE
+            e.user_id = ${userId}
+            AND e.title = e2.title
+            AND e.date = e2.date
+            AND e.user_id = e2.user_id
+            AND e.ctid > e2.ctid
     `;
 }
 

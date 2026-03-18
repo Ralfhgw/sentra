@@ -201,7 +201,11 @@ npm run start
 #### GitHub Actions deployment (build on GitHub, no Next.js build on the server)
 Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und überträgt anschließend nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
 Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert.
-Damit das funktioniert, muss `sentra/next.config.mjs` `output: "standalone"` setzen und die folgenden GitHub-Secrets müssen vorhanden sein: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `JWT_SECRET`, `NEXT_PUBLIC_AUTH_HOST`, `POSTGRES_URL`.
+Die Build-Variablen definierst du in GitHub unter **Repository → Settings → Secrets and variables → Actions** (alternativ in einem GitHub-Environment wie `production`). Die Action schreibt daraus beim Build automatisch `sentra/.env.production` auf dem Runner.
+Benötigt werden für Sentra: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `JWT_SECRET`, `NEXT_PUBLIC_AUTH_HOST`, `POSTGRES_URL`. `POSTGRES_SSL` musst du nur dann manuell setzen, wenn du das automatische SSL-Verhalten aus `sentra/utils/db.ts` überschreiben willst.
+Der Ordner `/home/deploy/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufräumen willst, nutze auf dem Server: `find /home/deploy/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht löschen, weil PM2 und der Deploy dorthin schreiben; lösche bei Bedarf nur den Inhalt.
+Das Build-Paket liegt nach dem Deploy direkt in `/home/deploy/sentra/sentra` und besteht aus `server.js`, `node_modules`, `public` sowie dem versteckten Ordner `.next` (sichtbar mit `ls -la`).
+Beim Deploy von `microservice/` bleiben die serverseitigen Laufzeitordner `mosquitto/data` und `mosquitto/log` erhalten, damit Docker/Mosquitto-Datenbanken und Logs nicht von `rsync --delete` entfernt werden.
 
 #### Enable Sentra Startup during system bootup
 sudo npm install -g pm2
@@ -209,9 +213,9 @@ pm2 status
 pm2 delete 0 (Another failed process)
 pm2 delete sentra
 cd /home/deploy/sentra/sentra
-HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name sentra --cwd /home/deploy/sentra/sentra
+HOSTNAME=0.0.0.0 PORT=3000 pm2 start /home/deploy/sentra/sentra/server.js --name sentra --cwd /home/deploy/sentra/sentra
 pm2 save
-pm2 restart sentra --update-env
+Wenn `pm2 status` noch einen alten Prozess mit `npm start` zeigt oder im Log `next: not found` erscheint, lösche ihn mit `pm2 delete sentra` und starte ihn anschließend mit dem obigen `server.js`-Befehl neu.
 
 #### Installing nginx
 sudo apt update

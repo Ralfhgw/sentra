@@ -104,7 +104,7 @@ jobs:
             -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
 
-      - name: Install auth runtime deps and restart sentra
+      - name: Install auth runtime deps and recreate sentra pm2 process
         run: |
           ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
           set -euo pipefail
@@ -115,11 +115,7 @@ jobs:
           cd "$AUTH_SERVER_PATH"
           npm ci --omit=dev
 
-          cd "$SENTRA_SERVER_PATH"
-          if pm2 describe sentra >/dev/null 2>&1; then
-            pm2 restart sentra --update-env
-          else
-            pm2 start server.js --name sentra --cwd "$SENTRA_SERVER_PATH"
-          fi
+          pm2 delete sentra || true
+          pm2 start "$SENTRA_SERVER_PATH/server.js" --name sentra --cwd "$SENTRA_SERVER_PATH"
           pm2 save
           EOF

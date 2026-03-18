@@ -414,7 +414,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
         </div>
         </a>
         {/* Logo MediaMTX */}
-{/*         <a
+         <a
           href="https://github.com/bluenviron/mediamtx"
           target="_blank"
           rel="noopener noreferrer"
@@ -430,7 +430,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
             style={{ filter: 'grayscale(100%)' }}
           />
         </div>
-        </a> */}
+        </a>
       </div>
       
     </div >

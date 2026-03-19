@@ -120,5 +120,5 @@ END;
 $$ LANGUAGE plpgsql;
 --SELECT * FROM get_days_for_date('2026-01-13');
 
-\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '/docker-entrypoint-initdb.d/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
+\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '/docker-entrypoint-initdb.d/day_meanings_export.csv' WITH (FORMAT CSV, HEADER, ENCODING 'UTF8');
 \copy channels (tvg_name, tvg_id, "group", location, channel, stream_url) FROM '/docker-entrypoint-initdb.d/liveview_channels.csv' WITH (FORMAT csv, HEADER true, DELIMITER ';', ENCODING 'UTF8');

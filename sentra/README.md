@@ -356,9 +356,11 @@ docker logs -f mosquitto
 sudo apt install mosquitto mosquitto-clients -y
 sudo systemctl enable mosquitto
 sudo systemctl start mosquitto
+
 pi@raspberrypi:~ $ sudo cat /etc/mosquitto/conf.d/listener.conf
 listener 1883 0.0.0.0
 allow_anonymous true
+
 pi@raspberrypi:~ $ sudo cat /etc/mosquitto/conf.d/bridge.conf
 connection to-server
 address 10.10.0.1:1883
@@ -373,6 +375,46 @@ docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v
 Test vom Rechner als Sensor Simulator
 mosquitto_sub -h 192.168.2.27 -t "#" -v
 
+#### MediaMTX Server
+
+
+#### MediaMTX Proxy (Raspi)
+uname -m
+wget https://github.com/bluenviron/mediamtx/releases/download/v1.17.0/mediamtx_v1.17.0_linux_arm64.tar.gz
+tar -xzf mediamtx_v1.17.0_linux_arm64.tar.gz
+
+vi /home/pi/mediamtx.yml
+cat /home/pi/mediamtx.yml
+paths:
+  cam:
+    source: rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0
+    sourceProtocol: tcp
+
+sudo ufw status
+sudo ufw allow 8554/tcp
+sudo ufw reload
+./mediamtx
+
+chmod +x /home/pi/mediamtx
+sudo vi /etc/systemd/system/mediamtx.service
+pi@raspberrypi:~ $ cat /etc/systemd/system/mediamtx.service
+[Unit]
+Description=MediaMTX
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/mediamtx /home/pi/mediamtx.yml
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl restart mediamtx
+systemctl status mediamtx
 
 ##### Konfiguration MediaMTX
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 
 const AUTH_HOST = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
 
@@ -40,6 +41,8 @@ export async function forwardAuthRequest(
   if (cookie) {
     upstreamHeaders.set("cookie", cookie);
   }
+
+  applyAuthServiceHeaders(upstreamHeaders);
 
   const upstream = await fetch(`${AUTH_HOST}${path}`, {
     method: req.method,

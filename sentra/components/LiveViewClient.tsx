@@ -327,7 +327,7 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
             onClick={() => setShowMenu(!showMenu)}
             className="mt-3 mx-1 bg-gray-500 px-4 py-1.5 rounded border border-gray-700 text-xs text-gray-100 hover:bg-gray-800 transition flex items-center gap-3"
           >
-            Raster: {layoutId} Ansicht
+            Grid: {layoutId}
             <span className={`text-[8px] transition-transform ${showMenu ? "rotate-180" : ""}`}>▼</span>
           </button>
 

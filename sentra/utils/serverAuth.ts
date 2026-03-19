@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import sql from "@/utils/db";
+import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import type { NextRequest, NextResponse } from "next/server";
 
 type CookieValue = {
@@ -266,6 +267,13 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
 }
 
 async function requestRefreshedAccessToken(refreshToken: string) {
+  const headers = new Headers({
+    Cookie: "refreshToken=" + refreshToken,
+    "Content-Type": "application/json",
+  });
+
+  applyAuthServiceHeaders(headers);
+
   const refreshRes = await fetch(getAuthHost() + "/api/auth/refresh", {
     method: "POST",
     headers: {

@@ -3,6 +3,9 @@ import axios from "axios";
 
 const apiHost = process.env.NEXT_PUBLIC_AUTH_HOST || "http://localhost:3001";
 
+const clientId = process.env.AUTH_CLIENT_ID || "webapp";
+const apiKey = process.env.AUTH_API_KEY || "change-me";
+
 const body = {
   user_name: "testuser4",
   email: "test@example.com",
@@ -17,6 +20,8 @@ async function main() {
     const response = await axios.post(`${apiHost}/api/auth/register`, body, {
       headers: {
         "Content-Type": "application/json",
+        "x-client-id": clientId,
+        "x-api-key": apiKey,
       },
     });
 

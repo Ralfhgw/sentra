@@ -3,6 +3,7 @@ import sql from "@/utils/db";
 import { getLocationFromCoords } from "./reverseGeoCode";
 import { getEvents } from "./getEvents";
 import { getBackgroundImage } from "./getBackgroundImage";
+import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 
 type RegisterPayload = {
   username?: string;
@@ -74,9 +75,12 @@ export async function POST(req: NextRequest) {
 
   let authRes: Response;
   try {
+    const authHeaders = new Headers({ "Content-Type": "application/json" });
+    applyAuthServiceHeaders(authHeaders);
+
     authRes = await fetch(`${AUTH_HOST}${AUTH_REGISTER_PATH}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify(authPayload),
       cache: "no-store",
     });

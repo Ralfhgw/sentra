@@ -1,16 +1,17 @@
 tvg_name;tvg_id;group;location;channel;stream_url
-Visdeurbel Cam;visdeurbel;Wildlife;Add-Ons;Fish Doorbell Utrecht;https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
-Flumserberg Panorama;flumserberg;Mountain;Add-Ons;Flumserberg Summit View;https://live.143b.ch/cam/flux/ts:abr.m3u8
-LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Outdoor Random Cam;https://cdn.livespotting.com/vpu/2g1v2qai/x0etac6e.m3u8
-Panomax 6002;panomax6002;Panorama;Add-Ons;Panorama Cam 6002;https://stream1.panomax.com/camera-6002/live.m3u8
-Altefähr Hafen;altefaehr;Beach;Add-Ons;Rügen Altefähr Harbor;https://livecam.stream24.net/osltv7/_definst_/mp4:altefaehr.stream/playlist.m3u8
-Göhren Seebrücke;goehren;Beach;Add-Ons;Rügen Göhren Pier;https://livecam.stream24.net/osltv2/_definst_/mp4:goehren.stream/playlist.m3u8
-Zinnowitz Strand;zinnowitz;Beach;Add-Ons;Usedom Zinnowitz Beach;https://webcam.zinnowitz.de/hls/sdstream.m3u8
-Boltenhagen Ostsee;boltenhagen;Beach;Add-Ons;Boltenhagen Beach View;https://livecam.stream24.net/osltv10/_definst_/mp4:boltenhagen2.stream/playlist.m3u8
-Göhren Seebrücke Backup;goehren2;Beach;Add-Ons;Rügen Göhren Pier Alt;https://livecam.stream24.net/osltv2/_definst_/mp4:goehren.stream/playlist.m3u8
-Waren Müritz Hafen;waren;Lake;Add-Ons;Müritz Harbor View;https://livecam.stream24.net//osltv5/_definst_/mp4:waren.stream/playlist.m3u8
-Rostock Skyline;rostock;City;Add-Ons;Rostock City View;https://stream1.panocloud.com/radissonblurostock/radissonblurostock.stream/playlist.m3u8
-Glowe Strand;glowe;Beach;Add-Ons;Rügen Glowe Beach;https://livecam.stream24.net/osltv11/_definst_/mp4:glowe.stream/playlist.m3u8
+Visdeurbel Cam;visdeurbel;Wildlife;Add-Ons;Netherlands Fish Doorbell Utrecht;https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
+Flumserberg Panorama;flumserberg;Mountain;Add-Ons;Switzerland Flumserberg Summit View;https://live.143b.ch/cam/flux/ts:abr.m3u8
+LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Warnemünde Alter Strom;https://cdn.livespotting.com/vpu/oq57fxnt/mciwlhsf.m3u8
+LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Warnemünde Strand-Hotel Hübner;https://cdn.livespotting.com/vpu/2g1v2qai/x0etac6e.m3u8
+Panomax 6002;panomax6002;Panorama;Add-Ons;Germany M-V Warnemünde Neptun Hotel;https://stream1.panomax.com/camera-6002/live.m3u8
+Altefähr Hafen;altefaehr;Beach;Add-Ons;Germany M-V Rügen Altefähr Harbor;https://livecam.stream24.net/osltv7/_definst_/mp4:altefaehr.stream/playlist.m3u8
+Göhren Seebrücke;goehren;Beach;Add-Ons;Germany M-V Rügen Göhren Pier;https://livecam.stream24.net/osltv2/_definst_/mp4:goehren.stream/playlist.m3u8
+Zinnowitz Strand;zinnowitz;Beach;Add-Ons;Germany M-V Usedom Zinnowitz Beach;https://webcam.zinnowitz.de/hls/sdstream.m3u8
+Boltenhagen Ostsee;boltenhagen;Beach;Add-Ons;Germany M-V Boltenhagen Beach View;https://livecam.stream24.net/osltv10/_definst_/mp4:boltenhagen2.stream/playlist.m3u8
+Göhren Seebrücke Backup;goehren2;Beach;Add-Ons;Germany M-V Rügen Göhren Pier Alt;https://livecam.stream24.net/osltv2/_definst_/mp4:goehren.stream/playlist.m3u8
+Waren Müritz Hafen;waren;Lake;Add-Ons;Germany M-V Müritz Harbor View;https://livecam.stream24.net//osltv5/_definst_/mp4:waren.stream/playlist.m3u8
+Rostock Skyline;rostock;City;Add-Ons;Germany M-V Rostock City View;https://stream1.panocloud.com/radissonblurostock/radissonblurostock.stream/playlist.m3u8
+Glowe Strand;glowe;Beach;Add-Ons;Germany M-V Rügen Glowe Beach;https://livecam.stream24.net/osltv11/_definst_/mp4:glowe.stream/playlist.m3u8
 Andorra TV (1080p);AndorraTV.ad@Web;TV Channels - Andorra;Andorra;Andorra TV (1080p);https://live-edge-eu-1.cdn.enetres.net/56495F77FD124FECA75590A906965F2C022/live-3000/index.m3u8
 Andorra TV (1080p);AndorraTV.ad@SD;TV Channels - Andorra;Andorra;Andorra TV (1080p);https://livesg1.rtva.hiway.media/65cea6ac-6944-4e45-b661-9dd47ea45c48/manifest.m3u8
 Ajman TV (1080p);AjmanTV.ae@SD;TV Channels - United Arab Emirates;United Arab Emirates;Ajman TV (1080p);https://cdn1.logichost.in/ajmantv/live/playlist.m3u8

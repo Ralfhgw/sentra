@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function CompBurgerMenu() {
   const [open, setOpen] = useState(false);
-
+//TODO Logout from Burger Menu not working
   return (
     <div className="fixed top-4 right-4 z-50">
       {/* Burger Icon */}

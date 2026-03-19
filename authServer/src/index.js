@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const crypto = require("crypto");
 
 const requiredEnv = ["DATABASE_URL", "JWT_SECRET", "REFRESH_SECRET"];
 for (const key of requiredEnv) {
@@ -29,6 +30,44 @@ const sql = postgres(process.env.DATABASE_URL);
 const PORT = Number(process.env.PORT || 3000);
 const isProd = process.env.NODE_ENV === "production";
 
+function parseConfiguredClients() {
+  const configured = [];
+
+  const singleClientId = process.env.AUTH_CLIENT_ID?.trim();
+  const singleApiKey = process.env.AUTH_API_KEY?.trim();
+  if (singleClientId && singleApiKey) {
+    configured.push({ clientId: singleClientId, apiKey: singleApiKey });
+  }
+
+  const jsonValue = process.env.AUTH_API_CLIENTS_JSON?.trim();
+  if (jsonValue) {
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonValue);
+    } catch (error) {
+      throw new Error(`AUTH_API_CLIENTS_JSON is not valid JSON: ${error.message}`);
+    }
+
+    if (!Array.isArray(parsed)) {
+      throw new Error("AUTH_API_CLIENTS_JSON must be a JSON array.");
+    }
+
+    for (const entry of parsed) {
+      const clientId = String(entry?.clientId ?? "").trim();
+      const apiKey = String(entry?.apiKey ?? "").trim();
+      if (!clientId || !apiKey) {
+        throw new Error("Each AUTH_API_CLIENTS_JSON entry must contain clientId and apiKey.");
+      }
+      configured.push({ clientId, apiKey });
+    }
+  }
+  return configured;
+}
+
+const apiClients = parseConfiguredClients();
+const apiClientMap = new Map(apiClients.map((entry) => [entry.clientId, entry.apiKey]));
+const apiKeyAuthEnabled = apiClientMap.size > 0;
+
 const allowedOrigins = (process.env.CORS_ORIGINS ||
   "http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
@@ -44,7 +83,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-client-id", "x-api-key"],
 };
 
 app.use(cors(corsOptions));
@@ -88,15 +127,49 @@ function setAuthCookies(res, userId) {
   return { accessToken, refreshToken };
 }
 
+function safeEqual(a, b) {
+  const aBuffer = Buffer.from(a, "utf8");
+  const bBuffer = Buffer.from(b, "utf8");
+  if (aBuffer.length !== bBuffer.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(aBuffer, bBuffer);
+}
+
+function requireApiKey(req, res, next) {
+  if (!apiKeyAuthEnabled) {
+    return next();
+  }
+
+  const clientId = String(req.get("x-client-id") || "").trim();
+  const apiKey = String(req.get("x-api-key") || "").trim();
+
+  if (!clientId || !apiKey) {
+    console.warn(`[AUTH-KEY] Missing credentials for ${req.method} ${req.originalUrl}`);
+    return res.status(401).json({ error: "Missing x-client-id or x-api-key header" });
+  }
+
+  const expectedApiKey = apiClientMap.get(clientId);
+  if (!expectedApiKey || !safeEqual(apiKey, expectedApiKey)) {
+    console.warn(`[AUTH-KEY] Invalid credentials for client ${clientId || "unknown"}`);
+    return res.status(403).json({ error: "Invalid API credentials" });
+  }
+
+  req.apiClientId = clientId;
+  return next();
+}
+
 app.get("/health", (_req, res) => {
   try {
-    res.json({ ok: true });
+    res.json({ ok: true, apiKeyAuthEnabled });
     console.log(`[${new Date().toISOString()}] Health-Check: OK - Server ist erreichbar.`);
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Health-Check: ERROR -`, error);
     res.status(500).json({ ok: false, error: "Internal Server Error" });
   }
 });
+
+app.use("/api/auth", requireApiKey);
 
 // POST /api/auth/register
 app.post("/api/auth/register", async (req, res) => {
@@ -249,9 +322,27 @@ app.use((err, _req, res, _next) => {
   return res.status(500).json({ error: "Interner Serverfehler" });
 });
 
+app.get("/api/auth/users", async (req, res) => {
+  try {
+    const users = await sql`
+      SELECT id, user_name, email, is_active
+      FROM users
+      ORDER BY id
+    `;
+    res.json(users);
+  } catch (err) {
+    console.error("[USERS] Fehler beim Laden der User:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("-----------------------------------------");
   console.log(`[START] Auth server listening on 0.0.0.0:${PORT}`);
   console.log(`[START] Allowed origins: ${allowedOrigins.join(", ")}`);
+  console.log(`[START] API key auth enabled: ${apiKeyAuthEnabled}`);
+  if (apiKeyAuthEnabled) {
+    console.log(`[START] Configured API clients: ${Array.from(apiClientMap.keys()).join(", ")}`);
+  }
   console.log("-----------------------------------------");
 });

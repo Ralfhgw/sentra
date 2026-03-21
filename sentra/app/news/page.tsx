@@ -30,7 +30,7 @@ async function getNews(): Promise<NewsClientProps> {
     return {
       events: events ?? [],
       dayMeanings: dayMeanings ?? [],
-      town: userSettings.town,
+      town: userSettings.town ?? "",
       error: events.length > 0 ? "" : "Keine Events gefunden",
     };
   } catch (err) {

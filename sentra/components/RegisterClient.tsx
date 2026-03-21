@@ -85,7 +85,8 @@ export default function RegisterClient() {
 
     return (
         <div className="w-full h-full bg-gray-400 flex items-center justify-center">
-            <MoveableScrollAreaVertical className="h-full sm:h-150 max-w-5xl rounded-2xl shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
+            <div className="p-1 bg-gray-300 rounded-lg border border-gray-500">
+            <MoveableScrollAreaVertical className="h-full sm:h-150 max-w-5xl rounded-lg shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
 
                 {/* Left: Karte und Koordinaten */}
                 <div className="p-10 relative bg-gray-900 text-white flex flex-col justify-between">
@@ -104,14 +105,15 @@ export default function RegisterClient() {
                             }}
                         />
                         <div className="mt-3 flex flex-row items-center justify-between">
-                            <div className="my-2 mr-11">
-                                <label className="mb-2 block text-sm text-center">
+
+                            <div className="flex flex-col my-2 mr-11">
+                                <label className="mb-2 block text-[16px] opacity-70 text-center">
                                     {t.latitude} <input
                                         value={lat.toFixed(6)}
                                         readOnly
                                         className="w-30 h-6 ml-3 pl-5 py-1 rounded bg-gray-700" />
                                 </label>
-                                <label className="block text-sm text-center">
+                                <label className="block text-[16px] opacity-70 text-center">
                                     {t.longitude} <input
                                         value={lon.toFixed(6)}
                                         readOnly
@@ -119,22 +121,23 @@ export default function RegisterClient() {
                                     />
                                 </label>
                             </div>
-                            <div className="flex flex-row item-center gap-3">
+
+                            <div className="flex flex-row item-center gap-2">
                                 <div className="flex flex-col items-center">
                                     <input type="checkbox" checked={evt} onChange={e => setEvt(e.target.checked)} />
-                                    <label className="text-xs">EVT</label>
+                                    <label className="text-[16px] opacity-70">EVT</label>
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <input type="checkbox" checked={wea} onChange={e => setWea(e.target.checked)} />
-                                    <label className="text-xs">WEA</label>
+                                    <label className="text-[16px] opacity-70">WEA</label>
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <input type="checkbox" checked={mtx} onChange={e => setMtx(e.target.checked)} />
-                                    <label className="text-xs">MTX</label>
+                                    <label className="text-[16px] opacity-70">MTX</label>
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <input type="checkbox" checked={rtc} onChange={e => setRtc(e.target.checked)} />
-                                    <label className="text-xs">RTC</label>
+                                    <label className="text-[16px] opacity-70">RTC</label>
                                 </div>
                             </div>
                         </div>
@@ -143,8 +146,8 @@ export default function RegisterClient() {
                     {/* Website Button */}
                     <button
                         type="button"
-                        className="mt-3 px-6 py-2 rounded-xl border border-orange-400 hover:bg-orange-400 text-orange-400 hover:text-black transition"
-                        onClick={() => window.open("https://www.google.de", "_blank")}
+                        className="mt-3 px-6 py-2 rounded-xl border border-gray-400 hover:bg-gray-400 text-gray-400 hover:text-black transition"
+                        onClick={() => window.open("/readme#project", "_blank")}
                     >
                         {t.officialWebsite}
                     </button>
@@ -155,7 +158,7 @@ export default function RegisterClient() {
                     <h2 className="mb-6 text-2xl font-semibold text-white">{t.registerTitle}</h2>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="mb-1 block text-sm">{t.username}</label>
+                            <label className="mb-1 block text-[16px] opacity-70">{t.username}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="username"
@@ -166,7 +169,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm mb-1">{t.email}</label>
+                            <label className="block text-[16px] opacity-70 mb-1">{t.email}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="email"
@@ -177,7 +180,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm mb-1">{t.password}</label>
+                            <label className="block text-[16px] opacity-70 mb-1">{t.password}</label>
                             <input
                                 className="h-10 w-full px-4 py-3 rounded-xl bg-gray-700 focus:outline-none"
                                 id="password"
@@ -188,7 +191,7 @@ export default function RegisterClient() {
                             />
                         </div>
                         <div className="mb-5">
-                            <label className="mb-1 block text-sm">{t.repeatPassword}</label>
+                            <label className="mb-1 block text-[16px] opacity-70">{t.repeatPassword}</label>
                             <input
                                 className={`h-10 w-full px-4 py-3 rounded-xl ${passwordSecondBg}  focus:outline-none`}
                                 id="passwordSecond"
@@ -208,7 +211,7 @@ export default function RegisterClient() {
 
                         {/* BackButton and ErrorMessage */}
                         <div className="flex flex-row">
-                            <div className="text-sm">
+                            <div className="text-[16px] opacity-90">
                                 {t.alreadyAccount}
                                 <span
                                     className="text-orange-400 hover:underline cursor-pointer"
@@ -224,6 +227,7 @@ export default function RegisterClient() {
                     </form>
                 </div>
             </MoveableScrollAreaVertical>
+            </div>
         </div>
         
     );

@@ -64,11 +64,11 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         wea: userSettings.wea,
         mtx: userSettings.mtx,
         rtc: userSettings.rtc,
-        sIndoor: userSettings.s_indoor,
-        sOutdoor: userSettings.s_outdoor,
-        sCalTemp: userSettings.s_cal_temp,
-        sCalHumidity: userSettings.s_cal_humidity,
-        sCalPressure: userSettings.s_cal_pressure,
+        s_indoor: userSettings.s_indoor,
+        s_outdoor: userSettings.s_outdoor,
+        s_cal_temp: userSettings.s_cal_temp ?? 0,
+        s_cal_humidity: userSettings.s_cal_humidity ?? 0,
+        s_cal_pressure: userSettings.s_cal_pressure ?? 0,
         event_urls: eventUrls,
       }));
       setCompareSettings(prev => ({
@@ -82,7 +82,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         country_code: userSettings.country_code,
         s_indoor: userSettings.s_indoor,
         s_outdoor: userSettings.s_outdoor,
-
+        s_cal_temp: userSettings.s_cal_temp ?? 0,
+        s_cal_humidity: userSettings.s_cal_humidity ?? 0,
+        s_cal_pressure: userSettings.s_cal_pressure ?? 0,
         event_urls: eventUrls,
       }));
     }
@@ -572,6 +574,24 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
     transition-colors duration-300`}
             >
+              <div className="rounded-lg text-sm bg-gray-200 p-3">
+                <dt>Sensor Kanäle:</dt>
+                <dt className="mt-1">Innensensor</dt>
+                <dd className="opacity-70 text-slate-800">
+                  {settings.user_id + "/in/climate" || "Unbekannt"}
+                </dd>
+                <dd className="opacity-70 text-slate-800">
+                  {settings.user_id + "/in/stat" || "Unbekannt"}
+                </dd>
+                <dt className="mt-1">Außensensor</dt>
+                <dd className="opacity-70 text-slate-800">
+                  {settings.user_id + "/out/climate" || "Unbekannt"}
+                </dd>
+                <dd className="opacity-70 text-slate-800">
+                  {settings.user_id + "/out/stat" || "Unbekannt"}
+                </dd>
+              </div>
+
               <button
                 type="submit"
                 className={`mt-4 px-6 py-1 rounded bg-amber-600 text-white shadow hover:bg-amber-700 transition

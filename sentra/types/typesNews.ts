@@ -21,6 +21,7 @@ export interface DayMeaning {
 export type NewsClientProps = {
   events: Event[];
   dayMeanings: DayMeaning[];
+  town: string;
   error: string;
 };
 

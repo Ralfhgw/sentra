@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import mqtt from 'mqtt';
+import { getAuthenticatedUserFromCookies } from '@/utils/serverAuth'; 
 
 export async function GET() {
     try {
+        const { userId } = await getAuthenticatedUserFromCookies(); 
+        const indoorClimateTopic = `${userId}/in/climate`;
+        const outdoorClimateTopic = `${userId}/out/climate`;
+        const indoorStatusTopic = `${userId}/in/status`;
+        const outdoorStatusTopic = `${userId}/out/status`; 
+
         const data = await new Promise((resolve, reject) => {
             const client = mqtt.connect({
                 host: 'localhost',
@@ -32,20 +39,20 @@ export async function GET() {
             client.on('connect', () => {
                 console.log("Verbunden mit Broker!");
                 client.subscribe([
-                    'indoor/sensor/climate',
-                    'outdoor/sensor/climate',
-                    'indoor/sensor/status',
-                    'outdoor/sensor/status'
+                    indoorClimateTopic,
+                    outdoorClimateTopic,
+                    indoorStatusTopic,
+                    outdoorStatusTopic
                 ]);
             });
 
             client.on('message', (topic, message) => {
                 console.log(`Nachricht erhalten von ${topic}:`, message.toString());
                 const msgStr = message.toString();
-                if (topic === 'indoor/sensor/climate') results.indoor = msgStr;
-                else if (topic === 'outdoor/sensor/climate') results.outdoor = msgStr;
-                else if (topic === 'indoor/sensor/status') results.indoorStatus = msgStr;
-                else if (topic === 'outdoor/sensor/status') results.outdoorStatus = msgStr;
+                if (topic === indoorClimateTopic) results.indoor = msgStr;
+                else if (topic === outdoorClimateTopic) results.outdoor = msgStr;
+                else if (topic === indoorStatusTopic) results.indoorStatus = msgStr;
+                else if (topic === outdoorStatusTopic) results.outdoorStatus = msgStr;
 
                 // Optional: Warten, bis alles da ist, oder nach Timeout auflösen
                 if (results.indoor && results.outdoor && results.indoorStatus && results.outdoorStatus) {

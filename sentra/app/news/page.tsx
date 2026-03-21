@@ -2,12 +2,13 @@ export const dynamic = 'force-dynamic';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NewsClient from "@/components/NewsClient";
 import sql from "@/utils/db";
-import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
+import { getAuthenticatedUserFromCookies, getUserSettings } from "@/utils/serverAuth";
 import type { NewsClientProps, Event, DayMeaning } from "@/types/typesNews";
 
 async function getNews(): Promise<NewsClientProps> {
   try {
     const { userId: user_id } = await getAuthenticatedUserFromCookies();
+    const userSettings = await getUserSettings(user_id);
     console.log("NewsServer UserId:", user_id);
 
     const eventsData = sql<Event[]>`
@@ -29,6 +30,7 @@ async function getNews(): Promise<NewsClientProps> {
     return {
       events: events ?? [],
       dayMeanings: dayMeanings ?? [],
+      town: userSettings.town,
       error: events.length > 0 ? "" : "Keine Events gefunden",
     };
   } catch (err) {
@@ -42,16 +44,17 @@ async function getNews(): Promise<NewsClientProps> {
     return {
       events: [],
       dayMeanings: [],
+      town: "",
       error: errorMessage,
     };
   }
 }
 
 export default async function News() {
-  const { events, dayMeanings, error } = await getNews();
+  const { events, town, dayMeanings, error } = await getNews();
   return (
     <ProtectedRoute>
-      <NewsClient events={events} dayMeanings={dayMeanings} error={error} />
+      <NewsClient events={events} town={town} dayMeanings={dayMeanings} error={error} />
     </ProtectedRoute>
   );
 }

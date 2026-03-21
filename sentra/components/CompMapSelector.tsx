@@ -8,7 +8,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const markerIcon = new L.Icon({
   iconUrl: "/marker-icon.png",

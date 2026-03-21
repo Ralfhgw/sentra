@@ -59,6 +59,7 @@ export function Thermometer({ temperature_2m, apparentTemperature }: Thermometer
                 alt="Thermometer"
                 width={150}
                 height={600}
+                priority
                 className="h-[25vw] w-[6vw]"
             />
         </div>
@@ -72,7 +73,7 @@ export function Hygrometer({ humidity }: { humidity: number }) {
     return (
         <div className="relative" style={{ height: size }}>
             <div>
-                <Image src="/hygrometer.png" alt="Hygrometer" width={150} height={150} style={{ height: size, width: size }} />
+                <Image src="/hygrometer.png" alt="Hygrometer" width={150} height={150} priority style={{ height: size, width: size }} />
             </div>
             <div
                 style={{
@@ -91,7 +92,7 @@ export function Hygrometer({ humidity }: { humidity: number }) {
                     alt="Hydrometer Scale"
                     width={150}
                     height={150}
-                    loading="eager"
+                    priority
                     className="image"
                     style={{
                         height: size,
@@ -111,7 +112,7 @@ export function Barometer({ pressure }: { pressure: number }) {
     return (
         <div className="relative">
             <div>
-                <Image src="/barometer.png" alt="Barometer" width={150} height={150} style={{ height: size, width: size }} />
+                <Image src="/barometer.png" alt="Barometer" width={150} height={150} priority style={{ height: size, width: size }} />
             </div>
             <div
                 style={{
@@ -130,7 +131,7 @@ export function Barometer({ pressure }: { pressure: number }) {
                     alt="Barometer Scale"
                     width={150}
                     height={150}
-                    loading="eager"
+                    priority
                     className="image"
                     style={{
                         height: size,
@@ -177,6 +178,7 @@ export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_1
                 alt="Zahnrad"
                 width={150}
                 height={150}
+                priority
                 style={{
                     width: sizeRad,
                     height: sizeRad,
@@ -194,6 +196,7 @@ export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_1
                 alt="Zahnrad"
                 width={150}
                 height={150}
+                priority
                 style={{
                     width: sizeRad,
                     height: sizeRad,
@@ -211,6 +214,7 @@ export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_1
                 alt="Kompass"
                 width={150}
                 height={150}
+                priority
                 style={{
                     width: size,
                     height: size,
@@ -226,6 +230,7 @@ export function Compass({ c_wind_direction_10m, c_wind_speed_10m, c_wind_gusts_1
                 alt="Kompass-Nadel"
                 width={150}
                 height={150}
+                priority
                 style={{
                     width: size,
                     height: size,

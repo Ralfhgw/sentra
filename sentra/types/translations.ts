@@ -63,6 +63,9 @@ export interface LoginTranslation {
   simDisplay: string;
   terms: string;
   privacy: string;
+  slogan: string;
+  description: string;
+  pinfo: string;
 }
 
 export const loginTranslations: { [key: string]: LoginTranslation } = {
@@ -75,7 +78,7 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     agreement: "I have read and agree to ",
     noAccount: "Don’t have an account?",
     signUp: "Sign up",
-    officialWebsite: "Official Website",
+    officialWebsite: "Project Information",
     title: "SENTRA",
     simNews: "News",
     simWeather: "Weather",
@@ -83,7 +86,10 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     simSensors: "LiveTalk",
     simDisplay: "Display",
     terms: "Terms of Use",
-    privacy: "Privacy Policy"
+    privacy: "Privacy Policy",
+    slogan: "Your information platform for intelligent leisure and vacation planning",
+    description: "Discover events, check the weather and access live information such as webcams and streams – all in one place.",
+    pinfo: "Project as part of the training at the DCI Institute",
   },
   de: {
     login: "ANMELDUNG",
@@ -94,7 +100,7 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     agreement: "Ich habe die Nutzungsbedingungen und Datenschutzrichtlinien gelesen und akzeptiere sie",
     noAccount: "Noch kein Konto?",
     signUp: "Registrieren",
-    officialWebsite: "Offizielle Webseite",
+    officialWebsite: "Projekt Information",
     title: "SENTRA",
     simNews: "News",
     simWeather: "Wetter",
@@ -102,7 +108,10 @@ export const loginTranslations: { [key: string]: LoginTranslation } = {
     simSensors: "LiveTalk",
     simDisplay: "Anzeige",
     terms: "Nutzungsbedingungen",
-    privacy: "Datenschutzrichtlinien"
+    privacy: "Datenschutzrichtlinien",
+    slogan: "Deine Informationsplattform für intelligente Freizeit- und Urlaubsplanung",
+    description: "Entdecke Events, prüfe das Wetter und greife auf Live-Informationen wie Webcams und Streams zu – alles an einem Ort.",
+    pinfo: "Projekt im Rahmen der Ausbildung am DCI Institut"
   },
 };
 
@@ -117,7 +126,7 @@ export const registerTranslations = {
     registerIn: "Register...",
     alreadyAccount: "Already have an account?  ",
     loggingIn: "Login",
-    officialWebsite: "Official Website",
+    officialWebsite: "Project Information",
     title: "SENTRA",
     latitude: "Latitude:",
     longitude: "Longitude:",
@@ -132,7 +141,7 @@ export const registerTranslations = {
     registerIn: "Registrierung...",
     alreadyAccount: "Bereits registriert?  ",
     loggingIn: "Anmeldung",
-    officialWebsite: "Offizielle Webseite",
+    officialWebsite: "Projekt Information",
     title: "SENTRA",
     latitude: "Breitengrad:",
     longitude: "Längengrad:",

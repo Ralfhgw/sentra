@@ -8,6 +8,7 @@ export type SaveWeatherResult =
 
 // SettingsClient.tsx
 export interface Settings {
+  user_id: string | null;
   display_name: string | null;
   lat: number | null;
   lon: number | null;
@@ -30,6 +31,7 @@ export interface Settings {
 }
 
 export const defaultSettings: Settings = {
+  user_id: "",
   display_name: null,
   lat: null,
   lon: null,

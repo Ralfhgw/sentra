@@ -5,6 +5,7 @@ import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
 import { defaultSettings } from "@/types/typesSettings";
 
 interface UserSettingsRow {
+  user_id: string | null;
   lang: string;
   lat: number | null;
   lon: number | null;
@@ -36,6 +37,12 @@ async function getSettings() {
     ? {
       ...defaultSettings,
       ...row,
+      evt: row.evt ?? false,
+      wea: row.wea ?? false,
+      mtx: row.mtx ?? false,
+      rtc: row.rtc ?? false,
+      s_indoor: row.s_indoor ?? false,
+      s_outdoor: row.s_outdoor ?? false,
       s_cal_temp: row.s_cal_temp !== null ? Number(row.s_cal_temp) : 0,
       s_cal_humidity: row.s_cal_humidity !== null ? Number(row.s_cal_humidity) : 0,
       s_cal_pressure: row.s_cal_pressure !== null ? Number(row.s_cal_pressure) : 0,

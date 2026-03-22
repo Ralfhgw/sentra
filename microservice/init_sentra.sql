@@ -46,6 +46,11 @@ CREATE TABLE "user_settings" (
     "s_cal_temp" numeric(10,4),
     "s_cal_humidity" numeric(10,4),
     "s_cal_pressure" numeric(10,4),
+    "key1" text,
+    "key2" text,
+    "key3" text,
+    "key4" text,
+    "key5" text,
     "created_at" timestamptz DEFAULT now(),
     "updated_at" timestamptz
 );

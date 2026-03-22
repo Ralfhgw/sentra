@@ -195,7 +195,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
         </div>
 
         {/* Logos */} 
-        <div className="bg-gray-500 w-full max-w-3xl rounded-lg flex flex-row flex-wrap justify-between p-4 mt-3">
+        <div className="bg-gray-500 w-full max-w-3xl rounded-lg flex flex-row flex-wrap justify-between p-4 mt-1">
         {/* Logo OpenMeteo */}
         <a
           href="https://open-meteo.com/"

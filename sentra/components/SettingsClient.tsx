@@ -291,7 +291,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
-            <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
+            {/*             <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
               <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
@@ -319,7 +319,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   }
                 }}
               />
-            </div>
+            </div> */}
             {/* Location Details */}
             <article className="w-100 h-100 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">
               <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Standortdetails</h2>
@@ -543,7 +543,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               )}
 
               <div className="bg-gray-200">
-                <p className="text-sm">Beachte, für die Offset Berechnung müssen beide Sensoren in der selben Umgebung sein.</p>
+                <p className="text-sm">Beachte, für die Offset Berechnung müssen beide Sensoren online und in der selben Umgebung sein.</p>
               </div>
 
               {/* Button Calculate Offset */}
@@ -568,14 +568,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               )}
             </article>
 
-            {/* Form Handling */}
-            <article
-              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-white/80 p-4 shadow-md
-    ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
-    transition-colors duration-300`}
-            >
-              <div className="rounded-lg text-sm bg-gray-200 p-3">
-                <dt>Sensor Kanäle:</dt>
+            {/* Sensor channel data */}
+            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 p-4 shadow-md">
+              <div className="h-full rounded-lg text-sm bg-gray-200 p-3">
+                <dt>Bitte verwende beim Senden deiner Sensordaten vom BM280 die folgenden Kanäle</dt>
                 <dt className="mt-1">Innensensor</dt>
                 <dd className="opacity-70 text-slate-800">
                   {settings.user_id + "/in/climate" || "Unbekannt"}
@@ -590,11 +586,84 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                 <dd className="opacity-70 text-slate-800">
                   {settings.user_id + "/out/stat" || "Unbekannt"}
                 </dd>
+                <p className="mt-5">Hier findest du den BME280 Code zum Download.</p>
+                <a
+                  href="/bme280_code.ino"
+                  download
+                  className="mt-2 inline-block px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition"
+                >
+                  Sensor BM280
+                </a>
+                <p className="mt-5">Die Verwendung der Sensoren mit Sentra erfordert einen MQTT Proxy. Eine Anleitung findest du in der README.</p>
               </div>
+            </article>
+
+            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 shadow-md">
+
+              {/* Key Input */}
+              <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
+                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                  <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
+                  <input
+                    id="input1"
+                    type="text"
+                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    placeholder="<Key>"
+                  />
+                </div>
+                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                  <label htmlFor="input2" className="text-sm text-slate-700">OPENAI_API_KEY</label>
+                  <input
+                    id="input2"
+                    type="text"
+                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    placeholder="sk-..."
+                  />
+                </div>
+                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                  <label htmlFor="input3" className="text-sm text-slate-700">CLOUDINARY_API_SECRET</label>
+                  <input
+                    id="input3"
+                    type="text"
+                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    placeholder="<Secret>"
+                  />
+                </div>
+                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                  <label htmlFor="input4" className="text-sm text-slate-700">CLOUDINARY_API_KEY</label>
+                  <input
+                    id="input4"
+                    type="text"
+                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    placeholder="<Key>"
+                  />
+                </div>
+                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                  <label htmlFor="input5" className="text-sm text-slate-700">CLOUDINARY_CLOUD_NAME</label>
+                  <input
+                    id="input5"
+                    type="text"
+                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    placeholder="<Name>"
+                  />
+                </div>
+              </div>
+            </article>
+
+            {/* Gloabal Data und Save Button */}
+            <article
+              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-white/80 p-4 shadow-md
+    ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
+    transition-colors duration-300`}
+            >
+              <div className="rounded-lg text-sm bg-gray-200 p-3">
+                <p>Drücke den Button zum Speichern aller nutzerspezifischen Daten.</p>
+              </div>
+
 
               <button
                 type="submit"
-                className={`mt-4 px-6 py-1 rounded bg-amber-600 text-white shadow hover:bg-amber-700 transition
+                className={`mt-1 px-6 py-1 rounded bg-amber-600 text-white shadow hover:bg-amber-700 transition
                   ${saving ? "opacity-50 pointer-events-none" : ""}
                   ${borderColor === "green"
                     ? "border-3 border-green-600"
@@ -604,13 +673,15 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                         ? "border-3 border-blue-500"
                         : "border-3 border-white"
                   }
-  transition-colors duration-300
-`}
+                     transition-colors duration-300
+                `}
                 disabled={saving}
               >
                 {saving ? "Speichere..." : "Speichern"}
               </button>
             </article>
+
+
           </div>
         </form>
       </MoveableScrollAreaVertical >

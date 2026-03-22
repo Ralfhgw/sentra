@@ -15,8 +15,13 @@ interface UserSettingsRow {
   state: string | null;
   country: string | null;
   country_code: string | null;
-  channels: []; // oder den richtigen Typ
-  event_urls: []; // oder den richtigen Typ
+  channels: [];
+  event_urls: [];
+  key1: string | null;
+  key2: string | null;
+  key3: string | null;
+  key4: string | null;
+  key5: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;

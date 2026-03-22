@@ -23,10 +23,37 @@ interface DualSensorState {
   outdoorStatus?: SensorStatus;
 }
 
+const KEY_FIELDS = ["key1", "key2", "key3", "key4", "key5"] as const;
+
+type KeyField = (typeof KEY_FIELDS)[number];
+type KeyInputState = {
+  [field in KeyField]: string;
+};
+
+function createEmptyKeyInputs(): KeyInputState {
+  return Object.fromEntries(KEY_FIELDS.map(field => [field, ""])) as KeyInputState;
+}
+
+function getKeyPlaceholder(value: string | null | undefined) {
+  if (!value) return "Kein Key hinterlegt";
+  return `${value.slice(0, 5)}...`;
+}
+
+function mergeSettingsWithKeyInputs(settings: Settings, keyInputs: KeyInputState): Settings {
+  return KEY_FIELDS.reduce((nextSettings, field) => {
+    const nextValue = keyInputs[field].trim();
+    return {
+      ...nextSettings,
+      [field]: nextValue || nextSettings[field] || null,
+    };
+  }, { ...settings });
+}
+
 export default function SettingsClient({ initialSettings }: SettingsClientProps) {
 
+
   // Es wird der aktuelle Wert aus dem Settings-Context geholt und userSettings genannt
-  const { settings: userSettings } = useSettings();
+  const { settings: userSettings, setSettings: setUserSettings } = useSettings();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -36,6 +63,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   // User Settings displayed in Formular
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [compareSettings, setCompareSettings] = useState<Settings>(initialSettings);
+  const [keyInputs, setKeyInputs] = useState<KeyInputState>(createEmptyKeyInputs);
 
   const normalizeUrls = (eventUrls: string[] | undefined) => {
     if (!Array.isArray(eventUrls)) return [];
@@ -86,6 +114,11 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         s_cal_humidity: userSettings.s_cal_humidity ?? 0,
         s_cal_pressure: userSettings.s_cal_pressure ?? 0,
         event_urls: eventUrls,
+        key1: userSettings.key1 ?? null,
+        key2: userSettings.key2 ?? null,
+        key3: userSettings.key3 ?? null,
+        key4: userSettings.key4 ?? null,
+        key5: userSettings.key5 ?? null,
       }));
     }
   }, [userSettings]);
@@ -187,6 +220,12 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   console.log("sCalPressure:", userSettings.s_cal_pressure);
   console.log("EventURLs:", userSettings.event_urls);
 
+  const handleKeyChange = (field: KeyField, value: string) => {
+    setKeyInputs((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   const handleAddUrl = () => {
     const trimmedUrl = urlInput.trim();
@@ -218,15 +257,42 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     setSaving(true);
     setError("");
     setStatus("idle");
+    const nextSettings = mergeSettingsWithKeyInputs(settings, keyInputs);
     try {
-      // Speichern der user_settings
       const response = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(nextSettings),
       });
       if (!response.ok) throw new Error("Fehler beim Speichern!");
-      setCompareSettings(settings);
+      setSettings(nextSettings);
+      setCompareSettings(nextSettings);
+      setUserSettings((currentSettings) => ({
+        ...currentSettings,
+        lat: nextSettings.lat,
+        lon: nextSettings.lon,
+        town: nextSettings.town,
+        county: nextSettings.county,
+        state: nextSettings.state,
+        country: nextSettings.country,
+        country_code: nextSettings.country_code,
+        event_urls: nextSettings.event_urls.map((url) => ({ url })),
+        key1: nextSettings.key1,
+        key2: nextSettings.key2,
+        key3: nextSettings.key3,
+        key4: nextSettings.key4,
+        key5: nextSettings.key5,
+        evt: nextSettings.evt,
+        wea: nextSettings.wea,
+        mtx: nextSettings.mtx,
+        rtc: nextSettings.rtc,
+        s_indoor: nextSettings.s_indoor,
+        s_outdoor: nextSettings.s_outdoor,
+        s_cal_temp: nextSettings.s_cal_temp,
+        s_cal_humidity: nextSettings.s_cal_humidity,
+        s_cal_pressure: nextSettings.s_cal_pressure,
+      }));
+      setKeyInputs(createEmptyKeyInputs());
       setStatus("success");
       setBorderColor("green");
       setTimeout(() => setBorderColor("none"), 2000);
@@ -251,24 +317,26 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     return res.json();
   }
 
-  function hasUnsavedChanges() {
-    return (
-      settings.s_indoor !== compareSettings.s_indoor ||
-      settings.s_outdoor !== compareSettings.s_outdoor ||
-      settings.lat !== compareSettings.lat ||
-      settings.lon !== compareSettings.lon ||
-      settings.town !== compareSettings.town ||
-      settings.county !== compareSettings.county ||
-      settings.state !== compareSettings.state ||
-      settings.country !== compareSettings.country ||
-      settings.country_code !== compareSettings.country_code ||
-      settings.s_cal_temp !== compareSettings.s_cal_temp ||
-      settings.s_cal_humidity !== compareSettings.s_cal_humidity ||
-      settings.s_cal_pressure !== compareSettings.s_cal_pressure ||
-      JSON.stringify(normalizeUrls(settings.event_urls)) !==
-      JSON.stringify(normalizeUrls(compareSettings.event_urls))
-    );
-  }
+function hasUnsavedChanges() {
+  return (
+    settings.s_indoor !== compareSettings.s_indoor ||
+    settings.s_outdoor !== compareSettings.s_outdoor ||
+    settings.lat !== compareSettings.lat ||
+    settings.lon !== compareSettings.lon ||
+    settings.town !== compareSettings.town ||
+    settings.county !== compareSettings.county ||
+    settings.state !== compareSettings.state ||
+    settings.country !== compareSettings.country ||
+    settings.country_code !== compareSettings.country_code ||
+    settings.s_cal_temp !== compareSettings.s_cal_temp ||
+    settings.s_cal_humidity !== compareSettings.s_cal_humidity ||
+    settings.s_cal_pressure !== compareSettings.s_cal_pressure ||
+    JSON.stringify(normalizeUrls(settings.event_urls)) !==
+    JSON.stringify(normalizeUrls(compareSettings.event_urls)) ||
+    KEY_FIELDS.some((field) => settings[field] !== compareSettings[field]) ||
+    KEY_FIELDS.some((field) => keyInputs[field].trim().length > 0)
+  );
+}
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
@@ -291,8 +359,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
-            {/*             <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
-              <MapSelector
+                         <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
+{/*               <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -318,8 +386,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     setError("Standortdaten konnten nicht geladen werden.");
                   }
                 }}
-              />
-            </div> */}
+              /> */}
+            </div> 
             {/* Location Details */}
             <article className="w-100 h-100 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">
               <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Standortdetails</h2>
@@ -497,9 +565,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     }`}
                 >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-base">Sensor Innen</h4>
+                    <p className="font-bold text-sm">Sensor Innen</p>
                     {sensorValues.indoorStatus === "offline" && (
-                      <span className="text-red-600 font-black text-base">OFFLINE</span>
+                      <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
                     )}
                   </div>
 
@@ -511,7 +579,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       <p className="text-sm">Luftdruck: {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
                     </div>
                   ) : (
-                    <p>Warte auf Innensensor...</p>
+                    <p className="text-sm">Warte auf Innensensor...</p>
                   )}
                 </div>
               )}
@@ -523,9 +591,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     }`}
                 >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-base">Sensor Außen</h4>
+                    <h4 className="font-bold text-sm">Sensor Außen</h4>
                     {sensorValues.outdoorStatus === "offline" && (
-                      <span className="text-red-600 font-black text-base">OFFLINE</span>
+                      <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
                     )}
                   </div>
 
@@ -537,7 +605,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       <p className="text-sm">Luftdruck: {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
                     </div>
                   ) : (
-                    <p>Warte auf Außensensor...</p>
+                    <p className="text-sm">Warte auf Außensensor...</p>
                   )}
                 </div>
               )}
@@ -598,9 +666,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               </div>
             </article>
 
+            {/* Key Input */}
             <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 shadow-md">
-
-              {/* Key Input */}
               <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
                   <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
@@ -608,7 +675,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     id="input1"
                     type="text"
                     className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
-                    placeholder="<Key>"
+                    value={keyInputs.key1 ?? ""}
+                    onChange={(e) => handleKeyChange("key1", e.target.value)}
+                    placeholder={getKeyPlaceholder(settings.key1)}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
@@ -617,7 +687,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     id="input2"
                     type="text"
                     className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
-                    placeholder="sk-..."
+                    value={keyInputs.key2 ?? ""}
+                    onChange={(e) => handleKeyChange("key2", e.target.value)}
+                    placeholder={getKeyPlaceholder(settings.key2)}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
@@ -626,7 +699,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     id="input3"
                     type="text"
                     className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
-                    placeholder="<Secret>"
+                    value={keyInputs.key3 ?? ""}
+                    onChange={(e) => handleKeyChange("key3", e.target.value)}
+                    placeholder={getKeyPlaceholder(settings.key3)}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
@@ -635,7 +711,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     id="input4"
                     type="text"
                     className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
-                    placeholder="<Key>"
+                    value={keyInputs.key4 ?? ""}
+                    onChange={(e) => handleKeyChange("key4", e.target.value)}
+                    placeholder={getKeyPlaceholder(settings.key4)}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
@@ -644,13 +723,16 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     id="input5"
                     type="text"
                     className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
-                    placeholder="<Name>"
+                    value={keyInputs.key5 ?? ""}
+                    onChange={(e) => handleKeyChange("key5", e.target.value)}
+                    placeholder={getKeyPlaceholder(settings.key5)}
+                    autoComplete="off"
                   />
                 </div>
               </div>
             </article>
 
-            {/* Gloabal Data und Save Button */}
+            {/* Global Data und Save Button */}
             <article
               className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-white/80 p-4 shadow-md
     ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
@@ -680,8 +762,6 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                 {saving ? "Speichere..." : "Speichern"}
               </button>
             </article>
-
-
           </div>
         </form>
       </MoveableScrollAreaVertical >

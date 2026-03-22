@@ -32,6 +32,11 @@ type UserSettings = {
   country_code: string | null;
   channels: UserChannel[];
   event_urls: EventUrls[];
+  key1: string | null;
+  key2: string | null;
+  key3: string | null;
+  key4: string | null;
+  key5: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -67,6 +72,11 @@ const defaultSettings: UserSettings = {
   country_code: null,
   channels: [],
   event_urls: [],
+  key1: null,
+  key2: null,
+  key3: null,
+  key4: null,
+  key5: null,
   evt: false,
   wea: false,
   mtx: false,
@@ -92,6 +102,11 @@ type SettingsResponse = {
         country?: string | null;
         countryCode?: string | null;
         channels?: UserChannel[];
+        key1?: string | null;
+        key2?: string | null;
+        key3?: string | null;
+        key4?: string | null;
+        key5?: string | null;
         evt?: boolean;
         wea?: boolean;
         mtx?: boolean;
@@ -168,6 +183,22 @@ country_code:
   defaultSettings.country_code,
 
 event_urls: normalizeEventUrls((responseSettings as Record<string, unknown>)["event_urls"]),
+
+  key1:
+    ((responseSettings as Record<string, unknown>)["key1"] as string | null | undefined) ??
+    defaultSettings.key1,
+  key2:
+    ((responseSettings as Record<string, unknown>)["key2"] as string | null | undefined) ??
+    defaultSettings.key2,
+  key3:
+    ((responseSettings as Record<string, unknown>)["key3"] as string | null | undefined) ??
+    defaultSettings.key3,
+  key4:
+    ((responseSettings as Record<string, unknown>)["key4"] as string | null | undefined) ??
+    defaultSettings.key4,
+  key5:
+    ((responseSettings as Record<string, unknown>)["key5"] as string | null | undefined) ??
+    defaultSettings.key5,
 
 s_indoor:
   (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??

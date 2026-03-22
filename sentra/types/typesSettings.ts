@@ -19,6 +19,11 @@ export interface Settings {
   country_code: string | null;
   channels: string[];
   event_urls: string[];
+  key1: string | null;
+  key2: string | null;
+  key3: string | null;
+  key4: string | null;
+  key5: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -42,6 +47,11 @@ export const defaultSettings: Settings = {
   country_code: "",
   channels: [],
   event_urls: [],
+  key1: null,
+  key2: null,
+  key3: null,
+  key4: null,
+  key5: null,
   evt: false,
   wea: false,
   mtx: false,

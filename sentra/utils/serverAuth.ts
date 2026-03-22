@@ -53,6 +53,11 @@ type UserSettingsRow = {
   country_code: string | null;
   channels: UserChannelsValue;
   event_urls: EventUrlsValue;
+  key1: string | null;
+  key2: string | null;
+  key3: string | null;
+  key4: string | null;
+  key5: string | null;
   evt: boolean | null;
   wea: boolean | null;
   mtx: boolean | null;
@@ -76,6 +81,11 @@ export type UserSettings = {
   countryCode: string | null;
   channels: UserChannel[];
   event_urls: EventUrl[];
+  key1: string | null;
+  key2: string | null;
+  key3: string | null;
+  key4: string | null;
+  key5: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -224,6 +234,11 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       country_code,
       channels,
       event_urls,
+      key1,
+      key2,
+      key3,
+      key4,
+      key5,
       evt,
       wea,
       mtx,
@@ -254,6 +269,11 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     countryCode: row.country_code,
     channels: normalizeUserChannels(row.channels),
     event_urls: normalizeEventUrls(row.event_urls),
+    key1: row.key1,
+    key2: row.key2,
+    key3: row.key3,
+    key4: row.key4,
+    key5: row.key5,
     evt: row.evt ?? false,
     wea: row.wea ?? false,
     mtx: row.mtx ?? false,

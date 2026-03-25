@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 
-type RouteContext = {
-  params: { id: string };
-};
-
-export async function DELETE(req: NextRequest, context: RouteContext) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
   const { id } = context.params;
 
   if (!id) {

@@ -29,6 +29,14 @@ export async function forwardAuthRequest(
   req: NextRequest,
   path: string
 ): Promise<NextResponse> {
+  const { response } = await forwardAuthRequestWithBody(req, path);
+  return response;
+}
+
+export async function forwardAuthRequestWithBody<T = unknown>(
+  req: NextRequest,
+  path: string
+) {
   const contentType = req.headers.get("content-type");
   const cookie = req.headers.get("cookie");
   const body =
@@ -51,7 +59,9 @@ export async function forwardAuthRequest(
     cache: "no-store",
   });
 
-  const response = new NextResponse(upstream.body, {
+  const bodyText = await upstream.text();
+
+  const response = new NextResponse(bodyText, {
     status: upstream.status,
   });
 
@@ -61,5 +71,19 @@ export async function forwardAuthRequest(
   }
 
   copySetCookieHeaders(upstream, response);
-  return response;
+
+  let data: T | null = null;
+  if (bodyText && upstreamContentType?.includes("application/json")) {
+    try {
+      data = JSON.parse(bodyText) as T;
+    } catch {
+      data = null;
+    }
+  }
+
+  return {
+    response,
+    data,
+    ok: upstream.ok,
+  };
 }

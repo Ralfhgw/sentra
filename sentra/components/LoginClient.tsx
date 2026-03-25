@@ -83,7 +83,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
               hover:bg-gray-400
               border border-gray-400 
               text-gray-400 hover:text-black transition"
-            onClick={() => window.open("/readme#project", "_blank")}
+            onClick={() => window.open("/readme?doc=project", "_blank")}
           >
             {t.officialWebsite}
           </button>

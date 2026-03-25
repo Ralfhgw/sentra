@@ -1,19 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
-import { getEvents } from "@/app/api/settings/getEvents";
+import { invalidatePrimaryEventRefreshState, warmEventsForUser } from "@/utils/eventsService";
+import { invalidateCustomEventRefreshState, refreshCustomEventSourcesForUser } from "@/utils/eventUrlService";
+import type { EventRefreshInterval, EventUrlSetting } from "@/types/typesSettings";
+
+function normalizeEventRefreshInterval(value: unknown): EventRefreshInterval {
+  if (value === "weekly" || value === "monthly") {
+    return value;
+  }
+  return "daily";
+}
+
+function normalizeEventUrls(value: unknown): EventUrlSetting[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return {
+          url: entry.trim(),
+          refreshInterval: "daily" as const,
+        };
+      }
+
+      return {
+        url: String((entry as { url?: unknown }).url ?? "").trim(),
+        refreshInterval: normalizeEventRefreshInterval(
+          (entry as { refreshInterval?: unknown }).refreshInterval
+        ),
+      };
+    })
+    .filter((entry) => entry.url.length > 0);
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await getAuthenticatedUserFromCookies();
     const data = await req.json();
 
-    console.log("Empfangene Settings für userId:", userId, data);
+    console.log("Empfangene Settings fuer userId:", userId, data);
 
     const safeData = {
       ...data,
       country_code: data.country_code ?? null,
-      event_urls: data.event_urls ?? [],
+      event_urls: normalizeEventUrls(data.event_urls),
+      event_refresh_interval: normalizeEventRefreshInterval(data.event_refresh_interval),
       key1: data.key1?.trim() || null,
       key2: data.key2?.trim() || null,
       key3: data.key3?.trim() || null,
@@ -30,13 +63,63 @@ export async function POST(req: NextRequest) {
       s_cal_pressure: data.s_cal_pressure ?? 0,
     };
 
-const [oldSettings] = await sql`
-  SELECT lat, lon FROM user_settings WHERE user_id = ${userId}
-`;
+    const [oldSettings] = await sql<{
+      lat: number | null;
+      lon: number | null;
+      town: string | null;
+      key1: string | null;
+      key2: string | null;
+      evt: boolean | null;
+      event_urls: unknown;
+      event_refresh_interval: string | null;
+    }[]>`
+      SELECT lat, lon, town, key1, key2, evt, event_urls, event_refresh_interval
+      FROM user_settings
+      WHERE user_id = ${userId}
+    `;
 
-const latChanged = oldSettings?.lat !== safeData.lat;
-const lonChanged = oldSettings?.lon !== safeData.lon;
-const locationChanged = latChanged || lonChanged;
+    const latChanged = oldSettings?.lat !== safeData.lat;
+    const lonChanged = oldSettings?.lon !== safeData.lon;
+    const locationChanged = latChanged || lonChanged;
+    const townChanged = oldSettings?.town !== safeData.town;
+    const serpApiKeyChanged = oldSettings?.key1 !== safeData.key1;
+    const openAiKeyChanged = oldSettings?.key2 !== safeData.key2;
+    const evtChanged = (oldSettings?.evt ?? false) !== safeData.evt;
+    const intervalChanged =
+      normalizeEventRefreshInterval(oldSettings?.event_refresh_interval) !==
+      safeData.event_refresh_interval;
+
+    const normalizedOldEventUrls = normalizeEventUrls(oldSettings?.event_urls);
+    const eventUrlsChanged =
+      JSON.stringify(normalizedOldEventUrls) !==
+      JSON.stringify(safeData.event_urls);
+
+    const serpRefreshInputsChanged =
+      locationChanged ||
+      townChanged ||
+      serpApiKeyChanged ||
+      evtChanged ||
+      intervalChanged;
+
+    const customEventRefreshInputsChanged =
+      eventUrlsChanged ||
+      openAiKeyChanged;
+
+    console.log("[settings] primary refresh flags:", {
+      userId,
+      locationChanged,
+      townChanged,
+      serpApiKeyChanged,
+      evtChanged,
+      intervalChanged,
+    });
+
+    console.log("[settings] custom refresh flags:", {
+      userId,
+      eventUrlsChanged,
+      openAiKeyChanged,
+      eventUrls: safeData.event_urls,
+    });
 
     const result = await sql`
       UPDATE user_settings
@@ -49,7 +132,8 @@ const locationChanged = latChanged || lonChanged;
         state = ${safeData.state},
         country = ${safeData.country},
         country_code = ${safeData.country_code},
-        event_urls = ${JSON.stringify(safeData.event_urls)},
+        event_urls = ${sql.json(safeData.event_urls)}::jsonb,
+        event_refresh_interval = ${safeData.event_refresh_interval},
         key1 = ${safeData.key1},
         key2 = ${safeData.key2},
         key3 = ${safeData.key3},
@@ -69,19 +153,46 @@ const locationChanged = latChanged || lonChanged;
 
     console.log("Update-Result:", result);
 
-    // Events von SerpApi für die nächsten 2 Tage holen und speichern
-    if (locationChanged && safeData.town) {
-      for (let i = 0; i < 2; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        const dayString = date.toISOString().slice(0, 10);
-        await getEvents(userId, safeData.town, dayString);
-      }
+    console.log("[settings] serpRefreshInputsChanged:", {
+      userId,
+      locationChanged,
+      townChanged,
+      serpApiKeyChanged,
+      evtChanged,
+      intervalChanged,
+    });
+
+    console.log("[settings] customEventRefreshInputsChanged:", {
+      userId,
+      eventUrlsChanged,
+      openAiKeyChanged,
+      eventUrls: safeData.event_urls,
+    });
+
+    if (serpRefreshInputsChanged) {
+      await invalidatePrimaryEventRefreshState(userId);
+    }
+
+    if (intervalChanged && safeData.evt && safeData.town) {
+      void warmEventsForUser(userId).catch((error) => {
+        console.error("Event warmup after global interval change failed:", error);
+      });
+    }
+
+    if (customEventRefreshInputsChanged) {
+      await invalidateCustomEventRefreshState(userId);
+
+      void refreshCustomEventSourcesForUser(userId).catch((error) => {
+        console.error("Custom event URL refresh failed:", error);
+      });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Fehler beim Schreiben in die DB oder beim Event-Import:", error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }

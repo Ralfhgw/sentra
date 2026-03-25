@@ -2,7 +2,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import SettingsClient from "@/components/SettingsClient";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
-import { defaultSettings } from "@/types/typesSettings";
+import { defaultSettings, type EventRefreshInterval, type EventUrlSetting, } from "@/types/typesSettings";
 
 interface UserSettingsRow {
   user_id: string | null;
@@ -16,7 +16,8 @@ interface UserSettingsRow {
   country: string | null;
   country_code: string | null;
   channels: [];
-  event_urls: [];
+  event_urls: EventUrlSetting[] | null;
+  event_refresh_interval: EventRefreshInterval | null;
   key1: string | null;
   key2: string | null;
   key3: string | null;
@@ -46,6 +47,8 @@ async function getSettings() {
       wea: row.wea ?? false,
       mtx: row.mtx ?? false,
       rtc: row.rtc ?? false,
+      event_urls: Array.isArray(row.event_urls) ? row.event_urls : [],
+      event_refresh_interval: row.event_refresh_interval ?? "daily",
       s_indoor: row.s_indoor ?? false,
       s_outdoor: row.s_outdoor ?? false,
       s_cal_temp: row.s_cal_temp !== null ? Number(row.s_cal_temp) : 0,

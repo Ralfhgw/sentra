@@ -8,16 +8,16 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
+import type {
+  EventRefreshInterval,
+  EventUrlSetting,
+} from "@/types/typesSettings";
 
 type Lang = "en" | "de";
 
 type UserChannel = {
   url: string;
   name: string;
-};
-
-type EventUrls = {
-  url: string;
 };
 
 type UserSettings = {
@@ -31,7 +31,8 @@ type UserSettings = {
   country: string | null;
   country_code: string | null;
   channels: UserChannel[];
-  event_urls: EventUrls[];
+  event_urls: EventUrlSetting[];
+  event_refresh_interval: EventRefreshInterval;
   key1: string | null;
   key2: string | null;
   key3: string | null;
@@ -72,6 +73,7 @@ const defaultSettings: UserSettings = {
   country_code: null,
   channels: [],
   event_urls: [],
+  event_refresh_interval: "daily",
   key1: null,
   key2: null,
   key3: null,
@@ -90,38 +92,47 @@ const defaultSettings: UserSettings = {
 
 type SettingsResponse = {
   settings?:
-    | UserSettings
-    | {
-        lang?: Lang;
-        lat?: number | null;
-        lon?: number | null;
-        displayName?: string | null;
-        town?: string | null;
-        county?: string | null;
-        state?: string | null;
-        country?: string | null;
-        countryCode?: string | null;
-        channels?: UserChannel[];
-        key1?: string | null;
-        key2?: string | null;
-        key3?: string | null;
-        key4?: string | null;
-        key5?: string | null;
-        evt?: boolean;
-        wea?: boolean;
-        mtx?: boolean;
-        rtc?: boolean;
-        sIndoor?: boolean;
-        sOutdoor?: boolean;
-        sCalTemp?: number | null;
-        sCalHumidity?: number | null;
-        sCalPressure?: number | null;
-      };
+  | UserSettings
+  | {
+    lang?: Lang;
+    lat?: number | null;
+    lon?: number | null;
+    displayName?: string | null;
+    town?: string | null;
+    county?: string | null;
+    state?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+    channels?: UserChannel[];
+    key1?: string | null;
+    key2?: string | null;
+    key3?: string | null;
+    key4?: string | null;
+    key5?: string | null;
+    evt?: boolean;
+    wea?: boolean;
+    mtx?: boolean;
+    rtc?: boolean;
+    sIndoor?: boolean;
+    sOutdoor?: boolean;
+    sCalTemp?: number | null;
+    sCalHumidity?: number | null;
+    sCalPressure?: number | null;
+  };
   lang?: Lang;
   error?: string;
 };
 
-function normalizeEventUrls(value: unknown): EventUrls[] {
+
+function normalizeEventRefreshInterval(value: unknown): EventRefreshInterval {
+  if (value === "weekly" || value === "monthly") {
+    return value;
+  }
+
+  return "daily";
+}
+
+function normalizeEventUrls(value: unknown): EventUrlSetting[] {
   if (!value) {
     return [];
   }
@@ -135,11 +146,16 @@ function normalizeEventUrls(value: unknown): EventUrls[] {
       return value
         .map((item) => String(item).trim())
         .filter((url) => url.length > 0)
-        .map((url) => ({ url }));
+        .map((url) => ({ url, refreshInterval: "daily" as const }));
     }
 
     return value
-      .map((item) => ({ url: String((item as { url?: unknown }).url ?? "").trim() }))
+      .map((item) => ({
+        url: String((item as { url?: unknown }).url ?? "").trim(),
+        refreshInterval: normalizeEventRefreshInterval(
+          (item as { refreshInterval?: unknown }).refreshInterval
+        ),
+      }))
       .filter((item) => item.url.length > 0);
   }
 
@@ -157,10 +173,10 @@ function normalizeEventUrls(value: unknown): EventUrls[] {
 
 const SettingsContext = createContext<SettingsContextType>({
   settings: defaultSettings,
-  setSettings: () => {},
+  setSettings: () => { },
   lang: "en",
-  setLang: () => {},
-  refreshSettings: async () => {},
+  setLang: () => { },
+  refreshSettings: async () => { },
 });
 
 function toUserSettings(data: SettingsResponse): UserSettings {
@@ -174,56 +190,62 @@ function toUserSettings(data: SettingsResponse): UserSettings {
     ...defaultSettings,
     ...responseSettings,
     displayName:
-responseSettings.displayName ??
-(responseSettings as Record<string, unknown>)["display_name"] as string ??
-defaultSettings.displayName,
-country_code:
-  (responseSettings as Record<string, unknown>)["countryCode"] as string ??
-  (responseSettings as Record<string, unknown>)["country_code"] as string ??
-  defaultSettings.country_code,
+      responseSettings.displayName ??
+      (responseSettings as Record<string, unknown>)["display_name"] as string ??
+      defaultSettings.displayName,
+    country_code:
+      (responseSettings as Record<string, unknown>)["countryCode"] as string ??
+      (responseSettings as Record<string, unknown>)["country_code"] as string ??
+      defaultSettings.country_code,
 
-event_urls: normalizeEventUrls((responseSettings as Record<string, unknown>)["event_urls"]),
+    event_urls: normalizeEventUrls(
+      (responseSettings as Record<string, unknown>)["event_urls"]
+    ),
+    event_refresh_interval: normalizeEventRefreshInterval(
+      (responseSettings as Record<string, unknown>)["eventRefreshInterval"] ??
+      (responseSettings as Record<string, unknown>)["event_refresh_interval"]
+    ),
 
-  key1:
-    ((responseSettings as Record<string, unknown>)["key1"] as string | null | undefined) ??
-    defaultSettings.key1,
-  key2:
-    ((responseSettings as Record<string, unknown>)["key2"] as string | null | undefined) ??
-    defaultSettings.key2,
-  key3:
-    ((responseSettings as Record<string, unknown>)["key3"] as string | null | undefined) ??
-    defaultSettings.key3,
-  key4:
-    ((responseSettings as Record<string, unknown>)["key4"] as string | null | undefined) ??
-    defaultSettings.key4,
-  key5:
-    ((responseSettings as Record<string, unknown>)["key5"] as string | null | undefined) ??
-    defaultSettings.key5,
+    key1:
+      ((responseSettings as Record<string, unknown>)["key1"] as string | null | undefined) ??
+      defaultSettings.key1,
+    key2:
+      ((responseSettings as Record<string, unknown>)["key2"] as string | null | undefined) ??
+      defaultSettings.key2,
+    key3:
+      ((responseSettings as Record<string, unknown>)["key3"] as string | null | undefined) ??
+      defaultSettings.key3,
+    key4:
+      ((responseSettings as Record<string, unknown>)["key4"] as string | null | undefined) ??
+      defaultSettings.key4,
+    key5:
+      ((responseSettings as Record<string, unknown>)["key5"] as string | null | undefined) ??
+      defaultSettings.key5,
 
-s_indoor:
-  (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??
-  (responseSettings as Record<string, unknown>)["s_indoor"] as boolean ??
-  defaultSettings.s_indoor,
+    s_indoor:
+      (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??
+      (responseSettings as Record<string, unknown>)["s_indoor"] as boolean ??
+      defaultSettings.s_indoor,
 
-s_outdoor:
-  (responseSettings as Record<string, unknown>)["sOutdoor"] as boolean ??
-  (responseSettings as Record<string, unknown>)["s_outdoor"] as boolean ??
-  defaultSettings.s_outdoor,
+    s_outdoor:
+      (responseSettings as Record<string, unknown>)["sOutdoor"] as boolean ??
+      (responseSettings as Record<string, unknown>)["s_outdoor"] as boolean ??
+      defaultSettings.s_outdoor,
 
-s_cal_temp:
-  (responseSettings as Record<string, unknown>)["sCalTemp"] as number ??
-  (responseSettings as Record<string, unknown>)["s_cal_temp"] as number ??
-  defaultSettings.s_cal_temp,
+    s_cal_temp:
+      (responseSettings as Record<string, unknown>)["sCalTemp"] as number ??
+      (responseSettings as Record<string, unknown>)["s_cal_temp"] as number ??
+      defaultSettings.s_cal_temp,
 
-s_cal_humidity:
-  (responseSettings as Record<string, unknown>)["sCalHumidity"] as number ??
-  (responseSettings as Record<string, unknown>)["s_cal_humidity"] as number ??
-  defaultSettings.s_cal_humidity,
+    s_cal_humidity:
+      (responseSettings as Record<string, unknown>)["sCalHumidity"] as number ??
+      (responseSettings as Record<string, unknown>)["s_cal_humidity"] as number ??
+      defaultSettings.s_cal_humidity,
 
-s_cal_pressure:
-  (responseSettings as Record<string, unknown>)["sCalPressure"] as number ??
-  (responseSettings as Record<string, unknown>)["s_cal_pressure"] as number ??
-  defaultSettings.s_cal_pressure,
+    s_cal_pressure:
+      (responseSettings as Record<string, unknown>)["sCalPressure"] as number ??
+      (responseSettings as Record<string, unknown>)["s_cal_pressure"] as number ??
+      defaultSettings.s_cal_pressure,
   };
 }
 

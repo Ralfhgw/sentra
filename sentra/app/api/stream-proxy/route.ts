@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
   const upstream = await fetch(targetUrl, {
     headers: forwardedHeaders,
     cache: "no-store",
+    signal: request.signal,
   });
 
   if (!upstream.ok) {

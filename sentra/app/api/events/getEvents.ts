@@ -2,10 +2,21 @@ import { getJson } from "serpapi";
 import type { GoogleEventsParams, EventData } from "@/types/typesRegister";
 import sql from "@/utils/db";
 
-const { SERPAPI_KEY } = process.env;
+async function getSerpApiKeyForUser(userId: string): Promise<string> {
+    const [row] = await sql<{ key1: string | null }[]>`
+        SELECT key1
+        FROM user_settings
+        WHERE user_id = ${userId}::uuid
+        LIMIT 1
+    `;
 
-if (!SERPAPI_KEY) {
-    throw new Error("Fehlende SERPAPI_KEY-Variable – prüfe deine .env");
+    const apiKey = row?.key1?.trim();
+
+    if (!apiKey) {
+        throw new Error(`Kein SERPAPI_KEY in user_settings.key1 für User ${userId}`);
+    }
+
+    return apiKey;
 }
 
 // Function fetchGoogleEvents() ==> return events[]
@@ -74,7 +85,7 @@ function formatDate(date: string): string {
 }
 
 // Function storeEventData() ==> Store Data
-async function storeEventData(userId: string, events: EventData[], date: string) {
+async function storeEventData(userId: string, town: string, events: EventData[], date: string) {
     const today = new Date();
     const todayString = today.toISOString().slice(0, 10);
 
@@ -100,46 +111,76 @@ async function storeEventData(userId: string, events: EventData[], date: string)
         }
 
         await sql`
-            INSERT INTO events (user_id, title, date, address, link, description, image, domain)
-            VALUES (
-                ${userId}, 
-                ${filtered.title}, 
-                ${isoDate}, 
-                ${filtered.address}, 
-                ${filtered.link}, 
-                ${newDescription}, 
+            INSERT INTO events (user_id, title, date, address, link, description, image, domain, source_town)
+            SELECT
+                ${userId},
+                ${filtered.title},
+                ${isoDate},
+                ${filtered.address},
+                ${filtered.link},
+                ${newDescription},
                 ${filtered.image},
-                ${domain}
+                ${domain},
+                ${town}
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM events
+                WHERE user_id = ${userId}
+                AND title = ${filtered.title}
+                AND date = ${isoDate}
+                AND COALESCE(link, '') = COALESCE(${filtered.link}, '')
+                AND COALESCE(address::text, '') = COALESCE(${filtered.address}, '')
+                AND COALESCE(domain, '') = COALESCE(${domain}, '')
+                AND COALESCE(source_town, '') = COALESCE(${town}, '')
             )
         `;
     }
-    await sql`
-        DELETE FROM events e
-        USING events e2
-        WHERE
-            e.user_id = ${userId}
-            AND e.title = e2.title
-            AND e.date = e2.date
-            AND e.user_id = e2.user_id
-            AND e.ctid > e2.ctid
-    `;
+}
+
+async function cleanupSerpApiDuplicates(userId: string, town: string, dayString: string) {
+  await sql`
+    DELETE FROM events e
+    USING events e2
+    WHERE e.user_id = ${userId}::uuid
+      AND e.user_id = e2.user_id
+      AND e.domain = 'https://serpapi.com/'
+      AND e2.domain = 'https://serpapi.com/'
+      AND e.date = ${dayString}
+      AND e2.date = ${dayString}
+      AND COALESCE(e.source_town, '') = COALESCE(${town}, '')
+      AND COALESCE(e2.source_town, '') = COALESCE(${town}, '')
+      AND e.title = e2.title
+      AND e.ctid > e2.ctid
+  `;
 }
 
 // Main Function getEvents() ==> 
 export async function getEvents(userId: string, town: string, dayString: string) {
-    try {
-        const googleEvents = await fetchGoogleEvents({
-            town,
-            dayString,
-            apiKey: SERPAPI_KEY!,
-        });
+  try {
+    const apiKey = await getSerpApiKeyForUser(userId);
 
-        await storeEventData(userId, googleEvents, dayString);
-        console.log(`Events für User ${userId} gespeichert.`);
-    } catch (err) {
-        console.error(`Fehler bei User ${userId}:`, err);
-    }
+    const googleEvents = await fetchGoogleEvents({
+      town,
+      dayString,
+      apiKey,
+    });
+
+    const storedCount = await storeEventData(userId, town, googleEvents, dayString);
+    await cleanupSerpApiDuplicates(userId, town, dayString);
+
+    console.log("[serpapi] refresh finished:", {
+      userId,
+      town,
+      dayString,
+      fetched: googleEvents.length,
+      stored: storedCount,
+      titles: googleEvents.slice(0, 5).map((event) => event.title),
+    });
+  } catch (err) {
+    console.error(`[serpapi] Fehler bei User ${userId}:`, err);
+  }
 }
+
 
 export {
     fetchGoogleEvents,

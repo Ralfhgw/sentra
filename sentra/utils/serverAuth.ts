@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import type { EventRefreshInterval } from "@/types/typesSettings";
 import sql from "@/utils/db";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import type { NextRequest, NextResponse } from "next/server";
@@ -35,6 +36,7 @@ type UserChannel = {
 
 type EventUrl = {
   url: string;
+  refreshInterval: EventRefreshInterval;
 };
 
 type EventUrlsValue = EventUrl[] | string[] | string | null;
@@ -53,6 +55,7 @@ type UserSettingsRow = {
   country_code: string | null;
   channels: UserChannelsValue;
   event_urls: EventUrlsValue;
+  event_refresh_interval: string | null;
   key1: string | null;
   key2: string | null;
   key3: string | null;
@@ -81,6 +84,7 @@ export type UserSettings = {
   countryCode: string | null;
   channels: UserChannel[];
   event_urls: EventUrl[];
+  eventRefreshInterval: EventRefreshInterval;
   key1: string | null;
   key2: string | null;
   key3: string | null;
@@ -109,6 +113,12 @@ export const defaultUserSettings: UserSettings = {
   countryCode: null,
   channels: [],
   event_urls: [],
+  eventRefreshInterval: "daily",
+  key1: null,
+  key2: null,
+  key3: null,
+  key4: null,
+  key5: null,
   evt: false,
   wea: false,
   mtx: false,
@@ -181,6 +191,14 @@ function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
   return [];
 }
 
+function normalizeEventRefreshInterval(value: unknown): EventRefreshInterval {
+  if (value === "weekly" || value === "monthly") {
+    return value;
+  }
+
+  return "daily";
+}
+
 function normalizeEventUrls(value: EventUrlsValue): EventUrl[] {
   if (Array.isArray(value)) {
     if (value.length === 0) {
@@ -191,12 +209,15 @@ function normalizeEventUrls(value: EventUrlsValue): EventUrl[] {
       return (value as string[])
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
-        .map((url) => ({ url }));
+        .map((url) => ({ url, refreshInterval: "daily" as const }));
     }
 
-    return (value as EventUrl[])
-      .map((entry) => ({ url: String(entry?.url ?? "").trim() }))
-      .filter((entry) => entry.url.length > 0);
+return (value as EventUrl[])
+  .map((entry) => ({
+    url: String(entry?.url ?? "").trim(),
+    refreshInterval: normalizeEventRefreshInterval(entry?.refreshInterval),
+  }))
+  .filter((entry) => entry.url.length > 0);
   }
 
   if (typeof value === "string") {
@@ -234,6 +255,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       country_code,
       channels,
       event_urls,
+      event_refresh_interval,
       key1,
       key2,
       key3,
@@ -269,6 +291,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     countryCode: row.country_code,
     channels: normalizeUserChannels(row.channels),
     event_urls: normalizeEventUrls(row.event_urls),
+    eventRefreshInterval: normalizeEventRefreshInterval(row.event_refresh_interval),
     key1: row.key1,
     key2: row.key2,
     key3: row.key3,
@@ -296,10 +319,7 @@ async function requestRefreshedAccessToken(refreshToken: string) {
 
   const refreshRes = await fetch(getAuthHost() + "/api/auth/refresh", {
     method: "POST",
-    headers: {
-      Cookie: "refreshToken=" + refreshToken,
-      "Content-Type": "application/json",
-    },
+    headers,
     cache: "no-store",
   });
 

@@ -10,7 +10,19 @@ DROP TABLE IF EXISTS "day_meanings" CASCADE;
 
 DROP TABLE IF EXISTS "channels" CASCADE;
 
+DROP TABLE IF EXISTS "user_event_refresh_state"CASCADE;
+
+DROP TABLE IF EXISTS "user_settings" CASCADE;
+
 DROP FUNCTION IF EXISTS get_days_for_date (date);
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TABLE "users" (
     "id" uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
@@ -26,7 +38,7 @@ CREATE TABLE "users" (
 CREATE TABLE "user_settings" (
     "id" uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
     "user_id" uuid NOT NULL UNIQUE,
-    "lang" text,
+    "lang" text NOT NULL DEFAULT 'en' CHECK (lang IN ('en', 'de')),
     "lat" numeric(10, 6),
     "lon" numeric(10, 6),
     "display_name" text,
@@ -35,28 +47,67 @@ CREATE TABLE "user_settings" (
     "state" text,
     "country" text,
     "country_code" text,
-    "channels" jsonb NOT NULL DEFAULT '[]'::jsonb,
-    "event_urls" jsonb NOT NULL DEFAULT '[]'::jsonb,
-    "evt" boolean,
-    "wea" boolean,
-    "mtx" boolean,
-    "rtc" boolean,
-    "s_indoor" boolean,
-    "s_outdoor" boolean,
-    "s_cal_temp" numeric(10,4),
-    "s_cal_humidity" numeric(10,4),
-    "s_cal_pressure" numeric(10,4),
+    "channels" jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(channels) = 'array'),
+    "event_urls" jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(event_urls) = 'array'),
+    "event_refresh_interval" text NOT NULL DEFAULT 'daily' CHECK (event_refresh_interval IN ('daily', 'weekly', 'monthly')),
     "key1" text,
     "key2" text,
     "key3" text,
     "key4" text,
     "key5" text,
-    "created_at" timestamptz DEFAULT now(),
-    "updated_at" timestamptz
+    "evt" boolean NOT NULL DEFAULT false,
+    "wea" boolean NOT NULL DEFAULT false,
+    "mtx" boolean NOT NULL DEFAULT false,
+    "rtc" boolean NOT NULL DEFAULT false,
+    "s_indoor" boolean NOT NULL DEFAULT false,
+    "s_outdoor" boolean NOT NULL DEFAULT false,
+    "s_cal_temp" double precision NOT NULL DEFAULT 0,
+    "s_cal_humidity" double precision NOT NULL DEFAULT 0,
+    "s_cal_pressure" double precision NOT NULL DEFAULT 0,
+    "created_at" timestamptz NOT NULL DEFAULT NOW(),
+    "updated_at" timestamptz NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE "user_settings"
 ADD CONSTRAINT fk_user_settings_user FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+CREATE TRIGGER trg_user_settings_updated_at
+BEFORE UPDATE ON user_settings
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE user_event_refresh_state (
+  user_id uuid NOT NULL,
+  source_key text NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('serpapi', 'url')),
+  cache_key text,
+  last_refreshed_at timestamptz,
+  next_refresh_at timestamptz,
+  refresh_started_at timestamptz,
+  last_status text NOT NULL DEFAULT 'idle' CHECK (last_status IN ('idle', 'running', 'success', 'error')),
+  last_error text,
+  created_at timestamptz NOT NULL DEFAULT NOW(),
+  updated_at timestamptz NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, source_key),
+  CONSTRAINT fk_user_event_refresh_state_user
+  FOREIGN KEY (user_id)
+  REFERENCES user_settings(user_id)
+  ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_event_refresh_state_next_refresh
+  ON user_event_refresh_state (next_refresh_at);
+
+CREATE INDEX idx_user_event_refresh_state_status
+  ON user_event_refresh_state (last_status);
+
+CREATE INDEX idx_user_event_refresh_state_user_kind
+  ON user_event_refresh_state (user_id, source_kind);
+
+CREATE TRIGGER trg_user_event_refresh_state_updated_at
+BEFORE UPDATE ON user_event_refresh_state
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TABLE "events" (
     "id" uuid PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid ()),
@@ -68,6 +119,7 @@ CREATE TABLE "events" (
     "description" text,
     "image" text,
     "domain" text,
+    "source_town" text,
     "created_at" timestamptz DEFAULT (now())
 );
 

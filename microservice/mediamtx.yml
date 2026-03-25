@@ -1,6 +1,6 @@
 # --- Globale Sektion ---
 api: yes
-apiAddress: :9997
+apiAddress: 0.0.0.0:9997
 
 hlsAddress: :8888
 hlsAllowOrigin: '*'

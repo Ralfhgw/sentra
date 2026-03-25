@@ -6,7 +6,7 @@ type WebcamItemProps = {
     isHuge?: boolean;
     isLarge: boolean;
     channel: number;
-        channelName?: string;
+    channelName?: string;
     location?: string;
 };
 
@@ -40,7 +40,7 @@ export default function WebcamItem({
     isHuge,
     isLarge,
     channel,
-        channelName,
+    channelName,
     location,
 }: WebcamItemProps) {
 
@@ -52,21 +52,43 @@ export default function WebcamItem({
     // Connect Video with Stream if change
     useEffect(() => {
         const video = videoRef.current;
-        if (!video || !url) return;
         let hls: Hls | undefined;
+
+        const resetVideo = () => {
+            if (!video) return;
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+        };
+
+        if (!video || !url) {
+            resetVideo();
+            return;
+        }
+
         const playbackUrl = getPlaybackUrl(url);
 
         if (Hls.isSupported()) {
             hls = new Hls({ capLevelToPlayerSize: true });
             hls.loadSource(playbackUrl);
             hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => { }));
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(() => { });
+            });
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
             video.src = playbackUrl;
+            video.load();
         }
 
-        return () => hls?.destroy();
+        return () => {
+            if (hls) {
+                hls.detachMedia();
+                hls.destroy();
+            }
+            resetVideo();
+        };
     }, [url]);
+
 
     // Play/Pause Handler
     const handlePlayPause = () => {

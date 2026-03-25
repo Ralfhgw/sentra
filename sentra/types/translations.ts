@@ -30,7 +30,8 @@ export const startpageTranslations = {
     news: "📰 News: Your local cultural calendar for the coming days",
     weather: "🌦️ Weather: Forecast for the next few days",
     liveview: "📷 LiveView: Webcam streaming and integrated live TV channels",
-    livetalk: "👥 LiveTalk: Video conferencing powered by MediaSoup (WebRTC)"
+    livetalk: "👥 LiveTalk: Video conferencing powered by MediaSoup (WebRTC)",
+    settings: "⚙️ Settings: Manage your preferences"
 
  },
   de: {
@@ -41,7 +42,8 @@ export const startpageTranslations = {
     news: "📰 Aktuelles: Dein regionaler Kulturkalender für die nächsten Tage",
     weather: "🌦️ Wetter: Aussichten für die nächsten Tage",
     liveview: "📷 LiveView: Webcam-Streaming und integrierte Live-TV-Kanäle",
-    livetalk: "👥 LiveTalk: Videokonferenzen auf Basis von MediaSoup (WebRTC)"
+    livetalk: "👥 LiveTalk: Videokonferenzen auf Basis von MediaSoup (WebRTC)",
+    settings: "⚙️ Einstellungen: Verwalte deine Präferenzen"
 },
 };
 

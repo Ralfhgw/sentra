@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getLocationFromCoords } from "./reverseGeoCode";
-import { getEvents } from "./getEvents";
-import { getBackgroundImage } from "./getBackgroundImage";
+//TODO Remove getEvents and BackgroundImage and remove files
+/* import { getEvents } from "./getEvents";
+import { getBackgroundImage } from "./getBackgroundImage"; */
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 
 type RegisterPayload = {
@@ -178,7 +179,7 @@ export async function POST(req: NextRequest) {
       updated_at = now()
   `;
     });
-
+/* 
     if (loc.town) {
       for (let i = 1; i <= 2; i++) {
         const date = new Date();
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
       await getBackgroundImage(userId, lat, lon);
     } catch (err) {
       console.error("Register background bootstrap error:", err);
-    }
+    } */
 
     return NextResponse.json({ success: true, userId });
   } catch (err) {

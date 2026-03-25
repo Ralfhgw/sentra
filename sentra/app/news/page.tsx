@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NewsClient from "@/components/NewsClient";
+import { ensureFreshEventsForUser } from "@/utils/eventsService";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies, getUserSettings } from "@/utils/serverAuth";
 import type { NewsClientProps, Event, DayMeaning } from "@/types/typesNews";
@@ -8,14 +9,15 @@ import type { NewsClientProps, Event, DayMeaning } from "@/types/typesNews";
 async function getNews(): Promise<NewsClientProps> {
   try {
     const { userId: user_id } = await getAuthenticatedUserFromCookies();
+    await ensureFreshEventsForUser(user_id);
     const userSettings = await getUserSettings(user_id);
     console.log("NewsServer UserId:", user_id);
 
     const eventsData = sql<Event[]>`
-      SELECT id, title, date, address, link, description, image, domain
+      SELECT id, title, date, address, link, description, image, domain, source_town AS "sourceTown"
       FROM events
       WHERE user_id = ${user_id}
-      ORDER BY date ASC
+      ORDER BY source_town ASC, date ASC
     `;
 
     const today = new Date().toISOString().slice(0, 10);

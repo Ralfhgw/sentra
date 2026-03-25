@@ -7,6 +7,7 @@ export interface Event {
   description: string | null;
   image: string | null;
   domain: string | null;
+  sourceTown: string | null;
 }
 
 // page.tsx

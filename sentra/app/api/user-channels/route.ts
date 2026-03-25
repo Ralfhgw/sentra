@@ -20,11 +20,17 @@ export async function POST(req: NextRequest) {
   const { channels } = await req.json();
 
   try {
-    await sql`
-      UPDATE user_settings
-      SET channels = ${JSON.stringify(channels)}::jsonb
-      WHERE user_id = ${auth.userId}::uuid
-    `;
+await sql`
+  INSERT INTO user_settings (user_id, channels, updated_at)
+  VALUES (
+    ${auth.userId}::uuid,
+    ${sql.json(channels)}::jsonb,
+    now()
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    channels = EXCLUDED.channels,
+    updated_at = now()
+`;
 
     const response = NextResponse.json({ success: true });
     return applyRefreshedAccessToken(response, auth);

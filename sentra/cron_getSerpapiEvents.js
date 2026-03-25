@@ -134,7 +134,7 @@ async function runCronEvents() {
   await deleteOldEvents();
 
   const users = await sql`
-    SELECT user_id, lat, lon, town
+    SELECT user_id, lat, lon, town, key1
     FROM user_settings
     WHERE user_id IS NOT NULL
   `;
@@ -153,7 +153,14 @@ async function runCronEvents() {
       date.setDate(date.getDate() + i);
       const dayString = date.toISOString().slice(0, 10);
 
-      const events = await fetchGoogleEvents(town, dayString);
+      const apiKey = user.key1?.trim();
+
+      if (!apiKey) {
+        console.log(`Überspringe User ${userId}: Kein SERPAPI_KEY in user_settings.key1.`);
+        continue;
+      }
+
+      const events = await fetchGoogleEvents(town, dayString, apiKey);
       await insertEventsForUser(userId, town, dayString, events);
     }
 

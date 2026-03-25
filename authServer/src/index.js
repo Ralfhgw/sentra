@@ -92,7 +92,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 function signAccessToken(userId) {
-  return jwt.sign({}, process.env.JWT_SECRET, { expiresIn: "1m", subject: userId });
+  return jwt.sign({}, process.env.JWT_SECRET, { expiresIn: "15m", subject: userId });
   //return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
 }
 
@@ -116,7 +116,7 @@ function setAuthCookies(res, userId) {
 
   res.cookie("accessToken", accessToken, {
     ...base,
-    maxAge: 1 * 60 * 1000,
+    maxAge: 15 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {

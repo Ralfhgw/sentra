@@ -68,7 +68,7 @@ function formatDate(date: string): string {
     return date;
 }
 
-async function storeEventData(userId: string, events: EventData[], date: string) {
+async function storeEventData(userId: string, town: string, events: EventData[], date: string) {
     const today = new Date();
     const todayString = today.toISOString().slice(0, 10);
 
@@ -94,7 +94,7 @@ async function storeEventData(userId: string, events: EventData[], date: string)
         }
 
         await sql`
-            INSERT INTO events (user_id, title, date, address, link, description, image, domain)
+            INSERT INTO events (user_id, title, date, address, link, description, image, domain, source_town)
             VALUES (
                 ${userId}, 
                 ${filtered.title}, 
@@ -103,7 +103,8 @@ async function storeEventData(userId: string, events: EventData[], date: string)
                 ${filtered.link}, 
                 ${newDescription}, 
                 ${filtered.image},
-                ${domain}
+                ${domain},
+                ${town}
             )
         `;
     }
@@ -128,7 +129,7 @@ export async function getEvents(userId: string, town: string, dayString: string)
             apiKey: SERPAPI_KEY!,
         });
 
-        await storeEventData(userId, googleEvents, dayString);
+        await storeEventData(userId, town, googleEvents, dayString);
         console.log(`Events für User ${userId} gespeichert.`);
     } catch (err) {
         console.error(`Fehler bei User ${userId}:`, err);

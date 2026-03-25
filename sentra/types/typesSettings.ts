@@ -1,3 +1,10 @@
+export type EventRefreshInterval = "daily" | "weekly" | "monthly";
+
+export interface EventUrlSetting {
+  url: string;
+  refreshInterval: EventRefreshInterval;
+}
+
 export interface SettingsClientProps {
   initialSettings: Settings;
 }
@@ -18,7 +25,8 @@ export interface Settings {
   country: string | null;
   country_code: string | null;
   channels: string[];
-  event_urls: string[];
+  event_urls: EventUrlSetting[];
+  event_refresh_interval: EventRefreshInterval;
   key1: string | null;
   key2: string | null;
   key3: string | null;
@@ -47,6 +55,7 @@ export const defaultSettings: Settings = {
   country_code: "",
   channels: [],
   event_urls: [],
+  event_refresh_interval: "daily",
   key1: null,
   key2: null,
   key3: null,

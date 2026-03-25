@@ -42,7 +42,7 @@ const LAYOUT_CONFIGS = {
       { id: 3, span: "col-span-1 row-span-1" },
       { id: 4, span: "col-span-1 row-span-1" },
       { id: 5, span: "col-span-1 row-span-1" },
-      { id: 5, span: "col-span-1 row-span-1" },
+      { id: 6, span: "col-span-1 row-span-1" },
     ],
   },
 
@@ -192,25 +192,35 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
 
   // Save channelassignment
   const handleAssignChannel = async () => {
-    const newChannels = [...currentUserChannels];
+    const maxSlotId = Math.max(
+      -1,
+      ...config.cells.map((cell) => cell.id),
+      currentUserChannels.length - 1,
+      popupCell ?? -1
+    );
+
+    const newChannels = Array.from(
+      { length: maxSlotId + 1 },
+      (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" }
+    );
+
     if (customUrl) {
-      newChannels[popupCell!] = { name: customName, url: customUrl, location: "" };
+      newChannels[popupCell!] = {
+        name: customName,
+        url: customUrl,
+        location: "",
+      };
     } else {
-      const selected = filteredChannels.find(ch => ch.stream_url === selectedUrl);
+      const selected = filteredChannels.find((ch) => ch.stream_url === selectedUrl);
       newChannels[popupCell!] = {
         name: selectedName,
         url: selectedUrl,
         location: selected?.location ?? "",
       };
     }
-    console.log("LiveViewClient newChannels: newChannels:", newChannels);
 
     setCurrentUserChannels(newChannels);
-    await fetch("/api/user-channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channels: newChannels }),
-    });
+    await persistChannels(newChannels);
 
     setPopupCell(null);
     setCustomUrl("");
@@ -219,25 +229,40 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
   };
 
   const persistChannels = async (next: UserChannel[]) => {
-    await fetch("/api/user-channels", {
+    const response = await fetch("/api/user-channels", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channels: next }),
     });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error ?? "Channels konnten nicht gespeichert werden.");
+    }
   };
 
-  const handleDropOnSlot = async (toIdx: number) => {
-    if (dragFrom === null || dragFrom === toIdx) return;
+  const handleDropOnSlot = async (toSlotId: number) => {
+    if (dragFrom === null || dragFrom === toSlotId) return;
 
-    const size = Math.max(config.cells.length, currentUserChannels.length);
-    const next = Array.from({ length: size }, (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" });
+    const maxSlotId = Math.max(
+      -1,
+      ...config.cells.map((cell) => cell.id),
+      currentUserChannels.length - 1,
+      dragFrom,
+      toSlotId
+    );
 
-    [next[dragFrom], next[toIdx]] = [next[toIdx], next[dragFrom]];
+    const next = Array.from(
+      { length: maxSlotId + 1 },
+      (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" }
+    );
+
+    [next[dragFrom], next[toSlotId]] = [next[toSlotId], next[dragFrom]];
 
     setCurrentUserChannels(next);
     setDragFrom(null);
     await persistChannels(next);
   };
+
 
   return (
 
@@ -353,41 +378,49 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
         className="w-full md:w-[80%] h-full grid gap-px bg-blue-300 border border-gray-800"
         style={{
           gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
-          gridAutoRows: "minmax(0, 1fr)",
+          gridAutoRows: useCompactSpans ? "minmax(220px, auto)" : "minmax(0, 1fr)",
           gridAutoFlow: "dense",
         }}
       >
 
-        {config.cells.map((cell, idx) => (
-          <div
-            key={`cell-${idx}-${cell.id ?? "empty"}`}
-            className={`${useCompactSpans ? "col-span-1 row-span-1" : cell.span.replace(/col-span-(\d+)/, (_, span) => `col-span-${Math.min(Number(span), responsiveCols)}`)} relative bg-black border border-gray-900/50 group overflow-hidden`}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => void handleDropOnSlot(idx)}
-            onDoubleClick={() => setPopupCell(idx)}
-          >
+        {config.cells.map((cell, idx) => {
+          const slotId = cell.id;
+
+          return (
             <div
-              className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
-              draggable
-              onDragStart={() => setDragFrom(idx)}
-              onDragEnd={() => setDragFrom(null)}
-              title="Zum Verschieben hier ziehen"
-              aria-label="Drag handle"
-            />
+              key={`cell-${idx}-${slotId}`}
+              className={`${useCompactSpans
+                  ? "col-span-1 row-span-1 min-h-[220px]"
+                  : cell.span.replace(
+                    /col-span-(\d+)/,
+                    (_, span) => `col-span-${Math.min(Number(span), responsiveCols)}`
+                  )
+                } relative bg-black border border-gray-900/50 group overflow-hidden`}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => void handleDropOnSlot(slotId)}
+              onDoubleClick={() => setPopupCell(slotId)}
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={() => setDragFrom(slotId)}
+                onDragEnd={() => setDragFrom(null)}
+                title="Zum Verschieben hier ziehen"
+                aria-label="Drag handle"
+              />
 
-            <WebcamItem
-              url={currentUserChannels[idx]?.url ?? null}
-              isHuge={cell.span.includes("col-span-4")}
-              isLarge={cell.span.includes("col-span-2")}
-              channel={cell.id + 1}
-              channelName={currentUserChannels[idx]?.name ?? ""}
-              location={currentUserChannels[idx]?.location ?? ""}
-            />
-          </div>
-        ))}
+              <WebcamItem
+                url={currentUserChannels[slotId]?.url ?? null}
+                isHuge={cell.span.includes("col-span-4")}
+                isLarge={cell.span.includes("col-span-2")}
+                channel={slotId + 1}
+                channelName={currentUserChannels[slotId]?.name ?? ""}
+                location={currentUserChannels[slotId]?.location ?? ""}
+              />
+            </div>
+          );
+        })}
       </div>
-
-
     </div>
   );
 }

@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS "user_event_refresh_state"CASCADE;
 
 DROP TABLE IF EXISTS "user_settings" CASCADE;
 
+DROP TABLE IF EXISTS "liveview_sources" CASCADE;
+
 DROP FUNCTION IF EXISTS get_days_for_date (date);
 
 CREATE OR REPLACE FUNCTION set_updated_at()
@@ -69,14 +71,14 @@ CREATE TABLE "user_settings" (
 );
 
 ALTER TABLE "user_settings"
-ADD CONSTRAINT fk_user_settings_user FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
+ADD CONSTRAINT "fk_user_settings_user" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-CREATE TRIGGER trg_user_settings_updated_at
+CREATE TRIGGER "trg_user_settings_updated_at"
 BEFORE UPDATE ON user_settings
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
-CREATE TABLE user_event_refresh_state (
+CREATE TABLE "user_event_refresh_state" (
   user_id uuid NOT NULL,
   source_key text NOT NULL,
   source_kind text NOT NULL CHECK (source_kind IN ('serpapi', 'url')),
@@ -95,16 +97,16 @@ CREATE TABLE user_event_refresh_state (
   ON DELETE CASCADE
 );
 
-CREATE INDEX idx_user_event_refresh_state_next_refresh
+CREATE INDEX "idx_user_event_refresh_state_next_refresh"
   ON user_event_refresh_state (next_refresh_at);
 
-CREATE INDEX idx_user_event_refresh_state_status
+CREATE INDEX "idx_user_event_refresh_state_status"
   ON user_event_refresh_state (last_status);
 
-CREATE INDEX idx_user_event_refresh_state_user_kind
+CREATE INDEX "idx_user_event_refresh_state_user_kind"
   ON user_event_refresh_state (user_id, source_kind);
 
-CREATE TRIGGER trg_user_event_refresh_state_updated_at
+CREATE TRIGGER "trg_user_event_refresh_state_updated_at"
 BEFORE UPDATE ON user_event_refresh_state
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
@@ -147,6 +149,54 @@ CREATE TABLE "channels" (
     "stream_url" text,
     "created_at" timestamptz DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS liveview_sources (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  slot_id integer NOT NULL CHECK (slot_id >= 0),
+  source_kind text NOT NULL CHECK (
+    source_kind IN ('catalog', 'custom_hls', 'mediamtx_rtsp')
+  ),
+  display_name text,
+  source_url text,
+  channel_id uuid,
+  mediamtx_path text,
+  transport text CHECK (transport IN ('tcp', 'udp', 'automatic')),
+  enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT fk_liveview_sources_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_liveview_sources_channel FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE SET NULL,
+  CONSTRAINT uq_liveview_sources_user_slot UNIQUE (user_id, slot_id),
+
+  CONSTRAINT chk_liveview_catalog 
+    CHECK (
+      source_kind <> 'catalog'
+      OR channel_id IS NOT NULL
+    ),
+
+  CONSTRAINT chk_liveview_custom_hls
+    CHECK (
+      source_kind <> 'custom_hls'
+      OR source_url IS NOT NULL
+    ),
+
+  CONSTRAINT chk_liveview_mediamtx_rtsp
+    CHECK (
+      source_kind <> 'mediamtx_rtsp'
+      OR (source_url IS NOT NULL AND mediamtx_path IS NOT NULL)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_liveview_sources_user_id ON liveview_sources(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_liveview_sources_kind ON liveview_sources(source_kind);
+
+CREATE TRIGGER trg_liveview_sources_updated_at  
+BEFORE UPDATE ON liveview_sources
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
 CREATE OR REPLACE FUNCTION get_days_for_date(check_date DATE)
 RETURNS SETOF day_meanings AS $$

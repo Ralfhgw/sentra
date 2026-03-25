@@ -40,11 +40,11 @@ function buildCacheKey(source: EventUrlSetting) {
 function getLookaheadDays(interval: EventRefreshInterval) {
     switch (interval) {
         case "weekly":
-            return 7;
+            return 14;
         case "monthly":
-            return 30;
+            return 60;
         default:
-            return 1;
+            return 2;
     }
 }
 

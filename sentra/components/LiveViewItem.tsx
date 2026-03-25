@@ -48,6 +48,26 @@ export default function WebcamItem({
     const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(true);
     const [volume, setVolume] = useState(0.5);
+    const hlsRef = useRef<Hls | null>(null);
+    const resumeAfterVisibleRef = useRef(false);
+
+    const seekToLiveEdge = () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const hls = hlsRef.current;
+        const liveSyncPosition = hls?.liveSyncPosition;
+
+        if (liveSyncPosition != null && Number.isFinite(liveSyncPosition)) {
+            video.currentTime = Math.max(0, liveSyncPosition - 0.25);
+            return;
+        }
+
+        if (video.buffered.length > 0) {
+            const end = video.buffered.end(video.buffered.length - 1);
+            video.currentTime = Math.max(0, end - 0.25);
+        }
+    };
 
     // Connect Video with Stream if change
     useEffect(() => {
@@ -62,6 +82,7 @@ export default function WebcamItem({
         };
 
         if (!video || !url) {
+            hlsRef.current = null;
             resetVideo();
             return;
         }
@@ -69,26 +90,81 @@ export default function WebcamItem({
         const playbackUrl = getPlaybackUrl(url);
 
         if (Hls.isSupported()) {
-            hls = new Hls({ capLevelToPlayerSize: true });
+            hls = new Hls({
+                capLevelToPlayerSize: true,
+                lowLatencyMode: true,
+                liveSyncDurationCount: 1,
+                liveMaxLatencyDurationCount: 3,
+                maxLiveSyncPlaybackRate: 1.5,
+            });
+
+            hlsRef.current = hls;
             hls.loadSource(playbackUrl);
             hls.attachMedia(video);
+
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                seekToLiveEdge();
                 video.play().catch(() => { });
             });
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            hlsRef.current = null;
             video.src = playbackUrl;
             video.load();
         }
 
         return () => {
+            hlsRef.current = null;
+
             if (hls) {
                 hls.detachMedia();
                 hls.destroy();
             }
+
             resetVideo();
         };
     }, [url]);
 
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            const video = videoRef.current;
+            if (!video) return;
+
+            const hls = hlsRef.current;
+
+            if (document.hidden) {
+                resumeAfterVisibleRef.current = !video.paused;
+
+                if (hls?.loadingEnabled) {
+                    hls.stopLoad();
+                }
+
+                video.pause();
+                return;
+            }
+
+            if (hls && !hls.loadingEnabled) {
+                hls.startLoad(-1);
+            }
+
+            requestAnimationFrame(() => {
+                seekToLiveEdge();
+
+                if (resumeAfterVisibleRef.current) {
+                    video.play().catch(() => { });
+                }
+            });
+
+            setTimeout(() => {
+                seekToLiveEdge();
+            }, 200);
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, []);
 
     // Play/Pause Handler
     const handlePlayPause = () => {

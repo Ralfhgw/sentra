@@ -164,7 +164,8 @@ export default function Home() {
         }}
         onClick={handleToggle}
       >
-        {backgroundMode === "image" && (
+        {backgroundMode === "image" 
+/*         && (
           <>
             <div className="bird-container bird-container--one" style={{ top: "1%" }}>
               <div className="bird bird--one bird--small"></div>
@@ -182,7 +183,8 @@ export default function Home() {
               <div className="bird bird--four bird--medium"></div>
             </div>
           </>
-        )}
+        ) */
+        }
 
         {infoVisible && (
           <div

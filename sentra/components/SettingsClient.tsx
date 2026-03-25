@@ -418,7 +418,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
             <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
-              {/*               <MapSelector
+               <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -444,7 +444,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     setError("Standortdaten konnten nicht geladen werden.");
                   }
                 }}
-              /> */}
+              /> 
             </div>
             {/* Location Details */}
             <article className="w-100 h-100 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">

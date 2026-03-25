@@ -138,7 +138,7 @@ export default function ChartTemperature({ data }: ChartTemperatureProps) {
         <h2 style={styles.cardTitle}>Temperatur °C</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN}>
+            <ComposedChart data={chartData} margin={CHART_MARGIN}>
               <CartesianGrid
                 stroke="#d4d5d6"
                 strokeOpacity={0.25}

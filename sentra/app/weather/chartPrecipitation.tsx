@@ -157,7 +157,7 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
         <h2 style={styles.cardTitle}>Niederschlag und Luftfeuchtigkeit</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN} barCategoryGap="24%">
+            <ComposedChart data={chartData} margin={CHART_MARGIN} barCategoryGap="24%">
               <defs>
                 <linearGradient id="precipBarGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#34d399" stopOpacity={0.96} />

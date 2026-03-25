@@ -32,6 +32,18 @@ function addInterval(date: Date, interval: EventRefreshInterval) {
   return next;
 }
 
+function getLookaheadDays(interval: EventRefreshInterval) {
+  switch (interval) {
+    case "weekly":
+      return 14;
+    case "monthly":
+      return 60;
+    default:
+      return 2;
+  }
+}
+
+
 function buildPrimaryCacheKey(settings: Awaited<ReturnType<typeof getUserSettings>>) {
   return JSON.stringify({
     town: settings.town ?? "",
@@ -199,7 +211,8 @@ async function refreshPrimaryEvents(userId: string, settings?: Awaited<ReturnTyp
   try {
     await markRefreshRunning(userId, cacheKey);
 
-    for (let offset = 0; offset < 1; offset += 1) {
+    const lookaheadDays = getLookaheadDays(resolvedSettings.eventRefreshInterval);
+    for (let offset = 0; offset < lookaheadDays; offset += 1) {
       const date = new Date();
       date.setDate(date.getDate() + offset);
       const dayString = date.toISOString().slice(0, 10);

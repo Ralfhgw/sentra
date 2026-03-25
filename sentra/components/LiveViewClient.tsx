@@ -127,9 +127,9 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
   const [popupCell, setPopupCell] = useState<number | null>(null);
   const [customUrl, setCustomUrl] = useState("");
   const [customName, setCustomName] = useState("");
-  const [selectedUrl, setSelectedUrl] = useState<string>("");
   const [selectedName, setSelectedName] = useState("");
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
 
   const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
     (typeof userChannels === "string"
@@ -192,75 +192,101 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
 
   // Save channelassignment
   const handleAssignChannel = async () => {
-    const maxSlotId = Math.max(
-      -1,
-      ...config.cells.map((cell) => cell.id),
-      currentUserChannels.length - 1,
-      popupCell ?? -1
-    );
+    if (popupCell === null) return;
 
-    const newChannels = Array.from(
-      { length: maxSlotId + 1 },
-      (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" }
-    );
-
-    if (customUrl) {
-      newChannels[popupCell!] = {
-        name: customName,
-        url: customUrl,
-        location: "",
-      };
+    if (customUrl.trim()) {
+      await saveSlot({
+        slotId: popupCell,
+        name: customName.trim(),
+        url: customUrl.trim(),
+        transport: "tcp",
+      });
     } else {
-      const selected = filteredChannels.find((ch) => ch.stream_url === selectedUrl);
-      newChannels[popupCell!] = {
+      await saveSlot({
+        slotId: popupCell,
         name: selectedName,
-        url: selectedUrl,
-        location: selected?.location ?? "",
-      };
+        channelId: selectedChannelId || null,
+        url: null,
+      });
     }
-
-    setCurrentUserChannels(newChannels);
-    await persistChannels(newChannels);
 
     setPopupCell(null);
     setCustomUrl("");
     setCustomName("");
-    setSelectedUrl("");
+    setSelectedName("");
+    setSelectedChannelId("");
   };
 
-  const persistChannels = async (next: UserChannel[]) => {
-    const response = await fetch("/api/user-channels", {
+  const deleteSlot = async (slotId: number) => {
+    const response = await fetch(`/api/liveview/slots?slotId=${slotId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error ?? "Slot konnte nicht gelöscht werden.");
+    }
+
+    if (Array.isArray(data?.channels)) {
+      setCurrentUserChannels(data.channels);
+    }
+  };
+
+
+  const saveSlot = async (payload: {
+    slotId: number;
+    name: string;
+    channelId?: string | null;
+    url?: string | null;
+    transport?: "tcp" | "udp" | "automatic";
+  }) => {
+    const response = await fetch("/api/liveview/slots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channels: next }),
+      body: JSON.stringify(payload),
     });
+
+    const data = await response.json().catch(() => null);
+
     if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      throw new Error(data?.error ?? "Channels konnten nicht gespeichert werden.");
+      throw new Error(data?.error ?? "Slot konnte nicht gespeichert werden.");
+    }
+
+    if (Array.isArray(data?.channels)) {
+      setCurrentUserChannels(data.channels);
+    }
+  };
+
+  const swapSlots = async (fromSlotId: number, toSlotId: number) => {
+    const response = await fetch("/api/liveview/swap-slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fromSlotId, toSlotId }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error ?? "Slots konnten nicht getauscht werden.");
+    }
+
+    if (Array.isArray(data?.channels)) {
+      setCurrentUserChannels(data.channels);
     }
   };
 
   const handleDropOnSlot = async (toSlotId: number) => {
     if (dragFrom === null || dragFrom === toSlotId) return;
 
-    const maxSlotId = Math.max(
-      -1,
-      ...config.cells.map((cell) => cell.id),
-      currentUserChannels.length - 1,
-      dragFrom,
-      toSlotId
-    );
-
-    const next = Array.from(
-      { length: maxSlotId + 1 },
-      (_, i) => currentUserChannels[i] ?? { name: "", url: "", location: "" }
-    );
-
-    [next[dragFrom], next[toSlotId]] = [next[toSlotId], next[dragFrom]];
-
-    setCurrentUserChannels(next);
+    const draggedChannel = currentUserChannels[dragFrom];
     setDragFrom(null);
-    await persistChannels(next);
+
+    if (!draggedChannel?.url) {
+      return;
+    }
+
+    await swapSlots(dragFrom, toSlotId);
   };
 
 
@@ -300,23 +326,33 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
             />
             <select
               className="w-full mb-4 p-2 border rounded"
-              value={selectedUrl || ""}
-              onChange={e => {
-                setSelectedUrl(e.target.value);
-                const selected = filteredChannels.find(ch => ch.stream_url === e.target.value);
+              value={selectedChannelId}
+              onChange={(e) => {
+                const nextId = e.target.value;
+                setSelectedChannelId(nextId);
+
+                const selected = filteredChannels.find((ch) => ch.id === nextId);
                 setSelectedName(selected?.channel ?? "");
               }}
             >
               <option value="">Bitte wählen...</option>
               {filteredChannels
                 .sort((a, b) => (a.channel || "").localeCompare(b.channel || ""))
-                .map(ch => (
-                  <option key={ch.id} value={ch.stream_url ?? ""}>
+                .map((ch) => (
+                  <option key={ch.id} value={ch.id}>
                     {ch.channel}
                   </option>
                 ))}
             </select>
+
             {/* Eigener Stream */}
+            <input
+              type="text"
+              placeholder="Name des eigenen Streams"
+              value={customName}
+              onChange={e => setCustomName(e.target.value)}
+              className="w-full mb-4 p-2 border rounded"
+            />
             <input
               type="text"
               placeholder="Eigene Stream-URL"
@@ -325,19 +361,32 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
                 e => setCustomUrl(e.target.value)}
               className="w-full mb-2 p-2 border rounded"
             />
-            <input
-              type="text"
-              placeholder="Name des eigenen Streams"
-              value={customName}
-              onChange={e => setCustomName(e.target.value)}
-              className="w-full mb-4 p-2 border rounded"
-            />
+
             <button
               className="bg-gray-700 text-white px-4 py-2 rounded"
               onClick={handleAssignChannel}
             >
               Speichern
             </button>
+
+            <button
+              className="ml-2 bg-red-700 text-white px-4 py-2 rounded"
+              disabled={!currentUserChannels[popupCell]?.url}
+              onClick={async () => {
+                if (popupCell === null) return;
+
+                await deleteSlot(popupCell);
+
+                setPopupCell(null);
+                setCustomUrl("");
+                setCustomName("");
+                setSelectedName("");
+                setSelectedChannelId("");
+              }}
+            >
+              Entfernen
+            </button>
+
             <button className="ml-2" onClick={() => setPopupCell(null)}>
               Schließen
             </button>
@@ -390,11 +439,11 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
             <div
               key={`cell-${idx}-${slotId}`}
               className={`${useCompactSpans
-                  ? "col-span-1 row-span-1 min-h-[220px]"
-                  : cell.span.replace(
-                    /col-span-(\d+)/,
-                    (_, span) => `col-span-${Math.min(Number(span), responsiveCols)}`
-                  )
+                ? "col-span-1 row-span-1 min-h-55"
+                : cell.span.replace(
+                  /col-span-(\d+)/,
+                  (_, span) => `col-span-${Math.min(Number(span), responsiveCols)}`
+                )
                 } relative bg-black border border-gray-900/50 group overflow-hidden`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => void handleDropOnSlot(slotId)}
@@ -402,8 +451,11 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
             >
               <div
                 className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
-                draggable
-                onDragStart={() => setDragFrom(slotId)}
+                draggable={Boolean(currentUserChannels[slotId]?.url)}
+                onDragStart={() => {
+                  if (!currentUserChannels[slotId]?.url) return;
+                  setDragFrom(slotId);
+                }}
                 onDragEnd={() => setDragFrom(null)}
                 title="Zum Verschieben hier ziehen"
                 aria-label="Drag handle"

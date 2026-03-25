@@ -10,8 +10,13 @@ export type Channel = {
 
 };
 
+export type UserChannel = {
+  name: string;
+  url: string;
+  location?: string;
+};
+
 export type WebcamClientProps = {
   channels: Channel[];
-  userChannels: any[];
-
+  userChannels: UserChannel[] | string;
 };

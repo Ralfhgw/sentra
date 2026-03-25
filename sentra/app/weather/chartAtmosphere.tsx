@@ -282,7 +282,7 @@ export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProp
                 <h2 style={styles.cardTitle}>Sichtweite / Luftdruck</h2>
                 <div style={styles.chartWrap}>
                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                        <ComposedChart data={chartData} syncId="weather" margin={CHART_MARGIN}>
+                        <ComposedChart data={chartData}  margin={CHART_MARGIN}>
                             {/* Grid Box */}
                             <CartesianGrid
                                 stroke="#e1e3e4"

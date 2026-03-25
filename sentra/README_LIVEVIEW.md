@@ -37,7 +37,6 @@ https://sydneybeach.cam/stream.m3u8
 http://194.203.232.201/mjpg/tc2.mjpg
 
 rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0
-
 rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0#backchannel=0
 
 https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8

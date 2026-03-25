@@ -5,10 +5,21 @@ import WebcamClient from "@/components/LiveViewClient";
 import sql from "@/utils/db";
 import { getAuthenticatedUserWithSettingsFromCookies } from "@/utils/serverAuth";
 import type { Channel } from "@/types/typesLiveView";
+import { reconcileAllLiveViewRtspSources } from "@/utils/liveviewSources";
 
 async function getWebcams() {
   try {
-    const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
+const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
+
+try {
+  await reconcileAllLiveViewRtspSources();
+} catch (error) {
+  console.warn(
+    `[liveview] reconcile failed: ${
+      error instanceof Error ? error.message : String(error)
+    }`
+  );
+}
 
     const channelsResult = await sql<Channel[]>`
       SELECT

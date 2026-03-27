@@ -1,7 +1,4 @@
-import { randomUUID } from "crypto";
 import { fetchWeatherApi } from "openmeteo";
-import fs from "fs/promises";
-import path from "path";
 import OpenAI from "openai";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -190,48 +187,17 @@ Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fot
         throw new Error("Kein Bild von OpenAI erhalten.");
     }
 
-    /* const base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+Xn1cAAAAASUVORK5CYII="; */
-
-    const buffer = Buffer.from(base64Image, "base64");
-
-    const fileDir = path.join(process.cwd(), "public", "backgrounds");
-    const tempFilePath = path.join(
-        fileDir,
-        `${userId}-${randomUUID()}-tmp.png`
-    );
-
-    await fs.mkdir(fileDir, { recursive: true });
-    await fs.writeFile(tempFilePath, buffer);
-
-    try {
-        const result = await cloudinary.uploader.upload(tempFilePath, {
+    const result = await cloudinary.uploader.upload(
+        `data:image/png;base64,${base64Image}`,
+        {
             public_id: userId,
             folder: "user_profiles",
             overwrite: true,
             invalidate: true,
-        });
+        }
+    );
 
-        console.log("Cloudinary Upload Result:", result.secure_url);
+    console.log("Cloudinary Upload Result:", result.secure_url);
 
-        let i = 1;
-        let numberedPath = "";
-        do {
-            const suffix = String(i).padStart(3, "0");
-            numberedPath = path.join(fileDir, `${userId}-${suffix}.png`);
-            i += 1;
-        } while (
-            await fs
-                .stat(numberedPath)
-                .then(() => true)
-                .catch(() => false)
-        );
-
-        await fs.rename(tempFilePath, numberedPath);
-
-        console.log(`/backgrounds/${path.basename(numberedPath)}`);
-
-        return result.secure_url;
-    } finally {
-        await fs.unlink(tempFilePath).catch(() => { });
-    }
+    return result.secure_url;
 }

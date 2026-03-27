@@ -284,6 +284,7 @@ export default function LiveTalkClient({
     syncRemoteFeeds();
   };
 
+  
   const cleanupSession = () => {
     socketRef.current?.disconnect();
     socketRef.current = null;

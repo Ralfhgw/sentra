@@ -26,7 +26,8 @@ jobs:
       SERVER_HOST: webschere.de
       SERVER_USER: deploy
 
-      SENTRA_SERVER_PATH: /home/deploy/sentra/sentra
+      SENTRA_SERVER_PATH: /data/sentra/sentra
+      LEGACY_SENTRA_SERVER_PATH: /home/deploy/sentra/sentra
       AUTH_SERVER_PATH: /home/deploy/sentra/authServer
       MICROSERVICE_PATH: /home/deploy/sentra/microservice
       RELEASE_DIR: sentra-release
@@ -135,6 +136,15 @@ jobs:
           ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
           set -euo pipefail
           mkdir -p "$SENTRA_SERVER_PATH" "$AUTH_SERVER_PATH" "$MICROSERVICE_PATH"
+
+          if [ -f "$LEGACY_SENTRA_SERVER_PATH/.env" ] && [ ! -f "$SENTRA_SERVER_PATH/.env" ]; then
+            cp "$LEGACY_SENTRA_SERVER_PATH/.env" "$SENTRA_SERVER_PATH/.env"
+          fi
+
+          if [ -d "$LEGACY_SENTRA_SERVER_PATH" ]; then
+            find "$LEGACY_SENTRA_SERVER_PATH" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
+          fi
+
           find "$SENTRA_SERVER_PATH" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
           EOF
 

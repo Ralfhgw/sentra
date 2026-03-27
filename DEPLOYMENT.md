@@ -55,7 +55,7 @@ npm run build
 npm run start
 
 #### GitHub Actions deployment (build on GitHub, no application build on the server)
-Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und ?bertr?gt anschlie?end nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
+Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und ?bertr?gt anschlie?end nur das Build-Artefakt nach `/data/sentra/sentra`.
 Zus?tzlich baut die Action die Docker-Images `sentra-authserver` und `sentra-livetalk` auf GitHub, pusht sie nach GHCR (`ghcr.io/<github-owner>/...`) und der Webserver zieht beim Deploy nur noch das passende Image-Tag. Auf dem Webserver l?uft damit kein `docker build` mehr f?r diese beiden Dienste.
 Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert, damit Compose-Dateien, `.env`-Dateien, Datenbank-Initialisierung und Service-Konfiguration lokal vorhanden sind.
 Die Build-Variablen definierst du in GitHub unter **Repository ? Settings ? Secrets and variables ? Actions** (alternativ in einem GitHub-Environment wie `production`). Die Action schreibt daraus beim Build automatisch `sentra/.env.production` auf dem Runner.
@@ -65,8 +65,8 @@ F?r serverseitige Auth-Aufrufe von Sentra (Login-Proxy, Refresh, Register) sollt
 F?r den Auth-Server gilt zus?tzlich: Die Laufzeitwerte m?ssen auf dem Server in `/home/deploy/sentra/authServer/.env` liegen, weil die Action diese Datei absichtlich nicht ?berschreibt. Pr?fe dort mindestens `DATABASE_URL`, `JWT_SECRET`, `REFRESH_SECRET`, `NODE_ENV=production` und vor allem `CORS_ORIGINS=https://<deine-sentra-domain>`. Wenn du mehrere Origins brauchst, trenne sie per Komma.
 Wenn die GHCR-Pakete privat bleiben sollen, hinterlege in GitHub Actions zus?tzlich `GHCR_USERNAME` und `GHCR_TOKEN`. Das Token braucht mindestens `read:packages`, damit sich der Webserver vor `docker compose pull` bei `ghcr.io` anmelden kann. Sind die Images ?ffentlich, ist dieser Login optional.
 Wichtig f?r ?nderungen an `authServer/` oder `microservice/livetalk/`: Ein Deploy von `sentra` allein reicht nicht. Die Action baut bei jedem Push neue Images, synchronisiert die Compose-Dateien und f?hrt anschlie?end auf dem Server `docker compose pull` plus `docker compose up -d --remove-orphans` aus, damit neue Images und neue Environment-Werte wirklich in den laufenden Diensten ankommen.
-Der Ordner `/home/deploy/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufr?umen willst, nutze auf dem Server: `find /home/deploy/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht l?schen, weil PM2 und der Deploy dorthin schreiben; l?sche bei Bedarf nur den Inhalt.
-Das Build-Paket liegt nach dem Deploy direkt in `/home/deploy/sentra/sentra` und besteht aus `server.js`, `node_modules`, `public` sowie dem versteckten Ordner `.next` (sichtbar mit `ls -la`).
+Der Ordner `/data/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufr?umen willst, nutze auf dem Server: `find /data/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht l?schen, weil PM2 und der Deploy dorthin schreiben; l?sche bei Bedarf nur den Inhalt.
+Das Build-Paket liegt nach dem Deploy direkt in `/data/sentra/sentra` und besteht aus `server.js`, `node_modules`, `public` sowie dem versteckten Ordner `.next` (sichtbar mit `ls -la`).
 Beim Deploy von `microservice/` bleiben die serverseitigen Laufzeitordner `mosquitto/data` und `mosquitto/log` erhalten, damit Docker/Mosquitto-Datenbanken und Logs nicht von `rsync --delete` entfernt werden.
 
 F?r manuelle Server-Deploys kannst du dieselben Image-Variablen verwenden:
@@ -80,8 +80,8 @@ sudo npm install -g pm2
 pm2 status
 pm2 delete 0 (Another failed process)
 pm2 delete sentra
-cd /home/deploy/sentra/sentra
-HOSTNAME=0.0.0.0 PORT=3000 pm2 start /home/deploy/sentra/sentra/server.js --name sentra --cwd /home/deploy/sentra/sentra
+cd /data/sentra/sentra
+HOSTNAME=0.0.0.0 PORT=3000 pm2 start /data/sentra/sentra/server.js --name sentra --cwd /data/sentra/sentra
 pm2 save
 Wenn `pm2 status` noch einen alten Prozess mit `npm start` zeigt oder im Log `next: not found` erscheint, lösche ihn mit `pm2 delete sentra` und starte ihn anschließend mit dem obigen `server.js`-Befehl neu.
 

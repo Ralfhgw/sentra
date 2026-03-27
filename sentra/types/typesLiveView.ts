@@ -17,6 +17,8 @@ export type UserChannel = {
 };
 
 export type WebcamClientProps = {
+  mtxEnabled: boolean;
   channels: Channel[];
   userChannels: UserChannel[] | string;
 };
+

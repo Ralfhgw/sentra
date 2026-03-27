@@ -11,6 +11,7 @@ import ChartWind from "@/app/weather/chartWind";
 import ChartPrecipitation from "@/app/weather/chartPrecipitation";
 import ChartTranspiration from "@/app/weather/chartTranspiration";
 import ChartAtmosphere from "@/app/weather/chartAtmosphere"
+import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
 
 interface SensorData {
   temp: number;
@@ -46,6 +47,7 @@ const mixColor = (
   ];
 
 export default function WeatherClient({
+  weaEnabled,
   weatherDataCurrent,
   weatherDataHourly,
   weatherDataDaily,
@@ -93,6 +95,10 @@ export default function WeatherClient({
 
   // Update MQTT data every 15 minutes
   useEffect(() => {
+    if (!weaEnabled) {
+      return;
+    }
+
     async function fetchSensorData() {
       try {
         const response = await fetch('/api/sensor');
@@ -154,10 +160,61 @@ export default function WeatherClient({
     const intervalId = window.setInterval(fetchSensorData, 60 * 1000); // 1 Minute Intervall
 
     return () => window.clearInterval(intervalId);
-  }, []);
-
+  }, [weaEnabled, s_cal_temp, s_cal_humidity, s_cal_pressure]);
 
   useEffect(() => { }, [dailyArray]);
+
+// Calculation BackgroundColor
+  const skyBackground = useMemo(() => {
+    const currentTimestamp = weatherDataCurrent?.time ?? null;
+    const cloudCoverValue = typeof weatherDataCurrent?.cloud_cover === 'number'
+      ? weatherDataCurrent.cloud_cover
+      : 0;
+
+    const nowDate = currentTimestamp ? new Date(currentTimestamp) : new Date();
+    const today = dailyArray?.find((item) => new Date(item.date).toDateString() === nowDate.toDateString());
+
+    // NACHT / FALLBACK
+    if (!today?.sunrise || !today?.sunset) {
+      return "linear-gradient(180deg, #020617 0%, #0f172a 100%)";
+    }
+
+    const now = nowDate.getTime();
+    const sunrise = new Date(today.sunrise).getTime();
+    const sunset = new Date(today.sunset).getTime();
+    const cloudiness = clamp(cloudCoverValue / 100, 0, 1);
+
+    if (now <= sunrise || now >= sunset) {
+      return "linear-gradient(180deg, #020617 0%, #1e1b4b 100%)";
+    }
+
+    // TAG-LOGIK
+    const daylightProgress = clamp((now - sunrise) / (sunset - sunrise), 0, 1);
+    const sunHeight = Math.sin(daylightProgress * Math.PI);
+    const sunX = 10 + daylightProgress * 80;
+    const sunY = 80 - sunHeight * 60;
+
+    // Farben [R, G, B]
+    const sunCore: [number, number, number] = [253, 224, 71];   // Gelb
+    const cloudCore: [number, number, number] = [209, 213, 219]; // Hellgrau
+    const skyBlue: [number, number, number] = [14, 165, 233];    // Blau
+    const skyGrey: [number, number, number] = [71, 85, 105];     // Slate-Grau
+
+    const core = mixColor(sunCore, cloudCore, cloudiness);
+    const atmosphere = mixColor(skyBlue, skyGrey, cloudiness);
+
+    return `
+    radial-gradient(circle at ${sunX}% ${sunY}%,
+      rgba(${core[0]}, ${core[1]}, ${core[2]}, 1) 0%,
+      rgba(${atmosphere[0]}, ${atmosphere[1]}, ${atmosphere[2]}, 0.8) 25%,
+      rgba(${Math.max(0, atmosphere[0] - 40)}, ${Math.max(0, atmosphere[1] - 40)}, ${Math.max(0, atmosphere[2] - 40)}, 1) 100%
+    )
+  `;
+  }, [weatherDataCurrent, dailyArray]);
+
+  if (!weaEnabled) {
+    return <ModuleDisabledNotice title="Weather" settingCode="WEA" />;
+  }
 
   const isIndoorWarning =
     sensorValues.indoor !== null &&
@@ -226,60 +283,10 @@ export default function WeatherClient({
     c_surfacePressure
   });
 
-  // Calculation BackgroundColor
-  const skyBackground = useMemo(() => {
-    const currentTimestamp = weatherDataCurrent?.time ?? null;
-    const cloudCoverValue = typeof weatherDataCurrent?.cloud_cover === 'number'
-      ? weatherDataCurrent.cloud_cover
-      : 0;
-
-    const nowDate = currentTimestamp ? new Date(currentTimestamp) : new Date();
-    const today = dailyArray?.find((item) => new Date(item.date).toDateString() === nowDate.toDateString());
-
-    // NACHT / FALLBACK
-    if (!today?.sunrise || !today?.sunset) {
-      return "linear-gradient(180deg, #020617 0%, #0f172a 100%)";
-    }
-
-    const now = nowDate.getTime();
-    const sunrise = new Date(today.sunrise).getTime();
-    const sunset = new Date(today.sunset).getTime();
-    const cloudiness = clamp(cloudCoverValue / 100, 0, 1);
-
-    if (now <= sunrise || now >= sunset) {
-      return "linear-gradient(180deg, #020617 0%, #1e1b4b 100%)";
-    }
-
-    // TAG-LOGIK
-    const daylightProgress = clamp((now - sunrise) / (sunset - sunrise), 0, 1);
-    const sunHeight = Math.sin(daylightProgress * Math.PI);
-    const sunX = 10 + daylightProgress * 80;
-    const sunY = 80 - sunHeight * 60;
-
-    // Farben [R, G, B]
-    const sunCore: [number, number, number] = [253, 224, 71];   // Gelb
-    const cloudCore: [number, number, number] = [209, 213, 219]; // Hellgrau
-    const skyBlue: [number, number, number] = [14, 165, 233];    // Blau
-    const skyGrey: [number, number, number] = [71, 85, 105];     // Slate-Grau
-
-    const core = mixColor(sunCore, cloudCore, cloudiness);
-    const atmosphere = mixColor(skyBlue, skyGrey, cloudiness);
-
-    return `
-    radial-gradient(circle at ${sunX}% ${sunY}%,
-      rgba(${core[0]}, ${core[1]}, ${core[2]}, 1) 0%,
-      rgba(${atmosphere[0]}, ${atmosphere[1]}, ${atmosphere[2]}, 0.8) 25%,
-      rgba(${Math.max(0, atmosphere[0] - 40)}, ${Math.max(0, atmosphere[1] - 40)}, ${Math.max(0, atmosphere[2] - 40)}, 1) 100%
-    )
-  `;
-  }, [weatherDataCurrent, dailyArray]);
-
   return (
-    <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <div>
-      </div>
-      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
 
+    <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
+      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
         { /* Weather Instruments Monitor*/}
         <div className="hidden lg:flex relative w-full h-full rounded-xl overflow-hidden shadow-xl items-center justify-center" style={{ background: skyBackground }}>
 

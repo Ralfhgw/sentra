@@ -40,6 +40,49 @@ services:
     ports:
       - "5432:5432" # Optional, falls Zugriff von außen benötigt
 
+  livetalk:
+    build:
+      context: ./livetalk
+    container_name: livetalk
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PORT: 3011
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      LIVETALK_JWT_SECRET: ${LIVETALK_JWT_SECRET}
+      CORS_ORIGIN: ${SENTRA_PUBLIC_URL}
+      MEDIASOUP_LISTEN_IP: 0.0.0.0
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP}
+      MEDIASOUP_RTC_MIN_PORT: 40000
+      MEDIASOUP_RTC_MAX_PORT: 40100
+      MEDIASOUP_WORKER_COUNT: 1
+      CHAT_HISTORY_LIMIT: 50
+    ports:
+      - "3011:3011"
+      - "40000-40100:40000-40100/udp"
+      - "40000-40100:40000-40100/tcp"
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "5349:5349"
+      - "5349:5349/udp"
+    command: >
+      -n
+      --log-file=stdout
+      --realm=sentra.local
+      --use-auth-secret
+      --static-auth-secret=${LIVETALK_JWT_SECRET}
+      --listening-port=3478
+      --tls-listening-port=5349
+      --min-port=49160
+      --max-port=49200
+
 volumes:
   pg-data:
 
@@ -49,8 +92,10 @@ volumes:
 # docker logs mediamtx
 # docker-compose logs -f mediamtx
 # docker compose exec db psql -U dbuser -d sentra
+# docker compose exec db psql -U user -d authdb
 
 # docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v-v
+# Proxy: mosquitto_sub -h localhost -t "#" -v-v
 # indoor/sensor/climate {"temp":21.60,"hum":45.98,"pres":1028.83}
 
 # Bei Sentra Problemen

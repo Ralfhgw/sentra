@@ -18,12 +18,18 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       NEXT_TELEMETRY_DISABLED: "1"
+
       SERVER_HOST: webschere.de
       SERVER_USER: deploy
+
       SENTRA_SERVER_PATH: /home/deploy/sentra/sentra
       AUTH_SERVER_PATH: /home/deploy/sentra/authServer
       MICROSERVICE_PATH: /home/deploy/sentra/microservice
       RELEASE_DIR: sentra-release
+
+      PUBLIC_BASE_URL: https://webschere.de
+      AUTH_PUBLIC_URL: https://webschere.de
+      LIVETALK_PUBLIC_URL: https://webschere.de
 
     steps:
       - name: Checkout repository
@@ -40,14 +46,17 @@ jobs:
         working-directory: sentra
         run: |
           cat > .env.production <<EOF
-          SERPAPI_KEY=${{ secrets.SERPAPI_KEY }}
-          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          NEXT_PUBLIC_AUTH_HOST=${{ secrets.NEXT_PUBLIC_AUTH_HOST }}
           POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+
+          AUTH_HOST=${AUTH_PUBLIC_URL}
+          NEXT_PUBLIC_AUTH_HOST=${AUTH_PUBLIC_URL}
+
+          LIVETALK_JWT_SECRET=${{ secrets.LIVETALK_JWT_SECRET }}
+          NEXT_PUBLIC_LIVETALK_SOCKET_URL=${LIVETALK_PUBLIC_URL}
+
+          AUTH_CLIENT_ID=${{ secrets.AUTH_CLIENT_ID }}
+          AUTH_API_KEY=${{ secrets.AUTH_API_KEY }}
           EOF
 
       - name: Install sentra dependencies
@@ -98,24 +107,26 @@ jobs:
             authServer/ "$SERVER_USER@$SERVER_HOST:$AUTH_SERVER_PATH/"
 
           rsync -az --delete \
+            --exclude 'node_modules' \
             --exclude '.env' \
             --exclude 'mosquitto/data/' \
             --exclude 'mosquitto/log/' \
             -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
 
-      - name: Rebuild auth server and recreate sentra pm2 process
+      - name: Rebuild auth server, microservice and restart sentra
         run: |
           ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
           set -euo pipefail
 
-          export HOSTNAME=0.0.0.0
-          export PORT=3000
-
           cd "$AUTH_SERVER_PATH"
+          docker compose up -d --build --remove-orphans
+
+          cd "$MICROSERVICE_PATH"
           docker compose up -d --build --remove-orphans
 
           pm2 delete sentra || true
           pm2 start "$SENTRA_SERVER_PATH/server.js" --name sentra --cwd "$SENTRA_SERVER_PATH"
           pm2 save
           EOF
+

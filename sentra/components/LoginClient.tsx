@@ -11,16 +11,27 @@ interface LoginFormProps {
 }
 //TODO Login soll nur mit email erfolgen
 export default function LoginForm({ translations, defaultLanguage = "en" }: LoginFormProps) {
-  const [language, setLanguage] = useState<"en" | "de">(defaultLanguage);
-  const [useremail, setUseremail] = useState("");
-  const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
+  const requestedLanguage = searchParams.get("lang");
   const redirectUrl = searchParams.get("redirect");
+  const registered = searchParams.get("registered") === "1";
+  const normalizedRequestedLanguage =
+    requestedLanguage === "de" || requestedLanguage === "en" ? requestedLanguage : undefined;
+  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "de" | null>(null);
+  const language = selectedLanguage ?? normalizedRequestedLanguage ?? defaultLanguage;
+  const [useremail, setUseremail] = useState("");
+  const [password, setPassword] = useState("");
   const { user, login, isLoading, error } = useAuth();
   const [agreed, setAgreed] = useState(false);
 
   const t = translations[language];
+  const registrationNotice =
+    language === "de"
+      ? "Dein Konto wurde angelegt. Ein Administrator muss es im Auth-Server zuerst freischalten, bevor du dich anmelden kannst."
+      : "Your account has been created. An administrator must activate it in the auth server before you can log in.";
+
+
 
   useEffect(() => {
     if (user) {
@@ -70,6 +81,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 width={2200}
                 height={90}
                 className="mx-auto mb-2 rounded-lg"
+                unoptimized
               />
               Events&nbsp;-&nbsp;Wetter&nbsp;-&nbsp;LiveView
             </div>
@@ -100,7 +112,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
             <select
               className="w-28 px-2 rounded-xl bg-gray-700 text-[16px] opacity-70"
               value={language}
-              onChange={e => setLanguage(e.target.value as "en" | "de")}
+              onChange={e => setSelectedLanguage(e.target.value as "en" | "de")}
             >
               <option value="en">English</option>
               <option value="de">Deutsch</option>
@@ -108,6 +120,12 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
           </div>
 
           <h2 className="mb-9 text-2xl font-semibold text-white">{t.login}</h2>
+
+          {registered && (
+            <div className="mb-4 rounded-xl border border-amber-400 bg-amber-100/90 px-4 py-3 text-sm text-amber-900">
+              {registrationNotice}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             {/* Input Email */}
@@ -346,3 +364,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
     </div >
   );
 }
+
+
+
+

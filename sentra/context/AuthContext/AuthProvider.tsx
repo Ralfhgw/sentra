@@ -1,20 +1,17 @@
 "use client";
-import { useReducer, useEffect, type ReactNode } from "react";
+
+import { useEffect, useReducer, type ReactNode } from "react";
+import axios from "axios";
 import { AuthContext } from "./AuthContext";
 import { authReducer } from "./AuthReducer";
-import axios from "axios";
+import {
+  getAccessToken,
+  getAuthErrorMessage,
+  getAuthUser,
+  type AuthResponseEnvelope,
+} from "@/utils/authResponse";
 
 const API_BASE = "/api/auth";
-
-type AuthResponse = {
-  accessToken?: string;
-  user?: {
-    id?: string | number;
-    user_name?: string;
-    email?: string;
-  };
-  error?: string;
-};
 
 function decodeUserFromToken(token: string) {
   try {
@@ -26,28 +23,32 @@ function decodeUserFromToken(token: string) {
     const payload = JSON.parse(atob(padded)) as {
       sub?: string | number;
       id?: string | number;
+      username?: string;
+      email?: string;
     };
 
     const userId = payload.sub ?? payload.id;
     if (!userId) return null;
 
-    return { id: String(userId) };
+    return {
+      id: String(userId),
+      username: payload.username,
+      email: payload.email,
+    };
   } catch {
     return null;
   }
 }
 
-function getUserFromAuthResponse(data: AuthResponse) {
-  if (data.user?.id) {
-    return {
-      id: String(data.user.id),
-      user_name: data.user.user_name,
-      email: data.user.email,
-    };
+function getUserFromAuthResponse(data: AuthResponseEnvelope) {
+  const user = getAuthUser(data);
+  if (user) {
+    return user;
   }
 
-  if (data.accessToken) {
-    return decodeUserFromToken(data.accessToken);
+  const accessToken = getAccessToken(data);
+  if (accessToken) {
+    return decodeUserFromToken(accessToken);
   }
 
   return null;
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function checkAuth() {
       dispatch({ type: "SET_LOADING" });
       try {
-        const refreshRes = await axios.post<AuthResponse>(
+        const refreshRes = await axios.post<AuthResponseEnvelope>(
           `${API_BASE}/refresh`,
           {},
           { withCredentials: true }
@@ -88,12 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LOADING" });
 
     const normalized = identifier.trim();
-    const payload = normalized.includes("@")
-      ? { email: normalized, password }
-      : { user_name: normalized, password };
+    const payload = {
+      email: normalized,
+      identifier: normalized,
+      password,
+    };
 
     try {
-      const loginRes = await axios.post<AuthResponse>(
+      const loginRes = await axios.post<AuthResponseEnvelope>(
         `${API_BASE}/login`,
         payload,
         {
@@ -111,19 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const data = err.response?.data;
-        const apiError =
-          typeof data === "string"
-            ? data
-            : data && typeof data === "object" && "error" in data
-              ? String((data as { error?: string }).error)
-              : undefined;
+        const apiError = getAuthErrorMessage(data);
 
         console.error("Login error:", err.response?.status, data, err.message);
         dispatch({
           type: "SET_ERROR",
-          payload: apiError ?? (err.code === "ERR_NETWORK"
-            ? "Auth server or CORS not reachable."
-            : "Login failed. Please try again"),
+          payload:
+            apiError ??
+            (err.code === "ERR_NETWORK"
+              ? "Auth server or CORS not reachable."
+              : "Login failed. Please try again"),
         });
       } else {
         dispatch({ type: "SET_ERROR", payload: "Login failed. Please try again" });

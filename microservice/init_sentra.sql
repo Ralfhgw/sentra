@@ -1,5 +1,11 @@
 -- psql -U ralf -h localhost -d sentra -a -f sentra.sql
 -- sentra=> \copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '~/dci_training/websites/project_Abschlussprojekt_final/day_meanings_export.csv' WITH (FORMAT CSV, HEADER);
+DROP TABLE IF EXISTS "livetalk_messages" CASCADE;
+
+DROP TABLE IF EXISTS "livetalk_participants" CASCADE;
+
+DROP TABLE IF EXISTS "livetalk_rooms" CASCADE;
+
 DROP TABLE IF EXISTS "users" CASCADE;
 
 DROP TABLE IF EXISTS "user_settings" CASCADE;
@@ -10,9 +16,7 @@ DROP TABLE IF EXISTS "day_meanings" CASCADE;
 
 DROP TABLE IF EXISTS "channels" CASCADE;
 
-DROP TABLE IF EXISTS "user_event_refresh_state"CASCADE;
-
-DROP TABLE IF EXISTS "user_settings" CASCADE;
+DROP TABLE IF EXISTS "user_event_refresh_state" CASCADE;
 
 DROP TABLE IF EXISTS "liveview_sources" CASCADE;
 
@@ -25,17 +29,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TABLE "users" (
-    "id" uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
-    "user_name" varchar(255) UNIQUE NOT NULL,
-    "hashed_password" varchar(255) NOT NULL,
-    "email" varchar(254) NOT NULL,
-    "is_active" boolean NOT NULL DEFAULT true,
-    "email_verified" boolean NOT NULL DEFAULT false,
-    "created_at" timestamptz NOT NULL DEFAULT now(),
-    "updated_at" timestamptz
-);
 
 CREATE TABLE "user_settings" (
     "id" uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
@@ -69,9 +62,6 @@ CREATE TABLE "user_settings" (
     "created_at" timestamptz NOT NULL DEFAULT NOW(),
     "updated_at" timestamptz NOT NULL DEFAULT NOW()
 );
-
-ALTER TABLE "user_settings"
-ADD CONSTRAINT "fk_user_settings_user" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 CREATE TRIGGER "trg_user_settings_updated_at"
 BEFORE UPDATE ON user_settings
@@ -125,9 +115,6 @@ CREATE TABLE "events" (
     "created_at" timestamptz DEFAULT (now())
 );
 
-ALTER TABLE "events"
-ADD CONSTRAINT fk_events_user FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
-
 CREATE TABLE "day_meanings" (
     "id" uuid PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid ()),
     "name" varchar(255) NOT NULL,
@@ -166,7 +153,6 @@ CREATE TABLE IF NOT EXISTS liveview_sources (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
 
-  CONSTRAINT fk_liveview_sources_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_liveview_sources_channel FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE SET NULL,
   CONSTRAINT uq_liveview_sources_user_slot UNIQUE (user_id, slot_id),
 
@@ -197,6 +183,51 @@ CREATE TRIGGER trg_liveview_sources_updated_at
 BEFORE UPDATE ON liveview_sources
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE IF NOT EXISTS livetalk_rooms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
+  owner_user_id uuid NOT NULL,
+  title text,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed', 'expired')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz
+);
+
+CREATE TRIGGER trg_livetalk_rooms_updated_at
+BEFORE UPDATE ON livetalk_rooms
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE IF NOT EXISTS livetalk_participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid NOT NULL REFERENCES livetalk_rooms(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  display_name text NOT NULL,
+  role text NOT NULL CHECK (role IN ('host', 'member', 'viewer')),
+  connection_id text NOT NULL UNIQUE,
+  joined_at timestamptz NOT NULL DEFAULT now(),
+  left_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS idx_livetalk_participants_room_id
+ON livetalk_participants(room_id);
+
+CREATE INDEX IF NOT EXISTS idx_livetalk_participants_user_id
+ON livetalk_participants(user_id);
+
+CREATE TABLE IF NOT EXISTS livetalk_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid NOT NULL REFERENCES livetalk_rooms(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  display_name text NOT NULL,
+  message text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_livetalk_messages_room_id_created_at
+ON livetalk_messages(room_id, created_at DESC);
 
 CREATE OR REPLACE FUNCTION get_days_for_date(check_date DATE)
 RETURNS SETOF day_meanings AS $$

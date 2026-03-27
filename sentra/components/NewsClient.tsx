@@ -4,6 +4,7 @@ import { NewsClientProps } from "@/types/typesNews";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical";
+import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
 
 type FilterMode = "all" | "day";
 type NewsEvent = NewsClientProps["events"][number] & {
@@ -116,7 +117,13 @@ function getEventTown(event: NewsEvent, fallbackTown: string): string {
   return event.sourceTown?.trim() || fallbackTown;
 }
 
-export default function NewsClient({ events, town, dayMeanings, error }: NewsClientProps) {
+export default function NewsClient({
+  events,
+  town,
+  dayMeanings,
+  error,
+  evtEnabled,
+}: NewsClientProps) {
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [selectedStart, setSelectedStart] = useState("");
   const [selectedEnd, setSelectedEnd] = useState("");
@@ -285,6 +292,10 @@ export default function NewsClient({ events, town, dayMeanings, error }: NewsCli
 
     void loadDayMeanings(meaningTargetDate);
   }, [infoVisible, canOpenMeaning, meaningTargetDate, loadDayMeanings]);
+
+  if (!evtEnabled) {
+    return <ModuleDisabledNotice title="News" settingCode="EVT" />;
+  }
 
   function handleFilterModeChange(nextMode: FilterMode) {
     setFilterMode(nextMode);

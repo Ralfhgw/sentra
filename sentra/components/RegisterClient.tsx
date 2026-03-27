@@ -67,7 +67,7 @@ export default function RegisterClient() {
                 throw new Error(response.data.error ?? "Registration failed");
             }
 
-            router.push("/login");
+            router.push(`/login?lang=${language}&registered=1`);
         } catch (e: unknown) {
             if (axios.isAxiosError(e)) {
                 const msg =

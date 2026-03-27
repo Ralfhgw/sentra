@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { WebcamClientProps } from "@/types/typesLiveView"
 import WebcamItem from "./LiveViewItem";
+import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
 
 // Layout Grid Configuration
 const LAYOUT_CONFIGS = {
@@ -118,7 +119,11 @@ type UserChannel = {
   location?: string;
 };
 
-export default function LiveViewClient({ channels, userChannels }: WebcamClientProps) {
+export default function LiveViewClient({
+  channels,
+  userChannels,
+  mtxEnabled,
+}: WebcamClientProps) {
   console.log("LiveViewClient userChannels: ", userChannels)
 
   const [layoutId, setLayoutId] = useState<keyof typeof LAYOUT_CONFIGS>(10);
@@ -155,6 +160,10 @@ export default function LiveViewClient({ channels, userChannels }: WebcamClientP
 
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  if (!mtxEnabled) {
+    return <ModuleDisabledNotice title="LiveView" settingCode="MTX" />;
+  }
 
   const responsiveCols = viewportWidth < 640 ? 1 : viewportWidth < 1024 ? Math.min(2, config.cols) : config.cols;
   const useCompactSpans = viewportWidth < 640;

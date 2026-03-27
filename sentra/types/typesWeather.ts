@@ -75,6 +75,7 @@ export type WeatherDaily = {
 } | null;
 
 export type WeatherClientProps = {
+    weaEnabled: boolean;
     weatherDataCurrent: WeatherCurrent | null;
     weatherDataHourly: HourlyDataItem[];
     weatherDataDaily: WeatherDaily;

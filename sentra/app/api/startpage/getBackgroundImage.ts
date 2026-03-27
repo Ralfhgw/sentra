@@ -11,9 +11,9 @@ type GetBackgroundImageParams = {
     lon: number;
     openAiApiKey: string;
     cloudinaryConfig: {
-    cloudName: string;
-    apiKey: string;
-    apiSecret: string;
+        cloudName: string;
+        apiKey: string;
+        apiSecret: string;
     };
 };
 
@@ -80,7 +80,7 @@ export async function getBackgroundImage({
     cloudinaryConfig,
 }: GetBackgroundImageParams): Promise<string> {
     if (!openAiApiKey) {
-        throw new Error("OPENAI_API_KEY fehlt.");
+        throw new Error("OpenAI-Key fehlt in user_settings.key2.");
     }
 
     const openai = new OpenAI({ apiKey: openAiApiKey });
@@ -178,19 +178,19 @@ Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fot
 
     console.log("GPT prompt:", prompt);
 
-     const imageRes = await openai.images.generate({
+    const imageRes = await openai.images.generate({
         model: "gpt-image-1",
         prompt,
         n: 1,
         size: "1536x1024",
-    }); 
+    });
 
     const base64Image = imageRes.data?.[0]?.b64_json;
     if (!base64Image) {
         throw new Error("Kein Bild von OpenAI erhalten.");
-    } 
+    }
 
-/* const base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+Xn1cAAAAASUVORK5CYII="; */
+    /* const base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+Xn1cAAAAASUVORK5CYII="; */
 
     const buffer = Buffer.from(base64Image, "base64");
 

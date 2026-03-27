@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function CompBurgerMenu() {
   const [open, setOpen] = useState(false);
-//TODO Logout from Burger Menu not working
+  //TODO Logout from Burger Menu not working
   return (
     <div className="fixed top-4 right-4 z-50">
       {/* Burger Icon */}
@@ -33,10 +33,10 @@ export function CompBurgerMenu() {
           <Link href="/liveview" className="ml-2 text-orange-400 hover:text-white font-bold" onClick={() => setOpen(false)}>
             LiveView
           </Link>
-          <Link href="/liveview" className="ml-2 text-orange-400 hover:text-white font-bold" onClick={() => setOpen(false)}>
+          <Link href="/livetalk" className="ml-2 text-orange-400 hover:text-white font-bold" onClick={() => setOpen(false)}>
             LiveTalk
           </Link>
-          <Link href="/liveview" className="ml-2 text-orange-400 hover:text-white font-bold" onClick={() => setOpen(false)}>
+          <Link href="/settings" className="ml-2 text-orange-400 hover:text-white font-bold" onClick={() => setOpen(false)}>
             Settings
           </Link>
           <Link href="/liveview" className="ml-2 text-center bg-gray-300 rounded-xl text-orange-400 hover:bg-gray-400 font-bold" onClick={() => setOpen(false)}>

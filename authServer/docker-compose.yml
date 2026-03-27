@@ -33,3 +33,4 @@ volumes:
 # docker compose up -d
 # docker compose logs db  bzw. app
 # docker compose exec db psql -U user -d authdb
+# UPDATE users SET status = 'active' WHERE id = '37d128eb-93e9-478d-a56c-3ca6d0712a0a';

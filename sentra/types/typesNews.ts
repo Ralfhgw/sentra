@@ -24,6 +24,7 @@ export type NewsClientProps = {
   dayMeanings: DayMeaning[];
   town: string;
   error: string;
+  evtEnabled: boolean;
 };
 
 // page.tsx

@@ -5,6 +5,7 @@ import type { EventRefreshInterval } from "@/types/typesSettings";
 import sql from "@/utils/db";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import type { NextRequest, NextResponse } from "next/server";
+import { getAccessToken, getAuthUserId, type AuthResponseEnvelope } from "@/utils/authResponse";
 
 type CookieValue = {
   value: string;
@@ -19,15 +20,13 @@ type AuthTokenPayload = {
   id?: string;
 };
 
-type RefreshResponse = {
-  accessToken?: string;
-  user?: {
-    id?: string | number;
-    user_name?: string;
-    email?: string;
-  };
-  error?: string;
+type RefreshResponse = AuthResponseEnvelope;
+
+type RefreshedSession = {
+  accessToken: string;
+  userId: string;
 };
+
 
 type UserChannel = {
   url: string;
@@ -174,6 +173,18 @@ function getUserIdFromToken(accessToken: string) {
   return String(userId);
 }
 
+function decodeUserIdFromToken(accessToken: string) {
+  const decoded = jwt.decode(accessToken) as AuthTokenPayload | null;
+  const userId = decoded?.sub ?? decoded?.id;
+
+  if (!userId) {
+    throw new Error("User-ID konnte nicht aus dem Token gelesen werden.");
+  }
+
+  return String(userId);
+}
+
+
 function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
   if (Array.isArray(value)) {
     return value;
@@ -212,12 +223,12 @@ function normalizeEventUrls(value: EventUrlsValue): EventUrl[] {
         .map((url) => ({ url, refreshInterval: "daily" as const }));
     }
 
-return (value as EventUrl[])
-  .map((entry) => ({
-    url: String(entry?.url ?? "").trim(),
-    refreshInterval: normalizeEventRefreshInterval(entry?.refreshInterval),
-  }))
-  .filter((entry) => entry.url.length > 0);
+    return (value as EventUrl[])
+      .map((entry) => ({
+        url: String(entry?.url ?? "").trim(),
+        refreshInterval: normalizeEventRefreshInterval(entry?.refreshInterval),
+      }))
+      .filter((entry) => entry.url.length > 0);
   }
 
   if (typeof value === "string") {
@@ -309,7 +320,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   };
 }
 
-async function requestRefreshedAccessToken(refreshToken: string) {
+async function requestRefreshedSession(refreshToken: string): Promise<RefreshedSession> {
   const headers = new Headers({
     Cookie: "refreshToken=" + refreshToken,
     "Content-Type": "application/json",
@@ -328,12 +339,19 @@ async function requestRefreshedAccessToken(refreshToken: string) {
   }
 
   const refreshData = (await refreshRes.json()) as RefreshResponse;
-  if (!refreshData.accessToken) {
+  const accessToken = getAccessToken(refreshData);
+  const userId = getAuthUserId(refreshData);
+
+  if (!accessToken) {
     throw new Error("Refresh lieferte kein Access-Token.");
   }
 
-  return refreshData.accessToken;
+  return {
+    accessToken,
+    userId: userId ?? decodeUserIdFromToken(accessToken),
+  };
 }
+
 
 async function authenticateWithCookies(
   cookieStore: CookieReader
@@ -357,13 +375,12 @@ async function authenticateWithCookies(
     throw new Error("Weder Access- noch Refresh-Token gefunden.");
   }
 
-  const refreshedAccessToken = await requestRefreshedAccessToken(refreshToken);
-  const userId = getUserIdFromToken(refreshedAccessToken);
+  const refreshedSession = await requestRefreshedSession(refreshToken);
 
   return {
-    userId,
-    accessToken: refreshedAccessToken,
-    refreshedAccessToken,
+    userId: refreshedSession.userId,
+    accessToken: refreshedSession.accessToken,
+    refreshedAccessToken: refreshedSession.accessToken,
   };
 }
 

@@ -1,8 +1,7 @@
 import WeatherClient from "@/components/WeatherClient";
 import { fetchWeatherApi } from "openmeteo";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import sql from "@/utils/db";
-import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
+import { getAuthenticatedUserWithSettingsFromCookies } from "@/utils/serverAuth";
 
 interface HourlyDataInput {
     time?: Date[];
@@ -84,39 +83,36 @@ function processHourlyData(hourlyData: HourlyDataInput | null) {
     }));
 }
 
-async function getAuthenticatedUserId() {
-    const { userId } = await getAuthenticatedUserFromCookies();
-    return userId;
-}
-
 async function getWeatherData() {
-    const userId = await getAuthenticatedUserId();
+    const { userId, settings } = await getAuthenticatedUserWithSettingsFromCookies();
     console.log("WeatherServer UserId:", userId);
-    const [row] = await sql<{
-        lat: number | null;
-        lon: number | null;
-        town: string | null;
-        s_cal_temp: number | null;
-        s_cal_humidity: number | null;
-        s_cal_pressure: number | null;
-    }[]>`
-    SELECT
-      lat::float8 AS lat,
-      lon::float8 AS lon,
-      town,
-      s_cal_temp,
-      s_cal_humidity,
-      s_cal_pressure
-      FROM user_settings
-      WHERE user_id = ${userId}::uuid
-      LIMIT 1
-`;
 
-    if (!row || row.lat == null || row.lon == null) {
+    if (!settings.wea) {
+        return {
+            weaEnabled: false,
+            elevation: null,
+            lat: settings.lat,
+            lon: settings.lon,
+            town: settings.town,
+            s_cal_temp: settings.sCalTemp ?? 0,
+            s_cal_humidity: settings.sCalHumidity ?? 0,
+            s_cal_pressure: settings.sCalPressure ?? 0,
+            current: null,
+            hourly: null,
+            daily: null,
+        };
+    }
+
+    if (settings.lat == null || settings.lon == null) {
         throw new Error("Keine Koordinaten in user_settings gefunden.");
     }
 
-    const { lat, lon, town, s_cal_temp, s_cal_humidity, s_cal_pressure } = row;
+    const lat = settings.lat;
+    const lon = settings.lon;
+    const town = settings.town;
+    const s_cal_temp = settings.sCalTemp;
+    const s_cal_humidity = settings.sCalHumidity;
+    const s_cal_pressure = settings.sCalPressure;
     console.log("WeatherServer UserId:", userId);
 console.log("DB Offset Werte:", {
   s_cal_temp,
@@ -199,6 +195,7 @@ console.log("DB Offset Werte:", {
     const sunset = daily ? daily.variables(11) : null;
 
     return {
+        weaEnabled: true,
         elevation,
         lat,
         lon,
@@ -305,6 +302,7 @@ export default async function WeatherPage() {
         <main>
             <ProtectedRoute>
                 <WeatherClient
+                    weaEnabled={weatherData.weaEnabled}
                     weatherDataCurrent={weatherData.current}
                     weatherDataHourly={processedHourlyData}
                     weatherDataDaily={weatherData.daily}

@@ -9,41 +9,63 @@ import { reconcileAllLiveViewRtspSources } from "@/utils/liveviewSources";
 
 async function getWebcams() {
   try {
-const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
+    const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
 
-try {
-  await reconcileAllLiveViewRtspSources();
-} catch (error) {
-  console.warn(
-    `[liveview] reconcile failed: ${
-      error instanceof Error ? error.message : String(error)
-    }`
-  );
-}
+    if (!settings.mtx) {
+      return {
+        mtxEnabled: false,
+        channels: [] as Channel[],
+        userChannels: settings.channels,
+        error: undefined as string | undefined,
+      };
+    }
 
-    const channelsResult = await sql<Channel[]>`
-      SELECT
-        id::text AS id,
-        tvg_name,
-        tvg_id,
-        "group",
-        location,
-        channel,
-        stream_url,
-        created_at::text AS created_at
-      FROM channels
-      ORDER BY created_at DESC
-    `;
+    try {
+      await reconcileAllLiveViewRtspSources();
+    } catch (error) {
+      console.warn(
+        `[liveview] reconcile failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
 
-    return {
-      channels: Array.from(channelsResult),
-      userChannels: settings.channels,
-      error: undefined as string | undefined,
-    };
+    try {
+      const channelsResult = await sql<Channel[]>`
+        SELECT
+          id::text AS id,
+          tvg_name,
+          tvg_id,
+          "group",
+          location,
+          channel,
+          stream_url,
+          created_at::text AS created_at
+        FROM channels
+        ORDER BY created_at DESC
+      `;
+
+      return {
+        mtxEnabled: true,
+        channels: Array.from(channelsResult),
+        userChannels: settings.channels,
+        error: undefined as string | undefined,
+      };
+    } catch (err) {
+      console.error("[DB] Fehlerfall:", err);
+
+      return {
+        mtxEnabled: true,
+        channels: [] as Channel[],
+        userChannels: settings.channels,
+        error: "Fehler beim Laden der Webcams.",
+      };
+    }
   } catch (err) {
-    console.error("[DB] Fehlerfall:", err);
+    console.error("[Auth] Fehlerfall:", err);
 
     return {
+      mtxEnabled: false,
       channels: [] as Channel[],
       userChannels: [],
       error: "Fehler beim Laden der Webcams.",
@@ -52,14 +74,18 @@ try {
 }
 
 export default async function Webcams() {
-  const { channels, userChannels } = await getWebcams();
+  const { channels, userChannels, mtxEnabled } = await getWebcams();
 
   return (
     <>
       <ProtectedRoute>
         <div className="fixed inset-0 bg-gray-400 -z-10" />
         <Suspense fallback={<div>Loading...</div>}>
-          <WebcamClient channels={channels} userChannels={userChannels} />
+          <WebcamClient
+            channels={channels}
+            userChannels={userChannels}
+            mtxEnabled={mtxEnabled}
+          />
         </Suspense>
       </ProtectedRoute>
     </>

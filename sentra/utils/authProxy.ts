@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
+import {
+  getAccessToken,
+  getExpiresAt,
+  getRefreshToken,
+  type AuthResponseEnvelope,
+} from "@/utils/authResponse";
 
 const AUTH_HOST = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
+const isProd = process.env.NODE_ENV === "production";
+const refreshTokenMaxAge =
+  Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
 
 if (!AUTH_HOST) {
   throw new Error("Missing AUTH_HOST (or NEXT_PUBLIC_AUTH_HOST) env var");
@@ -22,6 +31,58 @@ function copySetCookieHeaders(upstream: Response, response: NextResponse) {
   const setCookie = upstream.headers.get("set-cookie");
   if (setCookie) {
     response.headers.set("set-cookie", setCookie);
+  }
+}
+
+function getCookieBase() {
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+  } as const;
+}
+
+function getAccessTokenMaxAge(expiresAt: string | null) {
+  if (!expiresAt) {
+    return undefined;
+  }
+
+  const expiresAtMs = Date.parse(expiresAt);
+  if (Number.isNaN(expiresAtMs)) {
+    return undefined;
+  }
+
+  const maxAge = Math.floor((expiresAtMs - Date.now()) / 1000);
+  return maxAge > 0 ? maxAge : undefined;
+}
+
+function applyBodyTokenCookies(
+  response: NextResponse,
+  data: AuthResponseEnvelope | null
+) {
+  const accessToken = getAccessToken(data);
+  const refreshToken = getRefreshToken(data);
+
+  if (!accessToken && !refreshToken) {
+    return;
+  }
+
+  const base = getCookieBase();
+  const accessTokenMaxAge = getAccessTokenMaxAge(getExpiresAt(data));
+
+  if (accessToken) {
+    response.cookies.set("accessToken", accessToken, {
+      ...base,
+      ...(accessTokenMaxAge ? { maxAge: accessTokenMaxAge } : {}),
+    });
+  }
+
+  if (refreshToken) {
+    response.cookies.set("refreshToken", refreshToken, {
+      ...base,
+      maxAge: refreshTokenMaxAge,
+    });
   }
 }
 
@@ -80,6 +141,8 @@ export async function forwardAuthRequestWithBody<T = unknown>(
       data = null;
     }
   }
+
+  applyBodyTokenCookies(response, data as AuthResponseEnvelope | null);
 
   return {
     response,

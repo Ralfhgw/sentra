@@ -1,21 +1,16 @@
 import { NextRequest } from "next/server";
 import { warmStartpageBackground } from "@/app/api/startpage/backgroundService";
 import { forwardAuthRequestWithBody } from "@/utils/authProxy";
-
-type AuthResponse = {
-  user?: {
-    id?: string | number;
-  };
-};
+import { getAuthUserId, type AuthResponseEnvelope } from "@/utils/authResponse";
 
 // Take over the Auth-Refresh-Handling, check result and send answer
 export async function POST(req: NextRequest) {
-  const { response, data, ok } = await forwardAuthRequestWithBody<AuthResponse>(
+  const { response, data, ok } = await forwardAuthRequestWithBody<AuthResponseEnvelope>(
     req,
     "/api/auth/refresh"
   );
 
-  const userId = data?.user?.id ? String(data.user.id) : null;
+  const userId = getAuthUserId(data);
 
   if (ok && userId) {
     console.log("Starting startpage warmup after refresh for userId:", userId);
@@ -26,3 +21,4 @@ export async function POST(req: NextRequest) {
 
   return response;
 }
+

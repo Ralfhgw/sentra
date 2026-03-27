@@ -1,5 +1,5 @@
 # Basis-Image
-FROM node:current-alpine
+FROM node:22-alpine
 
 # Arbeitsverzeichnis im Container
 WORKDIR /usr/src/app

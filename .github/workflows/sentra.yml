@@ -198,8 +198,18 @@ jobs:
           docker builder prune -af || true
           docker image prune -af --filter "until=168h" || true
 
+          mkdir -p /data/sentra/.pm2/logs
+          if [ -d "$HOME/.pm2" ] && [ ! -L "$HOME/.pm2" ]; then
+            cp -a "$HOME/.pm2/." /data/sentra/.pm2/ || true
+            rm -rf "$HOME/.pm2"
+          fi
+          if [ ! -e "$HOME/.pm2" ]; then
+            ln -s /data/sentra/.pm2 "$HOME/.pm2"
+          fi
+          find "$HOME/.pm2/logs" -type f -name '*.log' -exec truncate -s 0 {} + || true
+
           pm2 delete sentra || true
           pm2 start "$SENTRA_SERVER_PATH/server.js" --name sentra --cwd "$SENTRA_SERVER_PATH"
-          pm2 save
+          pm2 save || true
           EOF
 

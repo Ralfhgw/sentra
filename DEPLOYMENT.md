@@ -75,6 +75,14 @@ F?r manuelle Server-Deploys kannst du dieselben Image-Variablen verwenden:
 `export IMAGE_TAG=<commit-sha-oder-latest>`
 Danach gen?gen im jeweiligen Ordner `/home/deploy/sentra/authServer` bzw. `/home/deploy/sentra/microservice` die Befehle `docker compose pull` und `docker compose up -d --remove-orphans`.
 
+#### PM2 storage on /data
+Damit PM2 bei wenig Root-Speicher nicht unter `/home/deploy/.pm2` volll?uft, lege das PM2-Verzeichnis dauerhaft auf `/data/sentra/.pm2` und verkn?pfe es zur?ck nach `~/.pm2`:
+`mkdir -p /data/sentra/.pm2/logs`
+`cp -a ~/.pm2/. /data/sentra/.pm2/ 2>/dev/null || true`
+`rm -rf ~/.pm2`
+`ln -s /data/sentra/.pm2 ~/.pm2`
+Danach funktionieren `pm2 save`, Logs und Dumps wieder ?ber den freien Datentr?ger unter `/data`.
+
 #### Enable Sentra Startup during system bootup
 sudo npm install -g pm2
 pm2 status

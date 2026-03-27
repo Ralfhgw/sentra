@@ -9,6 +9,10 @@ concurrency:
   group: deploy-sentra-main
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,6 +30,8 @@ jobs:
       AUTH_SERVER_PATH: /home/deploy/sentra/authServer
       MICROSERVICE_PATH: /home/deploy/sentra/microservice
       RELEASE_DIR: sentra-release
+      AUTH_IMAGE_NAME: sentra-authserver
+      LIVETALK_IMAGE_NAME: sentra-livetalk
 
       PUBLIC_BASE_URL: https://webschere.de
       AUTH_PUBLIC_URL: https://webschere.de
@@ -76,6 +82,45 @@ jobs:
           cp -R sentra/public "$RELEASE_DIR/public"
           cp sentra/package.json "$RELEASE_DIR/package.json"
 
+      - name: Derive image coordinates
+        id: image_vars
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "image_namespace=$owner" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "auth_image=ghcr.io/$owner/$AUTH_IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "livetalk_image=ghcr.io/$owner/$LIVETALK_IMAGE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push auth server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./authServer
+          file: ./authServer/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image_vars.outputs.auth_image }}:${{ steps.image_vars.outputs.image_tag }}
+            ${{ steps.image_vars.outputs.auth_image }}:latest
+
+      - name: Build and push livetalk image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./microservice/livetalk
+          file: ./microservice/livetalk/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image_vars.outputs.livetalk_image }}:${{ steps.image_vars.outputs.image_tag }}
+            ${{ steps.image_vars.outputs.livetalk_image }}:latest
+
       - name: Prepare SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -114,16 +159,34 @@ jobs:
             -e "ssh -i ~/.ssh/id_rsa" \
             microservice/ "$SERVER_USER@$SERVER_HOST:$MICROSERVICE_PATH/"
 
-      - name: Rebuild auth server, microservice and restart sentra
+      - name: Pull service images on server and restart sentra
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_NAMESPACE: ${{ steps.image_vars.outputs.image_namespace }}
+          IMAGE_TAG: ${{ steps.image_vars.outputs.image_tag }}
         run: |
           ssh -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" <<EOF
           set -euo pipefail
 
+          if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+            printf '%s\n' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          fi
+
+          export IMAGE_REGISTRY="ghcr.io"
+          export IMAGE_NAMESPACE="$IMAGE_NAMESPACE"
+          export IMAGE_TAG="$IMAGE_TAG"
+
           cd "$AUTH_SERVER_PATH"
-          docker compose up -d --build --remove-orphans
+          docker compose pull app
+          docker compose up -d --remove-orphans
 
           cd "$MICROSERVICE_PATH"
-          docker compose up -d --build --remove-orphans
+          docker compose pull livetalk
+          docker compose up -d --remove-orphans
+
+          docker builder prune -af || true
+          docker image prune -af --filter "until=168h" || true
 
           pm2 delete sentra || true
           pm2 start "$SENTRA_SERVER_PATH/server.js" --name sentra --cwd "$SENTRA_SERVER_PATH"

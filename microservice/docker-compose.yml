@@ -41,8 +41,7 @@ services:
       - "5432:5432" # Optional, falls Zugriff von außen benötigt
 
   livetalk:
-    build:
-      context: ./livetalk
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-ralfhgw}/sentra-livetalk:${IMAGE_TAG:-latest}
     container_name: livetalk
     restart: unless-stopped
     depends_on:

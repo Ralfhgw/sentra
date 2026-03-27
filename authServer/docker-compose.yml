@@ -11,7 +11,7 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   app:
-    build: .
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-ralfhgw}/sentra-authserver:${IMAGE_TAG:-latest}
     container_name: node_container
     restart: unless-stopped
     ports:

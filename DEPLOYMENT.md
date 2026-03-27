@@ -54,18 +54,26 @@ npm install
 npm run build
 npm run start
 
-#### GitHub Actions deployment (build on GitHub, no Next.js build on the server)
-Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und überträgt anschließend nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
-Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert.
-Die Build-Variablen definierst du in GitHub unter **Repository → Settings → Secrets and variables → Actions** (alternativ in einem GitHub-Environment wie `production`). Die Action schreibt daraus beim Build automatisch `sentra/.env.production` auf dem Runner.
-Benötigt werden für Sentra: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `JWT_SECRET`, `NEXT_PUBLIC_AUTH_HOST`, `POSTGRES_URL`. `POSTGRES_SSL` musst du nur dann manuell setzen, wenn du das automatische SSL-Verhalten aus `sentra/utils/db.ts` überschreiben willst.
-Für serverseitige Auth-Aufrufe von Sentra (Login-Proxy, Refresh, Register) solltest du zusätzlich `AUTH_HOST` setzen. Auf dem Produktivserver ist dafür in der Regel `AUTH_HOST=http://127.0.0.1:3001` korrekt, damit Sentra den lokalen Auth-Container intern erreicht, statt wieder die öffentliche Website-URL aufzurufen.
-`NEXT_PUBLIC_AUTH_HOST` kannst du stehen lassen, wenn du die öffentliche Auth-URL weiterhin dokumentieren oder für Tests verwenden willst. Für die serverseitigen Sentra-Aufrufe ist aber `AUTH_HOST` maßgeblich; ohne `AUTH_HOST` fällt Sentra absichtlich auf den lokalen Standard `http://127.0.0.1:3001` zurück.
-Für den Auth-Server gilt zusätzlich: Die Laufzeitwerte müssen auf dem Server in `/home/deploy/sentra/authServer/.env` liegen, weil die Action diese Datei absichtlich nicht überschreibt. Prüfe dort mindestens `DATABASE_URL`, `JWT_SECRET`, `REFRESH_SECRET`, `NODE_ENV=production` und vor allem `CORS_ORIGINS=https://<deine-sentra-domain>`. Wenn du mehrere Origins brauchst, trenne sie per Komma.
-Wichtig für das aktuelle CORS-Problem: Ein Deploy von `sentra` allein reicht nicht, wenn sich `authServer/` oder dessen CORS-Konfiguration geändert haben. Die Action synchronisiert zwar den Ordner, aber erst ein `docker compose up -d --build` im Ordner `/home/deploy/sentra/authServer` lädt neue Container-Images, neue Environment-Werte und neue CORS-Origins wirklich in den laufenden Auth-Service.
-Der Ordner `/home/deploy/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufräumen willst, nutze auf dem Server: `find /home/deploy/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht löschen, weil PM2 und der Deploy dorthin schreiben; lösche bei Bedarf nur den Inhalt.
+#### GitHub Actions deployment (build on GitHub, no application build on the server)
+Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und ?bertr?gt anschlie?end nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
+Zus?tzlich baut die Action die Docker-Images `sentra-authserver` und `sentra-livetalk` auf GitHub, pusht sie nach GHCR (`ghcr.io/<github-owner>/...`) und der Webserver zieht beim Deploy nur noch das passende Image-Tag. Auf dem Webserver l?uft damit kein `docker build` mehr f?r diese beiden Dienste.
+Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert, damit Compose-Dateien, `.env`-Dateien, Datenbank-Initialisierung und Service-Konfiguration lokal vorhanden sind.
+Die Build-Variablen definierst du in GitHub unter **Repository ? Settings ? Secrets and variables ? Actions** (alternativ in einem GitHub-Environment wie `production`). Die Action schreibt daraus beim Build automatisch `sentra/.env.production` auf dem Runner.
+Ben?tigt werden f?r Sentra: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `JWT_SECRET`, `NEXT_PUBLIC_AUTH_HOST`, `POSTGRES_URL`. `POSTGRES_SSL` musst du nur dann manuell setzen, wenn du das automatische SSL-Verhalten aus `sentra/utils/db.ts` ?berschreiben willst.
+F?r serverseitige Auth-Aufrufe von Sentra (Login-Proxy, Refresh, Register) solltest du zus?tzlich `AUTH_HOST` setzen. Auf dem Produktivserver ist daf?r in der Regel `AUTH_HOST=http://127.0.0.1:3001` korrekt, damit Sentra den lokalen Auth-Container intern erreicht, statt wieder die ?ffentliche Website-URL aufzurufen.
+`NEXT_PUBLIC_AUTH_HOST` kannst du stehen lassen, wenn du die ?ffentliche Auth-URL weiterhin dokumentieren oder f?r Tests verwenden willst. F?r die serverseitigen Sentra-Aufrufe ist aber `AUTH_HOST` ma?geblich; ohne `AUTH_HOST` f?llt Sentra absichtlich auf den lokalen Standard `http://127.0.0.1:3001` zur?ck.
+F?r den Auth-Server gilt zus?tzlich: Die Laufzeitwerte m?ssen auf dem Server in `/home/deploy/sentra/authServer/.env` liegen, weil die Action diese Datei absichtlich nicht ?berschreibt. Pr?fe dort mindestens `DATABASE_URL`, `JWT_SECRET`, `REFRESH_SECRET`, `NODE_ENV=production` und vor allem `CORS_ORIGINS=https://<deine-sentra-domain>`. Wenn du mehrere Origins brauchst, trenne sie per Komma.
+Wenn die GHCR-Pakete privat bleiben sollen, hinterlege in GitHub Actions zus?tzlich `GHCR_USERNAME` und `GHCR_TOKEN`. Das Token braucht mindestens `read:packages`, damit sich der Webserver vor `docker compose pull` bei `ghcr.io` anmelden kann. Sind die Images ?ffentlich, ist dieser Login optional.
+Wichtig f?r ?nderungen an `authServer/` oder `microservice/livetalk/`: Ein Deploy von `sentra` allein reicht nicht. Die Action baut bei jedem Push neue Images, synchronisiert die Compose-Dateien und f?hrt anschlie?end auf dem Server `docker compose pull` plus `docker compose up -d --remove-orphans` aus, damit neue Images und neue Environment-Werte wirklich in den laufenden Diensten ankommen.
+Der Ordner `/home/deploy/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufr?umen willst, nutze auf dem Server: `find /home/deploy/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht l?schen, weil PM2 und der Deploy dorthin schreiben; l?sche bei Bedarf nur den Inhalt.
 Das Build-Paket liegt nach dem Deploy direkt in `/home/deploy/sentra/sentra` und besteht aus `server.js`, `node_modules`, `public` sowie dem versteckten Ordner `.next` (sichtbar mit `ls -la`).
 Beim Deploy von `microservice/` bleiben die serverseitigen Laufzeitordner `mosquitto/data` und `mosquitto/log` erhalten, damit Docker/Mosquitto-Datenbanken und Logs nicht von `rsync --delete` entfernt werden.
+
+F?r manuelle Server-Deploys kannst du dieselben Image-Variablen verwenden:
+`export IMAGE_REGISTRY=ghcr.io`
+`export IMAGE_NAMESPACE=<github-owner-in-kleinbuchstaben>`
+`export IMAGE_TAG=<commit-sha-oder-latest>`
+Danach gen?gen im jeweiligen Ordner `/home/deploy/sentra/authServer` bzw. `/home/deploy/sentra/microservice` die Befehle `docker compose pull` und `docker compose up -d --remove-orphans`.
 
 #### Enable Sentra Startup during system bootup
 sudo npm install -g pm2

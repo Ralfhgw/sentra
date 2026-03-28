@@ -7,13 +7,16 @@ import {
   type AuthResponseEnvelope,
 } from "@/utils/authResponse";
 
-const AUTH_HOST = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
 const isProd = process.env.NODE_ENV === "production";
 const refreshTokenMaxAge =
   Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
 
-if (!AUTH_HOST) {
-  throw new Error("Missing AUTH_HOST (or NEXT_PUBLIC_AUTH_HOST) env var");
+function getAuthHost() {
+  const authHost = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
+  if (!authHost) {
+    throw new Error("Missing AUTH_HOST (or NEXT_PUBLIC_AUTH_HOST) env var");
+  }
+  return authHost;
 }
 
 function copySetCookieHeaders(upstream: Response, response: NextResponse) {
@@ -113,7 +116,7 @@ export async function forwardAuthRequestWithBody<T = unknown>(
 
   applyAuthServiceHeaders(upstreamHeaders);
 
-  const upstream = await fetch(`${AUTH_HOST}${path}`, {
+  const upstream = await fetch(`${getAuthHost()}${path}`, {
     method: req.method,
     headers: upstreamHeaders,
     body,

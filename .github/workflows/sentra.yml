@@ -52,17 +52,8 @@ jobs:
         working-directory: sentra
         run: |
           cat > .env.production <<EOF
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          POSTGRES_URL=${{ secrets.POSTGRES_URL }}
-
-          AUTH_HOST=${AUTH_PUBLIC_URL}
           NEXT_PUBLIC_AUTH_HOST=${AUTH_PUBLIC_URL}
-
-          LIVETALK_JWT_SECRET=${{ secrets.LIVETALK_JWT_SECRET }}
           NEXT_PUBLIC_LIVETALK_SOCKET_URL=${LIVETALK_PUBLIC_URL}
-
-          AUTH_CLIENT_ID=${{ secrets.AUTH_CLIENT_ID }}
-          AUTH_API_KEY=${{ secrets.AUTH_API_KEY }}
           EOF
 
       - name: Install sentra dependencies

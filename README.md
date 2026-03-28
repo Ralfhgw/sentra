@@ -4,6 +4,7 @@ Sentra ist eine zentrale Informationsplattform fuer Freizeit-, Reise- und Alltag
 
 Diese README dient als erste Orientierung vor bzw. beim Einstieg in das Projekt. Detaillierte Informationen zu den einzelnen Modulen stehen spaeter innerhalb der Anwendung nach dem Login zur Verfuegung.
 
+
 ## Wofuer Sentra gedacht ist
 
 Sentra fuehrt mehrere Informationsquellen in einem gemeinsamen Dashboard zusammen:

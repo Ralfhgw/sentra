@@ -8,6 +8,7 @@ Die News-Seite zeigt lokale Veranstaltungen und den kulturellen Kontext eines Ta
 - Standard-Events über SERPAPI auf Basis des gespeicherten Standorts
 - zusätzliche Event-Quellen über frei hinterlegte Event-URLs
 
+
 Ergänzend kann für einen Tag die Funktion **Bedeutung des Tages** angezeigt werden. Damit lassen sich Feiertage, Gedenktage oder besondere Kalendereinträge direkt in der News-Seite einsehen.
 
 ### Was die News-Seite macht

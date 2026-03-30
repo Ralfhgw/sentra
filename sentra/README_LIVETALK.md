@@ -1,4 +1,216 @@
-# LiveTalk
+##### Deutsche Sprache
+
+### LiveTalk
+
+##### Deutsche Sprache
+
+## LIVETALK Modul
+
+### Überblick
+Die LiveTalk-Seite ist das Echtzeitmodul für Audio, Video und Chat.
+
+Sie arbeitet mit einem Session-Key, über den mehrere Benutzer denselben Raum betreten können.
+
+Das Modul ist in zwei Teile aufgeteilt:
+
+- die SENTRA-App verwaltet Login, Session-Erzeugung und Token-Ausgabe
+- ein separater LiveTalk-Dienst übernimmt die Echtzeitverbindung für Audio, Video und Chat
+
+Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikation separat verarbeitet wird.
+
+### Was die LiveTalk-Seite macht
+Die Seite dient als persönlicher Gesprächs- und Besprechungsbereich.
+
+Sie ermöglicht:
+
+- Erzeugen eines neuen Session-Keys
+- Beitritt zu einem vorhandenen Raum
+- Start mit oder ohne Mikrofon und Kamera
+- Anzeige des eigenen Videobilds
+- Empfang fremder Video-Streams
+- Chat innerhalb des Raums
+- Kopieren des Session-Keys
+- Audio und Video während der Sitzung ein- und ausschalten
+- Verlassen der Sitzung
+
+### Voraussetzungen
+Damit die Seite vollständig funktioniert, sollten folgende Voraussetzungen erfüllt sein:
+
+- aktiviertes Modul `RTC`
+- gültiger Login
+- laufender LiveTalk-Echtzeitdienst
+- gültige Server-Konfiguration für die Token-Erzeugung
+- Browserzugriff auf Mikrofon und Kamera, wenn nicht im Viewer-Modus gestartet wird
+
+Ohne aktiviertes `RTC` wird statt der LiveTalk-Seite nur ein Hinweis angezeigt.
+
+### Konfiguration in den Einstellungen
+Die zugehörige Grundkonfiguration erfolgt auf der Settings-Seite.
+
+#### 1. Modul aktivieren
+Damit die LiveTalk-Seite nutzbar ist, muss das Modul `RTC` aktiviert sein.
+
+Weitere Raum- oder Teilnehmerdaten werden nicht in den Settings gepflegt, sondern direkt in der LiveTalk-Seite erzeugt.
+
+### Verwendung der LiveTalk-Seite
+Die LiveTalk-Seite arbeitet mit einem Session-Key.
+
+#### Start ohne aktive Sitzung
+Vor dem Verbindungsaufbau gibt es drei Eingaben beziehungsweise Aktionen:
+
+- `Username` eingeben
+- vorhandenen `Session-Key` eintragen oder
+- neuen `Session-Key` erzeugen
+
+Zusätzlich gibt es die Option:
+
+- `Start Session ohne Mikrofon und Kamera`
+
+Damit kann der Raum bewusst im reinen Empfangsmodus betreten werden.
+
+#### Neuen Session-Key erzeugen
+Über `Neuen Session-Key erzeugen` wird ein neuer Raum erstellt.
+
+Der erzeugte Session-Key wird direkt in das Formular übernommen und kann anschließend verwendet oder kopiert werden.
+
+Ein neu erzeugter Raum ist zeitlich begrenzt und läuft nach einer gewissen Zeit ab.
+
+#### Mit Session-Key verbinden
+Über `Mit Session-Key verbinden` wird ein vorhandener Raum geladen und die Echtzeitverbindung aufgebaut.
+
+Dabei gilt:
+
+- mit aktivierter Empfangsoption startet der Benutzer als Viewer
+- ohne Empfangsoption startet der Benutzer als Teilnehmer mit Mikrofon und Kamera
+- der Besitzer eines neu erzeugten Raums ist der Host
+- andere Benutzer treten als normale Teilnehmer bei
+
+### Ansicht während einer aktiven Sitzung
+Sobald die Verbindung steht, zeigt die Seite mehrere Bereiche.
+
+#### Aktive Session
+Im Session-Bereich werden angezeigt:
+
+- Session-Key
+- Benutzername
+- Verbindungsstatus
+- Socket-ID
+- aktueller Modus
+
+Zusätzlich gibt es dort die Schaltfläche:
+
+- `Session verlassen`
+
+#### Session-Key-Bereich
+Der aktive Session-Key wird zusätzlich separat angezeigt.
+
+Dort kann er über `Session-Key kopieren` in die Zwischenablage übernommen werden.
+
+#### Audio und Video
+Teilnehmer mit Feed können während der Sitzung Audio und Video steuern.
+
+Dazu gibt es Schaltflächen für:
+
+- Mikrofon
+- Kamera
+
+Im Viewer-Modus werden keine lokalen Medien gestartet.
+
+#### Video-Bereich
+Im Videobereich erscheinen:
+
+- das eigene Kamerabild
+- die Videobilder anderer Teilnehmer
+
+Wenn noch keine weiteren Teilnehmer mit aktivem Kamerabild im Raum sind, erscheint ein Wartehinweis.
+
+#### Chat
+Im unteren Bereich befindet sich der Raum-Chat.
+
+Dort werden:
+
+- bereits vorhandene Nachrichten
+- neu eingehende Nachrichten in Echtzeit
+
+angezeigt.
+
+### Wie die Verbindung aufgebaut wird
+Der Verbindungsaufbau läuft mehrstufig.
+
+1. Benutzer gibt Namen und Session-Key an oder erzeugt einen neuen Raum
+2. die App lädt Raumdaten
+3. die App erzeugt ein Zugriffstoken für LiveTalk
+4. der Browser verbindet sich mit dem Echtzeitdienst
+5. Audio, Video und Chat werden innerhalb dieses Raums gestartet
+
+Die eigentliche Medienübertragung läuft nicht über klassische Seitenaufrufe, sondern über eine separate Echtzeitverbindung.
+
+### Rollen im Raum
+Innerhalb von LiveTalk gibt es drei typische Rollen:
+
+- `host`
+- `member`
+- `viewer`
+
+Bedeutung:
+
+- `host`: Besitzer des Raums
+- `member`: normaler Teilnehmer mit aktiver Medienverbindung
+- `viewer`: reiner Empfang ohne eigenes Mikrofon und Kamerabild
+
+### Typische Nutzung
+#### Eigene Sitzung starten
+1. `RTC` in den Einstellungen aktivieren
+2. LiveTalk-Seite öffnen
+3. Username eingeben
+4. `Neuen Session-Key erzeugen` klicken
+5. Session-Key kopieren und an andere Teilnehmer weitergeben
+6. mit dem Session-Key verbinden
+
+#### Einer Sitzung beitreten
+1. LiveTalk-Seite öffnen
+2. Username eingeben
+3. Session-Key eintragen
+4. optional `ohne Mikrofon und Kamera` aktivieren
+5. `Mit Session-Key verbinden` klicken
+
+### Wenn keine Verbindung zustande kommt
+Mögliche Ursachen:
+
+- `RTC` ist nicht aktiviert
+- der Benutzer ist nicht eingeloggt
+- der Session-Key ist ungültig
+- der Raum ist abgelaufen
+- der LiveTalk-Dienst ist nicht erreichbar
+- Mikrofon- oder Kamerazugriff wurde blockiert
+- die Token-Erzeugung auf dem Server ist nicht korrekt konfiguriert
+
+### Empfehlung für den Betrieb
+Für eine stabile Nutzung empfiehlt sich:
+
+- `RTC` nur aktivieren, wenn der Echtzeitdienst läuft
+- Session-Keys nur gezielt weitergeben
+- Viewer-Modus nutzen, wenn kein eigenes Audio oder Video nötig ist
+- Browserrechte für Kamera und Mikrofon sauber prüfen
+- Sitzungen nach der Nutzung wieder verlassen
+
+### Kurzfassung
+Die LiveTalk-Seite ist der zentrale Bereich für:
+
+- Audio
+- Video
+- Chat
+- Session-Keys
+- gemeinsame Echtzeiträume
+
+Konfiguriert wird sie über:
+
+- `RTC`
+- Username
+- Session-Key
+- optionalen Viewer-Modus
+
+
 
 ## Ziel
 
@@ -681,3 +893,5 @@ Wenn `socketUrl` oder `MEDIASOUP_ANNOUNCED_IP` nicht zur realen Testumgebung pas
 - Session-Ende / Raum schliessen durch Host
 - automatisches Reconnect-Verhalten bei Netzwechsel
 .
+
+##### English language

@@ -164,26 +164,26 @@ export default function Home() {
         }}
         onClick={handleToggle}
       >
-        {backgroundMode === "image" 
-/*         && (
-          <>
-            <div className="bird-container bird-container--one" style={{ top: "1%" }}>
-              <div className="bird bird--one bird--small"></div>
-            </div>
-
-            <div className="bird-container bird-container--two" style={{ top: "2%" }}>
-              <div className="bird bird--two bird--small"></div>
-            </div>
-
-            <div className="bird-container bird-container--three" style={{ top: "3%" }}>
-              <div className="bird bird--three bird--medium"></div>
-            </div>
-
-            <div className="bird-container bird-container--four" style={{ top: "4%" }}>
-              <div className="bird bird--four bird--medium"></div>
-            </div>
-          </>
-        ) */
+        {backgroundMode === "image"
+          /*         && (
+                    <>
+                      <div className="bird-container bird-container--one" style={{ top: "1%" }}>
+                        <div className="bird bird--one bird--small"></div>
+                      </div>
+          
+                      <div className="bird-container bird-container--two" style={{ top: "2%" }}>
+                        <div className="bird bird--two bird--small"></div>
+                      </div>
+          
+                      <div className="bird-container bird-container--three" style={{ top: "3%" }}>
+                        <div className="bird bird--three bird--medium"></div>
+                      </div>
+          
+                      <div className="bird-container bird-container--four" style={{ top: "4%" }}>
+                        <div className="bird bird--four bird--medium"></div>
+                      </div>
+                    </>
+                  ) */
         }
 
         {infoVisible && (
@@ -224,7 +224,11 @@ export default function Home() {
                 boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
               }}
             >
-              <Link href="/readme?doc=news" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
+              <Link
+                href={`/readme?doc=news#${lang === "de" ? "deutsche-sprache" : "english-language"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full h-full font-medium">
                 {t.news}
               </Link>
             </p>

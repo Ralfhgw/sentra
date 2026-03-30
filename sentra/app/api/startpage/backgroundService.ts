@@ -4,7 +4,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { getBackgroundImage } from "./getBackgroundImage";
 import { getUserSettings } from "@/utils/serverAuth";
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const CLOUDINARY_FOLDER = "user_profiles";
 const PLACEHOLDER_IMAGES = [
   "bg_placeholder_01.jpg",
@@ -40,7 +40,7 @@ function configureCloudinary(settings: StartpageSettings) {
   });
 }
 
-function isOlderThanOneDay(version?: string | number | null) {
+function isOlderThanOneWeek(version?: string | number | null) {
   if (!version) {
     return true;
   }
@@ -51,7 +51,7 @@ function isOlderThanOneDay(version?: string | number | null) {
     return true;
   }
 
-  return Date.now() - updatedAtMs > ONE_DAY_MS;
+  return Date.now() - updatedAtMs > ONE_WEEK_MS;
 }
 
 function isCloudinaryNotFound(error: unknown) {
@@ -159,7 +159,7 @@ export async function warmStartpageBackground(userId: string) {
 
   const existingImage = await getExistingImage(userId);
   const needsRefresh =
-    !existingImage || isOlderThanOneDay(existingImage.version);
+    !existingImage || isOlderThanOneWeek(existingImage.version);
 
   if (!hasOpenAiKey) {
     if (!needsRefresh && existingImage) {

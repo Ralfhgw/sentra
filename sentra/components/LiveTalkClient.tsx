@@ -1,5 +1,4 @@
 ﻿"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
@@ -14,6 +13,7 @@ import type {
   RemoteFeed,
 } from "@/types/typesLiveTalk";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
+//TODO Call Aufbau ohne Mikrofon/Kamera darf nicht zum Abbruch führen
 
 type ActiveSession = {
   userName: string;

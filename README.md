@@ -1,58 +1,110 @@
-# Sentra
+## Sentra
 
-Sentra ist eine zentrale Informationsplattform fuer Freizeit-, Reise- und Alltagsplanung. Die Anwendung buendelt persoenlich relevante Inhalte an einem Ort und richtet sich an Mitglieder, die lokale Informationen, Wetterdaten und Live-Bilder schnell und uebersichtlich abrufen moechten.
+Sentra is a personalized information platform for everyday life, leisure, and travel planning. After logging in, the application combines weather, regional events, live images, sensor data, and, in the future, real-time communication into a single web interface.
 
-Diese README dient als erste Orientierung vor bzw. beim Einstieg in das Projekt. Detaillierte Informationen zu den einzelnen Modulen stehen spaeter innerhalb der Anwendung nach dem Login zur Verfuegung.
+This README serves as a concise, basic project information for users. It explains Sentra's purpose, its main areas of focus, and the technical services used in the background. Further information is available within the project after registration.
 
+## What Sentra is intended for
 
-## Wofuer Sentra gedacht ist
+Sentra brings together several everyday information sources in one dashboard:
 
-Sentra fuehrt mehrere Informationsquellen in einem gemeinsamen Dashboard zusammen:
+- Regional events and dates
+- Weather forecasts for the saved location
+- Live images, webcams, and streams
+- Sensor data, for example, for indoor and outdoor climate
+- Personal settings for customizing content
 
-- lokale und regionale Veranstaltungen
-- Wetterprognosen fuer den eigenen Standort
-- Live-Bilder und Streams
-- persoenliche Einstellungen zur Individualisierung der Inhalte
+The goal is for users to be able to work directly with the information relevant to them after logging in, without having to access multiple external services separately.
 
-Die Plattform ist so aufgebaut, dass Nutzer nach dem Login direkt mit ihren personalisierten Daten arbeiten koennen.
-
-## Module im Ueberblick
+## Module overview
 
 ### News
-Das Modul `News` zeigt einen regionalen Kultur- und Veranstaltungsueberblick fuer die naechsten Tage. Die Inhalte werden standortbezogen zusammengestellt und koennen durch hinterlegte Quellen individuell erweitert werden.
+The `News` module collects regional event data and presents it clearly for the next few days.
 
 ### Weather
-Das Modul `Weather` liefert Wetterdaten und Vorhersagen fuer den gespeicherten Standort. Neben der allgemeinen Prognose koennen auch standort- und sensorbezogene Werte in die Darstellung einfliessen.
+The `Weather` module provides current weather data, multi-day forecasts and combines these with sensor data from the user's own environment if required.
 
 ### LiveView
-Das Modul `LiveView` stellt Live-Streams, Webcams und ausgewaehlte Kanaele bereit. Ziel ist ein schneller visueller Zugriff auf aktuelle Eindruecke aus relevanten Orten oder Quellen.
+The `LiveView` module provides live streams, webcams and custom stream sources in a freely configurable view.
 
 ### LiveTalk
-Das Modul `LiveTalk` fehlt derzeit noch in der eigentlichen Funktion. Es ist fuer die Live-Kommunikation ueber Videocalls mit anderen Mitgliedern von Sentra vorgesehen und soll kuenftig den direkten Austausch in Echtzeit ermoeglichen.
+The `LiveTalk` module is designed for direct exchange between Sentra members and maps audio, video and chat communication in real time.
 
 ### Settings
-Im Bereich `Settings` werden persoenliche Angaben, Sprache, Standort, Kanal-Auswahl und weitere individuelle Voreinstellungen gepflegt. Diese Einstellungen bilden die Grundlage fuer die personalisierte Darstellung der Inhalte.
+Im Bereich `Settings` werden Standort, Sprache, API-Zugaenge, Modulfreigaben und persoenliche Voreinstellungen gepflegt. Diese Daten steuern die personalisierte Darstellung in Sentra.
 
-## Einstieg fuer Nutzer
+## Services used in Sentra
 
-1. Konto registrieren oder anmelden.
-2. Persoenliche Daten und Standort hinterlegen.
-3. Relevante Module und Quellen in den Einstellungen anpassen.
-4. Inhalte im Dashboard und in den einzelnen Modulen nutzen.
+Sentra uses the following services and technologies in the project:
+
+- `NEXT.js`: Basis of the web application with user interface, routing and server-side API endpoints.
+- `Tailwind`: Styling framework for the user interface and modular design of Sentra views.
+- `Open-Meteo`: Provides weather forecasts and context for the Weather module and for weather-related homepage content.
+- `SERPAPI`: Retrieves location-based event and activity data for the News module.
+- `GPT Image 1.5`: Generates custom background images in Sentra based on location and current weather conditions.
+- `Cloudinary`: Stores and efficiently delivers the generated background images to the homepage.
+- `Mosquitto`: Serves as an MQTT broker for sensor data, which is displayed and analyzed in Sentra.
+- `MediaMTX`: Manages RTSP sources and provides browser-compatible streams for the LiveView module.
+- `MediaSoup`: handles the WebRTC media logic for LiveTalk and the distribution of audio and video streams.
+- `Coturn`: adds TURN/STUN connectivity to LiveTalk, enabling stable audio and video connections even behind NAT or firewalls.
+
+Note regarding server setup: In the microservice stack, `Coturn` is planned for the web server and defined as a separate service in `microservice/docker-compose.yml`.
 
 ## Projektaufbau
 
-Das Repository besteht aus mehreren Teilen:
+The repository consists of several parts:
 
-- `sentra/`: Next.js-Webanwendung mit Benutzeroberflaeche und geschuetzten Modulen
-- `authServer/`: separater Authentifizierungsdienst fuer Login, Logout und Session-Verwaltung
-- `microservice/`: Infrastruktur fuer Streaming, Messaging und Datenhaltung
-- `documents/`: projektbezogene Unterlagen und Zusatzmaterial
+- `sentra/`: Main application based on NEXT.js
+- `authServer/`: Separate service for authentication, login, and session management
+- `microservice/`: Infrastructure for PostgreSQL, streaming, messaging, LiveTalk, and Coturn
+- `documents/`: Project-related documentation and supplementary materials
 
-## Technischer Rahmen
+## Technical Framework
 
-Sentra kombiniert eine moderne Weboberflaeche mit begleitenden Diensten fuer Authentifizierung, Datenbank, Streaming und Messaging. Im Hintergrund kommen unter anderem Next.js, PostgreSQL, MediaMTX und MQTT-basierte Komponenten zum Einsatz.
+Sentra combines a modern web interface with accompanying services for authentication, data storage, weather, event search, image generation, messaging, streaming, and real-time communication. This creates a central platform that integrates personal information, live visual impressions, and technical background services into a single application.
 
-## Aktueller Stand
+## Current Benefits for Users
 
-Die Kernmodule `News`, `Weather`, `LiveView`, Login, Registrierung und Einstellungen sind im Projekt bereits angelegt. `LiveTalk` ist als vorgesehenes Kommunikationsmodul eingeplant, befindet sich aber noch nicht in der eigentlichen Umsetzung.
+Sentra is designed for users who want to access local information, weather, sensor data, and live content in a personally configurable system. The platform aims not only to collect information but also to provide it in a user-friendly, fast, and personalized format.
+
+** **
+
+## Database structure
+
+### AuthServer
+
+**users:** Central user table containing ID, public_id, username, email address, verification status, account status, and timestamps. Basis for login, registration, and user management.
+
+**user_credentials:** Stores the password hash for each user. Separates sensitive login credentials from general profile data.
+
+**verification_tokens:** Stores token hashes for email verification and password reset, including expiration time. Used for verification and recovery.
+
+**user_sessions:** Stores session token hashes, previous tokens, expiration, and lockout status. Basis for login sessions and token rotation.
+
+**api_clients:** Registers authorized clients with client_id, API key hash, and target paths for email verification and password reset. Used to connect external applications to the authentication server.
+
+### SENTRA
+
+**user_settings:** stores language, location, channel and event sources, API keys, module permissions, and sensor calibration values ​​for each user. This is Sentra's central personalization base.
+
+**user_event_refresh_state:** manages the refresh state of event sources for each user and source, including last runtime, next update date, status, and error message. It serves for scheduling, caching, and error control.
+
+**events:** stores found events for each user with date, address, link, description, image, domain, and origin. This is the data basis for the News/Events module.
+
+**day_meanings:** contains special days and holiday logic with fixed or rule-based calculation. It is used for calendar and date meanings.
+
+**channels:** catalogs available LiveView channels with name, group, location, and stream URL. This forms the basis for selectable live streams.
+
+**liveview_sources:** stores the specific LiveView source for each user and slot, such as a catalog channel, custom HLS, or MediaMTX RTSP path. This is used for individual LiveView configuration.
+
+**livetalk_rooms:** manages LiveTalk rooms with their code, owner, status, and expiration time. This forms the basis for sessions and conversation rooms.
+
+**livetalk_participants:** stores participants in a LiveTalk room with their role, display name, connection ID, and join/leave times. This is used for attendance and role management.
+
+**livetalk_messages:** stores chat messages for each LiveTalk room. This is the basis for the room's message history.
+
+**set_updated_at():** is a trigger function that automatically sets updated_at to NOW() upon updates. It is used for multiple tables to ensure consistent change times.
+
+**get_days_for_date(check_date DATE):** returns all matching entries from day_meanings for a specific date. Supports both fixed calendar dates and rules such as "last Monday of the month".
+
+

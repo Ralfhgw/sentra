@@ -38,7 +38,7 @@ services:
       - ./day_meanings_export.csv:/docker-entrypoint-initdb.d/day_meanings_export.csv
       - ./liveview_channels.csv:/docker-entrypoint-initdb.d/liveview_channels.csv
     ports:
-      - "5432:5432" # Optional, falls Zugriff von außen benötigt
+      - "5432:5432"
 
   livetalk:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-ralfhgw}/sentra-livetalk:${IMAGE_TAG:-latest}
@@ -90,6 +90,7 @@ volumes:
 # docker compose logs db
 # docker logs mediamtx
 # docker-compose logs -f mediamtx
+# docker compose logs -f livetalk
 # docker compose exec db psql -U dbuser -d sentra
 # docker compose exec db psql -U user -d authdb
 

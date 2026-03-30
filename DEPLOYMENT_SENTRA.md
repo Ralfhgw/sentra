@@ -38,52 +38,23 @@ sudo ufw status
 #### Create Environment
 vi .env
 
-#### Increase swap space
-sudo swapoff /swapfile
-sudo rm /swapfile
-sudo fallocate -l 4G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-export NODE_OPTIONS="--max-old-space-size=4096"
-echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.bashrc
-
-#### Build Sentra
-npm install
-npm run build
-npm run start
-
-#### GitHub Actions deployment (build on GitHub, no application build on the server)
-Die GitHub Action baut Sentra als Next.js-Standalone-Bundle auf GitHub und ?bertr?gt anschlie?end nur das Build-Artefakt nach `/home/deploy/sentra/sentra`.
-Zus?tzlich baut die Action die Docker-Images `sentra-authserver` und `sentra-livetalk` auf GitHub, pusht sie nach GHCR (`ghcr.io/<github-owner>/...`) und der Webserver zieht beim Deploy nur noch das passende Image-Tag. Auf dem Webserver l?uft damit kein `docker build` mehr f?r diese beiden Dienste.
-Die benachbarten Ordner `/home/deploy/sentra/authServer` und `/home/deploy/sentra/microservice` bleiben dabei erhalten und werden weiterhin separat synchronisiert, damit Compose-Dateien, `.env`-Dateien, Datenbank-Initialisierung und Service-Konfiguration lokal vorhanden sind.
-Die Build-Variablen definierst du in GitHub unter **Repository ? Settings ? Secrets and variables ? Actions** (alternativ in einem GitHub-Environment wie `production`). Die Action schreibt daraus beim Build automatisch `sentra/.env.production` auf dem Runner.
-Ben?tigt werden f?r den GitHub-Build von Sentra nur noch die echten Build-Werte: `SSH_PRIVATE_KEY`, `SERPAPI_KEY`, `OPENAI_API_KEY`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_AUTH_HOST` und `NEXT_PUBLIC_LIVETALK_SOCKET_URL`. `AUTH_HOST`, `AUTH_CLIENT_ID`, `AUTH_API_KEY`, `LIVETALK_JWT_SECRET`, `JWT_SECRET`, `POSTGRES_URL` und optional `POSTGRES_SSL` liegen fuer den Laufzeitbetrieb nur noch in `/home/deploy/sentra/sentra/.env` auf dem Server.
-F?r serverseitige Auth-Aufrufe von Sentra (Login-Proxy, Refresh, Register) solltest du zus?tzlich `AUTH_HOST` setzen. Auf dem Produktivserver ist daf?r in der Regel `AUTH_HOST=http://127.0.0.1:3001` korrekt, damit Sentra den lokalen Auth-Container intern erreicht, statt wieder die ?ffentliche Website-URL aufzurufen.
-`NEXT_PUBLIC_AUTH_HOST` kannst du stehen lassen, wenn du die ?ffentliche Auth-URL weiterhin dokumentieren oder f?r Tests verwenden willst. F?r die serverseitigen Sentra-Aufrufe ist aber `AUTH_HOST` ma?geblich; ohne `AUTH_HOST` f?llt Sentra absichtlich auf den lokalen Standard `http://127.0.0.1:3001` zur?ck.
-F?r den Auth-Server gilt zus?tzlich: Die Laufzeitwerte m?ssen auf dem Server in `/home/deploy/sentra/authServer/.env` liegen, weil die Action diese Datei absichtlich nicht ?berschreibt. Pr?fe dort mindestens `DATABASE_URL`, `JWT_SECRET`, `REFRESH_SECRET`, `NODE_ENV=production` und vor allem `CORS_ORIGINS=https://<deine-sentra-domain>`. Wenn du mehrere Origins brauchst, trenne sie per Komma.
-Wenn die GHCR-Pakete privat bleiben sollen, hinterlege in GitHub Actions zus?tzlich `GHCR_USERNAME` und `GHCR_TOKEN`. Das Token braucht mindestens `read:packages`, damit sich der Webserver vor `docker compose pull` bei `ghcr.io` anmelden kann. Sind die Images ?ffentlich, ist dieser Login optional.
-Wichtig f?r ?nderungen an `authServer/` oder `microservice/livetalk/`: Ein Deploy von `sentra` allein reicht nicht. Die Action baut bei jedem Push neue Images, synchronisiert die Compose-Dateien und f?hrt anschlie?end auf dem Server `docker compose pull` plus `docker compose up -d --remove-orphans` aus, damit neue Images und neue Environment-Werte wirklich in den laufenden Diensten ankommen.
-Der Ordner `/home/deploy/sentra/sentra` wird vor dem Upload automatisch geleert, wobei `.env` erhalten bleibt. Falls du einmal manuell aufr?umen willst, nutze auf dem Server: `find /home/deploy/sentra/sentra -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +`. Den Ordner selbst solltest du nicht l?schen, weil PM2 und der Deploy dorthin schreiben; l?sche bei Bedarf nur den Inhalt.
-Das Build-Paket liegt nach dem Deploy direkt in `/home/deploy/sentra/sentra` und besteht aus `server.js`, `node_modules`, `public` sowie dem versteckten Ordner `.next` (sichtbar mit `ls -la`).
-Beim Deploy von `microservice/` bleiben die serverseitigen Laufzeitordner `mosquitto/data` und `mosquitto/log` erhalten, damit Docker/Mosquitto-Datenbanken und Logs nicht von `rsync --delete` entfernt werden.
-
-F?r manuelle Server-Deploys kannst du dieselben Image-Variablen verwenden:
-`export IMAGE_REGISTRY=ghcr.io`
-`export IMAGE_NAMESPACE=<github-owner-in-kleinbuchstaben>`
-`export IMAGE_TAG=<commit-sha-oder-latest>`
-Danach gen?gen im jeweiligen Ordner `/home/deploy/sentra/authServer` bzw. `/home/deploy/sentra/microservice` die Befehle `docker compose pull` und `docker compose up -d --remove-orphans`.
-
-#### PM2 storage on /data
-Damit PM2 bei wenig Root-Speicher nicht unter `/home/deploy/.pm2` volll?uft, lege das PM2-Verzeichnis dauerhaft auf `/data/sentra/.pm2` und verkn?pfe es zur?ck nach `~/.pm2`:
-`mkdir -p /data/sentra/.pm2/logs`
-`cp -a ~/.pm2/. /data/sentra/.pm2/ 2>/dev/null || true`
-`rm -rf ~/.pm2`
-`ln -s /data/sentra/.pm2 ~/.pm2`
-Danach funktionieren `pm2 save`, Logs und Dumps wieder ?ber den freien Datentr?ger unter `/data`.
+#### Create swap space
+```
+sudo swapoff /swapfile 2>/dev/null
+sudo rm -f /swapfile
+sudo sed -i 's|^/swapfile|#/swapfile|' /etc/fstab
+sudo fallocate -l 4G /data/swapfile
+sudo chmod 600 /data/swapfile
+sudo mkswap /data/swapfile
+sudo swapon /data/swapfile
+echo '/data/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+sudo swapon --show
+free -h
+grep swap /etc/fstab
+```
 
 #### Enable Sentra Startup during system bootup
+```
 sudo npm install -g pm2
 pm2 status
 pm2 delete 0 (Another failed process)
@@ -92,12 +63,72 @@ cd /home/deploy/sentra/sentra
 HOSTNAME=0.0.0.0 PORT=3000 pm2 start /home/deploy/sentra/sentra/server.js --name sentra --cwd /home/deploy/sentra/sentra
 pm2 save
 Wenn `pm2 status` noch einen alten Prozess mit `npm start` zeigt oder im Log `next: not found` erscheint, lösche ihn mit `pm2 delete sentra` und starte ihn anschließend mit dem obigen `server.js`-Befehl neu.
+```
+#### PM2 storage on /data
+Damit PM2 bei wenig Root-Speicher nicht unter `/home/deploy/.pm2` vollläuft, lege das PM2-Verzeichnis dauerhaft auf `/data/sentra/.pm2` und verknüpfe es zurück nach `~/.pm2`:
+```mkdir -p /data/sentra/.pm2/logs
+cp -a ~/.pm2/. /data/sentra/.pm2/ 2>/dev/null || true
+rm -rf ~/.pm2
+ln -s /data/sentra/.pm2 ~/.pm2
+```
+
+Danach funktionieren `pm2 save`, Logs und Dumps wieder über den freien Datenträger unter `/data`.
+
 
 #### Installing nginx
+```
 sudo apt update
 sudo apt install nginx -y
 sudo systemctl status nginx
 sudo vi /etc/nginx/sites-available/sentra
+```
+Aktuelle nginx Konfiguration
+```
+deploy@v124:~$ cat /etc/nginx/sites-enabled/sentra
+server {
+    server_name webschere.de;
+
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:3011/socket.io/;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/webschere.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/webschere.de/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    listen 80;
+    server_name webschere.de;
+    return 301 https://$host$request_uri;
+}
+```
+Weitere nginx Konfiguration
+```
 sudo ln -s /etc/nginx/sites-available/sentra /etc/nginx/sites-enabled/
 sudo rm /etc/nginx/sites-enabled/default
 sudo nginx -t
@@ -117,7 +148,10 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo docker run hello-world
 sudo usermod -aG docker deploy (anschließend Relogin)
 docker compose up -d
+```
+#### Wireguard Installation
 
+```
 [Sensornetz / Kamera]
         |
    (LAN/WLAN)
@@ -129,10 +163,9 @@ docker compose up -d
    Webserver (Ubuntu)  ← WireGuard Server
         |
    Docker (MQTT + MediaMTX)
-   
+```
 
-#### Wireguard Installation
-
+```
 sudo apt install wireguard -y
 cd ~
 wg genkey | tee server.key | wg pubkey > server.pub
@@ -212,8 +245,9 @@ sudo ufw enable
 sudo ufw status verbose
 ping 10.10.0.1
 sudo systemctl restart wg-quick@wg0
-
+```
 #### MQTT Server
+```
 docker exec -it mosquitto mosquitto_sub -h localhost -t
 docker ps
 docker logs -f mosquitto
@@ -222,9 +256,9 @@ sudo chmod -R 755 mosquitto/log
 docker compose down
 docker compose up -d
 docker logs -f mosquitto
-
-
+```
 #### MQTT Proxy (Raspi)
+```
 sudo apt install mosquitto mosquitto-clients -y
 sudo systemctl enable mosquitto
 sudo systemctl start mosquitto
@@ -240,17 +274,19 @@ topic # out 0
 sudo systemctl restart mosquitto
 sudo ufw allow from 192.168.2.0/24 to any port 1883
 sudo ufw status
+```
 
-Test vom Webserver
+##### Test vom Webserver
+```
 docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v
 
-Test vom Rechner als Sensor Simulator
+# Test vom Rechner als Sensor Simulator
 mosquitto_sub -h 192.168.2.27 -t "#" -v
-
+```
 #### MediaMTX Server
 
-
-#### MediaMTX Proxy (Raspi)
+##### MediaMTX Proxy (Raspi)
+```
 uname -m
 wget https://github.com/bluenviron/mediamtx/releases/download/v1.17.0/mediamtx_v1.17.0_linux_arm64.tar.gz
 tar -xzf mediamtx_v1.17.0_linux_arm64.tar.gz
@@ -287,16 +323,17 @@ sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl restart mediamtx
 systemctl status mediamtx
-
+```
 ##### Konfiguration MediaMTX
-
+```
 [Webcam] → [Raspberry Pi] → (WireGuard VPN) → [MediaMTX Server]
                 |                                 |
            lokal RTSP                      öffentlicher Zugriff
+```
 
-
-### Raspi
+##### Raspi
 Install ffmpeg
+```
 sudo apt install ffmpeg -y
 
 ffmpeg -rtsp_transport tcp -i "rtsp://admin:L2202183@192.168.2.92:554/cam/realmonitor?channel=1&subtype=0" -f rtsp rtsp://10.10.0.1:8554/cam1 
@@ -320,9 +357,9 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reexec
 sudo systemctl enable rtsp-proxy
 sudo systemctl start rtsp-proxy
-
-
+```
 #### MediaMTX Server
+```
 mediamtx.yml
 paths:
   cam1:
@@ -333,16 +370,15 @@ docker compose down
 docker compose up -d
 
 Browser http://SERVER-IP:8888/cam1
+```
 
-
-
-# Deployment Cleanup (was kann gelöscht werden?)
+#### Deployment Cleanup (was kann gelöscht werden?)
 
 Dieses Repo enthält Entwicklungsmaterial und Laufzeit-Komponenten. Für den **Produktiv-Server** brauchst du nur das, was zur Laufzeit wirklich genutzt wird.
 
-## 1) Was auf dem Server für Runtime nötig ist
+#### 1) Was auf dem Server für Runtime nötig ist
 
-### `sentra` (Next.js Webserver)
+#### `sentra` (Next.js Webserver)
 Benötigt nach `npm run build`:
 - `.next/`
 - `public/`
@@ -376,38 +412,3 @@ Benötigt (abhängig vom Setup):
 - `mediamtx.yml`
 - `init_sentra.sql` (falls Initialisierung genutzt)
 - `.env` (serverseitig)
-
-Optional/entfernbar, wenn nicht aktiv genutzt:
-- Export-/Beispieldateien wie `day_meanings_export.csv`
-
-## 2) Bereits bereinigt in diesem Commit
-- Entfernt: `sentra/public/logo-mediamtx.svg:Zone.Identifier` (Windows ADS-Artefakt)
-- Entfernt: `sentra/app/layout copy.tsx` (Backup/Altdatei)
-- Ergänzt `.gitignore`, damit `node_modules`, `.env`-Dateien, Logs und `*.Zone.Identifier` nicht mehr versehentlich eingecheckt werden.
-
-## 3) Empfohlener Deploy-Ansatz (nur notwendige Dateien)
-
-Nutze pro Service ein **gezieltes Deployment** statt komplettes Repo zu kopieren.
-
-Beispiel (rsync):
-
-```bash
-rsync -av --delete \
-  --exclude '.git' \
-  --exclude '**/node_modules' \
-  --exclude '**/.env*' \
-  --exclude '**/*.log' \
-  --exclude '**/*Zone.Identifier*' \
-  /path/to/repo/ user@server:/opt/sentra/
-```
-
-Danach auf dem Server:
-
-```bash
-cd /opt/sentra/sentra
-npm ci --omit=dev
-npm run build
-npm run start
-```
-
-Für `authServer`/`microservice` analog nur die jeweiligen Verzeichnisse deployen.

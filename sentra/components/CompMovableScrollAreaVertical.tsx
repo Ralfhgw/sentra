@@ -37,6 +37,30 @@ export const MoveableScrollAreaVertical: React.FC<MoveableScrollAreaProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    const scrollToHashTarget = () => {
+      if (!scrollRef.current) return;
+
+      const hash = decodeURIComponent(window.location.hash.slice(1));
+      if (!hash) return;
+
+      const target = scrollRef.current.querySelector<HTMLElement>(`#${CSS.escape(hash)}`);
+      if (!target) return;
+
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ block: "start" });
+      });
+    };
+
+    scrollToHashTarget();
+    window.addEventListener("hashchange", scrollToHashTarget);
+
+    return () => {
+      window.removeEventListener("hashchange", scrollToHashTarget);
+    };
+  }, []);
+
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     if ((e.target as HTMLElement).closest("button, a, input, select")) return;

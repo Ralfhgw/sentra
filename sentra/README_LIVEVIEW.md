@@ -1,3 +1,193 @@
+##### Deutsche Sprache
+
+##### Deutsche Sprache
+
+## LIVEVIEW Modul
+
+### Überblick
+Die LiveView-Seite zeigt mehrere Live-Streams gleichzeitig in einem frei belegbaren Raster an.
+
+Dabei können drei Quellarten verwendet werden:
+
+- vorhandene Kanäle aus der Datenbank
+- eigene HLS-/HTTP-Stream-URLs
+- eigene RTSP-/RTSPS-Quellen, die über mediaMTX in einen abspielbaren Stream überführt werden
+
+Die Seite ist dafür gedacht, persönliche Stream-Layouts dauerhaft zu speichern und später direkt wieder zu laden.
+
+### Was die LiveView-Seite macht
+Die Seite dient als persönlicher Multi-Stream-Monitor.
+
+Sie zeigt:
+
+- mehrere Streams gleichzeitig
+- verschiedene Grid-Layouts
+- frei belegbare Slots
+- gespeicherte Benutzerbelegungen
+- Filter nach Ort
+- Suche nach Kanälen
+- eigene Stream-URLs
+- Drag-and-Drop zum Tauschen von Slots
+
+Leere Slots bleiben sichtbar und können später neu belegt werden.
+
+### Voraussetzungen
+Damit die Seite vollständig funktioniert, sollten folgende Voraussetzungen erfüllt sein:
+
+- aktiviertes Modul `MTX`
+- gültiger Login
+- vorhandene Kanaldaten in der Tabelle `channels`, wenn Katalogquellen genutzt werden sollen
+- laufender mediaMTX-Dienst, wenn RTSP-Quellen verwendet werden sollen
+- gültige Stream-URLs für eigene Quellen
+
+Ohne aktiviertes `MTX` wird statt der LiveView-Seite nur ein Hinweis angezeigt.
+
+### Konfiguration in den Einstellungen
+Die zugehörige Grundkonfiguration erfolgt auf der Settings-Seite.
+
+#### 1. Modul aktivieren
+Damit die LiveView-Seite nutzbar ist, muss das Modul `MTX` aktiviert sein.
+
+Weitere Slot-Zuweisungen erfolgen nicht in den Settings, sondern direkt in der LiveView-Seite.
+
+### Verwendung der LiveView-Seite
+Die LiveView-Seite besteht aus Raster, Slot-Verwaltung und Stream-Anzeige.
+
+#### Grid-Auswahl
+Über die Schaltfläche `Grid` kann das Layout gewechselt werden.
+
+Aktuell stehen mehrere Rastergrößen zur Verfügung, zum Beispiel:
+
+- `1`
+- `4`
+- `6`
+- `7`
+- `9`
+- `10`
+- `13`
+- `16`
+
+Je nach Auswahl entstehen unterschiedlich große Kacheln. Auf kleineren Displays wird das Raster automatisch kompakter dargestellt.
+
+#### Slot belegen
+Ein Doppelklick auf einen Slot öffnet das Konfigurationsfenster `Kanal zuweisen`.
+
+Dort gibt es zwei Wege:
+
+- Auswahl eines vorhandenen Kanals aus der Kanal-Liste
+- Eintragen einer eigenen Stream-URL
+
+Zusätzlich kann ein eigener Name vergeben werden.
+
+#### Vorhandene Kanäle auswählen
+Im Konfigurationsfenster kann die Liste eingeschränkt werden durch:
+
+- Ortsfilter
+- Suchbegriff
+
+Die Suche berücksichtigt unter anderem Kanalname, Ort und Stream-URL.
+
+#### Eigene Streams eintragen
+Statt eines Katalogkanals kann auch eine eigene URL gespeichert werden.
+
+Dabei gelten folgende Fälle:
+
+- `http` oder `https`: direkter benutzerdefinierter Stream
+- `rtsp` oder `rtsps`: Quelle wird über mediaMTX eingebunden
+
+#### Slot entfernen
+Wenn ein Slot bereits belegt ist, kann er im selben Fenster über `Entfernen` wieder gelöscht werden.
+
+#### Slots tauschen
+Belegte Slots können per Drag-and-Drop umsortiert werden.
+
+Dazu wird der obere Bereich einer Kachel gezogen und auf eine andere Kachel abgelegt.
+
+### Stream-Anzeige
+Jede belegte Kachel zeigt den jeweiligen Stream direkt im Raster an.
+
+Zusätzliche Funktionen pro Kachel:
+
+- Play/Pause
+- Mute/Unmute
+- Lautstärke-Regler
+- Hover-Informationen zu Slot, Kanal, Ort und URL
+
+Leere Felder zeigen den Hinweis `No Signal`.
+
+### Wie die Daten gespeichert und geladen werden
+Die Slot-Belegung wird benutzerbezogen gespeichert.
+
+Beim Öffnen der Seite passiert Folgendes:
+
+- gespeicherte Slots werden geladen
+- Kanalquellen werden aus der Datenbank gelesen
+- RTSP-Quellen werden mit mediaMTX abgeglichen
+- das persönliche Raster kann direkt weiterverwendet werden
+
+Wenn ein Slot geändert wird, wird die Benutzerbelegung aktualisiert und erneut gespeichert.
+
+### Verhalten bei RTSP-Quellen
+RTSP- oder RTSPS-Quellen werden nicht direkt im Browser abgespielt.
+
+Stattdessen wird für solche Quellen ein mediaMTX-Pfad angelegt und anschließend als HLS-Stream bereitgestellt.
+
+Dadurch können auch RTSP-Quellen in der LiveView-Seite angezeigt werden.
+
+### Typische Nutzung
+#### Nutzung mit vorhandenen Kanälen
+1. `MTX` in den Einstellungen aktivieren
+2. LiveView-Seite öffnen
+3. gewünschtes Grid auswählen
+4. per Doppelklick einen Slot öffnen
+5. Kanal filtern oder suchen
+6. Kanal auswählen
+7. `Speichern` klicken
+
+#### Nutzung mit eigenen Streams
+1. LiveView-Seite öffnen
+2. freien Slot doppelklicken
+3. Namen und Stream-URL eintragen
+4. `Speichern` klicken
+5. bei Bedarf Slots per Drag-and-Drop neu sortieren
+
+### Wenn keine Streams erscheinen
+Mögliche Ursachen:
+
+- `MTX` ist nicht aktiviert
+- es ist kein gültiger Stream im Slot gespeichert
+- die Quelle ist nicht erreichbar
+- mediaMTX läuft nicht
+- der Kanal in der Datenbank ist ungültig
+- der Slot ist leer
+- die Quelle liefert zwar Daten, aber kein abspielbares Format
+
+### Empfehlung für den Betrieb
+Für eine stabile Nutzung empfiehlt sich:
+
+- `MTX` aktivieren
+- nur erreichbare Streams speichern
+- RTSP-Quellen über einen stabilen mediaMTX-Dienst einbinden
+- das Grid passend zur Anzahl der tatsächlich genutzten Quellen wählen
+- ungenutzte Slots regelmäßig bereinigen
+
+### Kurzfassung
+Die LiveView-Seite ist der zentrale Bereich für:
+
+- mehrere gleichzeitige Live-Streams
+- frei belegbare Slots
+- Katalogkanäle und eigene Stream-URLs
+- RTSP-Einbindung über mediaMTX
+- flexible Grid-Layouts
+
+Konfiguriert wird sie über:
+
+- `MTX`
+- Slot-Zuweisung direkt in der LiveView-Seite
+- Kanalwahl oder eigene Stream-URL
+
+
+
 ### mediaMTX Server
 Der mediaMTX Server (früher bekannt als rtsp-simple-server) ist ein Streaming-Server, der verschiedene Medienprotokolle wie RTSP, RTMP, HLS und WebRTC unterstützt. Der mediaMTX Server empfängt einen Video-Stream (z.B. von einer Kamera oder einem anderen Encoder) über RTSP oder RTMP. In deinem Projekt wird mediaMTX genutzt, um einen Live-Video-Stream bereitzustellen, der z.B. im Frontend angezeigt werden kann. Die Konfiguration des mediaMTX Servers findest du in stream-server/mediamtx/config.yml. Der Server wird über Docker in docker-compose.yml gestartet.
 Das Frontend kann dann den bereitgestellten Stream (z.B. als HLS-URL) einbinden und anzeigen.
@@ -89,3 +279,5 @@ Movies: https://iptv-org.github.io/iptv/categories/movies.m3u
 News: https://iptv-org.github.io/iptv/categories/news.m3u
 Documentary: https://iptv-org.github.io/iptv/categories/documentary.m3u
 Music: https://iptv-org.github.io/iptv/categories/music.m3u
+
+##### English language

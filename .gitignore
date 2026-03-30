@@ -1,6 +1,5 @@
 microservice/.env
 microservice/mosquitto/data/mosquitto.db
-documents
 .github
 
 # node

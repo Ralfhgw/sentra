@@ -6,8 +6,6 @@ DROP TABLE IF EXISTS "livetalk_participants" CASCADE;
 
 DROP TABLE IF EXISTS "livetalk_rooms" CASCADE;
 
-DROP TABLE IF EXISTS "users" CASCADE;
-
 DROP TABLE IF EXISTS "user_settings" CASCADE;
 
 DROP TABLE IF EXISTS "events" CASCADE;

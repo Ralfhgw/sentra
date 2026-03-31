@@ -1,9 +1,5 @@
 ##### Deutsche Sprache
 
-### LiveTalk
-
-##### Deutsche Sprache
-
 ## LIVETALK Modul
 
 ### Überblick
@@ -17,6 +13,9 @@ Das Modul ist in zwei Teile aufgeteilt:
 - ein separater LiveTalk-Dienst übernimmt die Echtzeitverbindung für Audio, Video und Chat
 
 Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikation separat verarbeitet wird.
+
+
+![MediaSoup](./webrtc-coturn-mediasoup.png)
 
 ### Was die LiveTalk-Seite macht
 Die Seite dient als persönlicher Gesprächs- und Besprechungsbereich.

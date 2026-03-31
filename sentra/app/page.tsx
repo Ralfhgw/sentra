@@ -200,7 +200,7 @@ export default function Home() {
           >
             <h1
               className="mt-2 text-5xl text-center font-bold text-orange-400"
-              style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+              style={{ textShadow: "0 2px 3px rgba(0,0,0,0.5)" }}
             >
               {t.title}
               <sup className="text-base align-top">&copy;</sup>
@@ -271,7 +271,7 @@ export default function Home() {
               </Link>
             </p>
 
-            <p
+{/*             <p
               className="p-2 my-1 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
               style={{
                 boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
@@ -280,7 +280,7 @@ export default function Home() {
               <Link href="/readme?doc=settings" target="_blank" rel="noopener noreferrer" className="block w-full h-full font-medium">
                 {t.settings}
               </Link>
-            </p>
+            </p> */}
           </div>
         )}
       </div>

@@ -16,6 +16,7 @@ Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikati
 
 ![MediaSoup](./webrtc-coturn-mediasoup.png)
 
+
 ### Was die LiveTalk-Seite macht
 Die Seite dient als persönlicher Gesprächs- und Besprechungsbereich.
 

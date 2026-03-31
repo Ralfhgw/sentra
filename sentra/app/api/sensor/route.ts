@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import mqtt from 'mqtt';
-/* import { getAuthenticatedUserFromCookies } from '@/utils/serverAuth';  */
+import { getAuthenticatedUserFromCookies } from '@/utils/serverAuth'; 
 
 export async function GET() {
     try {
-        /* const { userId } = await getAuthenticatedUserFromCookies();  */
-/*         const indoorClimateTopic = `${userId}/in/climate`;
+        const { userId } = await getAuthenticatedUserFromCookies();
+        const indoorClimateTopic = `${userId}/in/climate`;
         const outdoorClimateTopic = `${userId}/out/climate`;
         const indoorStatusTopic = `${userId}/in/status`;
-        const outdoorStatusTopic = `${userId}/out/status`;  */
+        const outdoorStatusTopic = `${userId}/out/status`;
 
-        const indoorClimateTopic = `in/climate`;
+/*      const indoorClimateTopic = `in/climate`;
         const outdoorClimateTopic = `out/climate`;
         const indoorStatusTopic = `in/status`;
-        const outdoorStatusTopic = `out/status`; 
+        const outdoorStatusTopic = `out/status`; */ 
 
         const data = await new Promise((resolve, reject) => {
             const client = mqtt.connect({

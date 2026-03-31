@@ -98,7 +98,7 @@ volumes:
 # docker compose exec db psql -U dbuser -d sentra
 # docker compose exec db psql -U user -d authdb
 
-# docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v-v
+# docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v
 # Proxy: mosquitto_sub -h localhost -t "#" -v-v
 # indoor/sensor/climate {"temp":21.60,"hum":45.98,"pres":1028.83}
 

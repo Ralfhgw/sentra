@@ -18,6 +18,7 @@ export async function GET() {
                 connectTimeout: 5000
             });
 
+            
             const results: {
                 indoor: string | null,
                 outdoor: string | null,

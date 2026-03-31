@@ -5,7 +5,7 @@ import type { EventRefreshInterval } from "@/types/typesSettings";
 import sql from "@/utils/db";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import type { NextRequest, NextResponse } from "next/server";
-import { getAccessToken, getAuthUserId, type AuthResponseEnvelope } from "@/utils/authResponse";
+import { getAccessToken, getAuthUserId, getExpiresAt, getRefreshToken, type AuthResponseEnvelope } from "@/utils/authResponse";
 
 type CookieValue = {
   value: string;
@@ -24,6 +24,8 @@ type RefreshResponse = AuthResponseEnvelope;
 
 type RefreshedSession = {
   accessToken: string;
+  refreshToken: string | null;
+  expiresAt: string | null;
   userId: string;
 };
 
@@ -133,11 +135,15 @@ export type ServerAuthResult = {
   userId: string;
   accessToken: string;
   refreshedAccessToken?: string;
+  refreshedRefreshToken?: string;
+  refreshedAccessTokenExpiresAt?: string | null;
 };
 
 export type ServerAuthWithSettingsResult = ServerAuthResult & {
   settings: UserSettings;
 };
+
+const REFRESH_TOKEN_MAX_AGE_SECONDS = Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
 
 function getAuthHost() {
   const authHost = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
@@ -147,7 +153,23 @@ function getAuthHost() {
   return authHost;
 }
 
-function getAccessCookieOptions() {
+function getAccessCookieOptions(expiresAt: string | null = null) {
+  const isProd = process.env.NODE_ENV === "production";
+  const expiresAtMs = expiresAt ? Date.parse(expiresAt) : Number.NaN;
+  const maxAge =
+    Number.isFinite(expiresAtMs) && expiresAtMs > Date.now()
+      ? Math.floor((expiresAtMs - Date.now()) / 1000)
+      : undefined;
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+    ...(maxAge ? { maxAge } : {}),
+  } as const;
+}
+
+function getRefreshCookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
 
   return {
@@ -155,7 +177,7 @@ function getAccessCookieOptions() {
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
     path: "/",
-    maxAge: 60,
+    maxAge: REFRESH_TOKEN_MAX_AGE_SECONDS,
   } as const;
 }
 
@@ -183,7 +205,6 @@ function decodeUserIdFromToken(accessToken: string) {
 
   return String(userId);
 }
-
 
 function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
   if (Array.isArray(value)) {
@@ -340,6 +361,8 @@ async function requestRefreshedSession(refreshToken: string): Promise<RefreshedS
 
   const refreshData = (await refreshRes.json()) as RefreshResponse;
   const accessToken = getAccessToken(refreshData);
+  const refreshedRefreshToken = getRefreshToken(refreshData);
+  const expiresAt = getExpiresAt(refreshData);
   const userId = getAuthUserId(refreshData);
 
   if (!accessToken) {
@@ -348,10 +371,11 @@ async function requestRefreshedSession(refreshToken: string): Promise<RefreshedS
 
   return {
     accessToken,
+    refreshToken: refreshedRefreshToken,
+    expiresAt,
     userId: userId ?? decodeUserIdFromToken(accessToken),
   };
 }
-
 
 async function authenticateWithCookies(
   cookieStore: CookieReader
@@ -381,6 +405,8 @@ async function authenticateWithCookies(
     userId: refreshedSession.userId,
     accessToken: refreshedSession.accessToken,
     refreshedAccessToken: refreshedSession.accessToken,
+    refreshedRefreshToken: refreshedSession.refreshToken ?? undefined,
+    refreshedAccessTokenExpiresAt: refreshedSession.expiresAt,
   };
 }
 
@@ -425,8 +451,16 @@ export function applyRefreshedAccessToken(
   response.cookies.set(
     "accessToken",
     auth.refreshedAccessToken,
-    getAccessCookieOptions()
+    getAccessCookieOptions(auth.refreshedAccessTokenExpiresAt ?? null)
   );
+
+  if (auth.refreshedRefreshToken) {
+    response.cookies.set(
+      "refreshToken",
+      auth.refreshedRefreshToken,
+      getRefreshCookieOptions()
+    );
+  }
 
   return response;
 }

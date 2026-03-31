@@ -159,6 +159,7 @@ async function issueAuthTokens(res, userId, currentSessionHash = null) {
         expires_at = ${sessionExpiresAt.toISOString()},
         revoked_at = NULL
       WHERE session_token_hash = ${currentSessionHash}
+      OR previous_session_token_hash = ${currentSessionHash}
       RETURNING user_id
     `;
 
@@ -449,7 +450,7 @@ app.post("/api/auth/refresh", async (req, res) => {
       RETURNING id, public_id, username, email, email_verified_at, status, created_at, updated_at
     `;
 
-    const tokens = await issueAuthTokens(res, updatedUser.id, session.session_token_hash);
+    const tokens = await issueAuthTokens(res, updatedUser.id, sessionTokenHash);
 
     console.log(`[REFRESH] Erfolgreich: Neues AccessToken f?r User ID ${updatedUser.id} ausgestellt.`);
     return res.json(

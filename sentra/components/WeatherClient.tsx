@@ -118,7 +118,7 @@ export default function WeatherClient({
               console.log("calPressure:", s_cal_pressure);
 
               newSensorData.indoor = JSON.parse(result.wert.indoor);
-/*               console.log("indoor.temp:",newSensorData.indoor.temp)
+/*            console.log("indoor.temp:",newSensorData.indoor.temp)
               console.log("indoor.dew:",newSensorData.indoor.dew)
               console.log("indoor.hum:",newSensorData.indoor.hum)
               console.log("indoor.pres:",newSensorData.indoor.pres) */

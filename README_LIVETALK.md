@@ -50,12 +50,12 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 ### Wichtigste Typen und Definitionen
 
 - `ActiveSession`
-  - haelt den aktuellen Zustand der laufenden Session im UI.
+  - hält den aktuellen Zustand der laufenden Session im UI.
   - speichert `userName`, `sessionCode` und `receiveOnly`.
 
 - `JoinRoomAck`
   - typisiert die Antwort auf `room:join`.
-  - enthaelt `routerRtpCapabilities`, vorhandene Producer und Chat-Nachrichten.
+  - enthält `routerRtpCapabilities`, vorhandene Producer und Chat-Nachrichten.
 
 - `TransportCreateAck`
   - typisiert die Antwort auf `transport:create`.
@@ -63,7 +63,7 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 
 - `ConsumerCreateAck`
   - typisiert die Antwort auf `consumer:create`.
-  - enthaelt die Infos zum Erzeugen eines lokalen Consumers.
+  - enthält die Infos zum Erzeugen eines lokalen Consumers.
 
 - `ProducerStartAck`
   - typisiert die Antwort auf `producer:start`.

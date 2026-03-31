@@ -172,14 +172,14 @@ function VideoTile({
   }, [stream, muted]);
 
   return (
-    <div className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-slate-700">{title}</h3>
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="aspect-video w-full rounded-xl bg-slate-950"
+        className="aspect-video w-full rounded-lg bg-slate-950"
       />
       <audio ref={audioRef} autoPlay playsInline muted={muted} className="hidden" />
     </div>
@@ -284,7 +284,7 @@ export default function LiveTalkClient({
     syncRemoteFeeds();
   };
 
-  
+
   const cleanupSession = () => {
     socketRef.current?.disconnect();
     socketRef.current = null;
@@ -941,10 +941,10 @@ export default function LiveTalkClient({
   if (!rtcEnabled) {
     return (
       <main className="mx-auto max-w-5xl p-6">
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-6 text-slate-800 shadow-sm">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-6 text-slate-800 shadow-sm">
           <h1 className="text-2xl font-bold">LiveTalk</h1>
           <p className="mt-3">
-            Das Modul ist vorhanden, aber in deinen Einstellungen ist `RTC` aktuell nicht aktiviert.
+            The module is present, but `RTC` is currently not enabled in your settings.
           </p>
         </div>
       </main>
@@ -953,13 +953,13 @@ export default function LiveTalkClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="p-2 bg-gray-200 flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
 
         {/* Header */}
-        <section className="bg-gray-300 rounded-xl shadow-sm">
+        <section className="mb-2 bg-gray-300 rounded-lg shadow-sm">
           <h1 className="p-3 text-3xl font-bold text-slate-900">LiveTalk</h1>
           <p className="ml-3 w-100 text-slate-600">
-            Gib einen Usernamen ein, erzeuge bei Bedarf einen Session-Key und verbinde dich dann mit der Session.
+            Enter a username, generate a session key if needed, and then connect to the session.
           </p>
           <p className="ml-3 mt-3 pb-3 text-slate-600">{statusText}</p>
           {errorMessage && (
@@ -968,10 +968,10 @@ export default function LiveTalkClient({
         </section>
 
         {!activeSession && (
-          <section className="mt-1 p-1 flex flex-row gap-2 flex-wrap rounded-xl shadow-sm">
+          <section className="mt-1 p-1 flex flex-row gap-2 flex-wrap rounded-lg shadow-sm">
             {/* left Box */}
-            <div className="p-2 w-screen max-w-120 h-60 bg-gray-300 rounded-xl flex flex-col justify-between">
-              <div className="p-2 bg-gray-200 rounded-xl ">
+            <div className="p-2 w-screen max-w-120 h-60 bg-blue-200 rounded-lg flex flex-col justify-between">
+              <div className="p-2 bg-gray-200 rounded-lg ">
                 {/* Username Input */}
                 <label className="flex flex-col">
                   <span className="font-semibold text-slate-900">Username</span>
@@ -979,7 +979,7 @@ export default function LiveTalkClient({
                     value={userNameInput}
                     onChange={(event) => setUserNameInput(event.target.value)}
                     placeholder="z.B. Anna"
-                    className="p-2 rounded-xl border border-gray-300"
+                    className="p-2 rounded-lg border border-gray-300"
                   />
                 </label>
 
@@ -990,15 +990,15 @@ export default function LiveTalkClient({
                     value={sessionCodeInput}
                     onChange={(event) => setSessionCodeInput(event.target.value.toUpperCase())}
                     placeholder="z.B. A1B2C3D4E5"
-                    className="p-2 rounded-xl border border-gray-300 uppercase tracking-[0.08em]"
+                    className="p-2 rounded-lg border border-gray-300 uppercase tracking-[0.08em]"
                   />
                 </label>
 
                 {sessionKeyInfo && sessionKeyInfo.code === sessionCodeInput.trim().toUpperCase() && (
-                  <div className="my-2 p-2 rounded-xl border border-gray-200 bg-green-100 text-slate-600 text-sm">
+                  <div className="my-2 p-2 rounded-lg border border-gray-200 bg-green-100 text-slate-600 text-sm">
                     <div className="font-semibold text-slate-800">Session-Key {sessionKeyInfo.code}</div>
                     {sessionKeyInfo.expiresAt && (
-                      <div className="mt-1">Gültig bis: {formatDateTime(sessionKeyInfo.expiresAt)}</div>
+                      <div className="mt-1">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</div>
                     )}
                   </div>
                 )}
@@ -1006,8 +1006,8 @@ export default function LiveTalkClient({
             </div>
 
             {/* Right Box */}
-            <div className="p-2 w-screen max-w-120 h-60 bg-gray-300 rounded-xl ">
-              <div className="h-full p-5 bg-gray-200 rounded-xl flex flex-col items-center justify-between">
+            <div className="p-2 w-screen max-w-120 h-60 bg-blue-200 rounded-lg ">
+              <div className="h-full p-5 bg-gray-200 rounded-lg flex flex-col items-center justify-between">
                 {/* Checkbox */}
                 <label className="w-100 ml-16 flex gap-3 text-slate-700">
                   <input
@@ -1015,7 +1015,7 @@ export default function LiveTalkClient({
                     checked={receiveOnly}
                     onChange={(event) => setReceiveOnly(event.target.checked)}
                   />
-                  Start Session ohne Mikrofon und Kamera
+                  Start session without microphone and camera
                 </label>
 
                 {/* Buttons */}
@@ -1023,18 +1023,18 @@ export default function LiveTalkClient({
                   type="button"
                   onClick={() => void generateSessionKey()}
                   disabled={isGeneratingCode}
-                  className="h-12 w-70 py-3 rounded-xl bg-gray-500  hover:bg-gray-400 text-black font-semibold transition"
+                  className="h-12 w-70 py-3 rounded-lg bg-gray-500  hover:bg-gray-400 text-black font-semibold transition"
                 >
-                  {isGeneratingCode ? "Erzeuge Session-Key..." : "Neuen Session-Key erzeugen"}
+                  {isGeneratingCode ? "Creating Session-Key..." : "Create Session-Key"}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => void connectWithSessionKey()}
                   disabled={!canConnect || isJoining}
-                  className="h-12 w-70 py-3 rounded-xl bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
+                  className="h-12 w-70 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
                 >
-                  {isJoining ? "Verbinde..." : "Mit Session-Key verbinden"}
+                  {isJoining ? "Connecting..." : "Connect with Session-Key"}
                 </button>
               </div>
             </div>
@@ -1043,132 +1043,139 @@ export default function LiveTalkClient({
 
         {activeSession && (
           <>
-            <div className="p-2 bg-blue-200 flex flex-row flex-wrap gap-2">
-              {/* Active - Left Box */}
-              <section className="p-2 w-screen max-w-120 h-60 bg-gray-300 rounded-xl shadow-sm">
-                <div className="h-full bg-gray-200 p-2 rounded-xl flex flex-col flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Aktive Session</h2>
-                    <p className="mt-2 text-slate-600">
-                      Session-Key <strong>{activeSession.sessionCode}</strong> mit User <strong>{activeSession.userName}</strong>
-                    </p>
-                    <p className="mt-2 text-slate-500">
-                      Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "Teilnehmer mit Feed"}
-                    </p>
-                  </div>
+            <div className="flex flex-col flex-wrap gap-1">
+              <div className="flex flex-row flex-wrap gap-1">
 
-                  <div className="p-2 rounded-xl bg-gray-300 w-full flex flex-row justify-between">
-                    <button
-                      type="button"
-                      onClick={leaveSession}
-                      className="h-12 w-70 py-3 rounded-xl bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
-                    >
-                      Session verlassen
-                    </button>
-
-                    {/* Active Session Field */}
-                    {!activeSession.receiveOnly && (
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => void toggleAudio()}
-                          disabled={!localStream}
-                          className="px-4 py-3 rounded-xl border border-slate-300 bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          {audioEnabled ? "🎤" : "🎤"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void toggleVideo()}
-                          disabled={!localStream}
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          {videoEnabled ? "📷" : "📷"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* Active - Right Box */}
-              {sessionKeyInfo && (
-                <section className="p-2 w-screen max-w-120 h-60 bg-gray-300 rounded-xl shadow-sm">
-                  <div className="h-full p-2 bg-gray-200 rounded-xl flex flex-col justify-between">
-                    <div className="flex flex-col ">
-
-                      <h3 className="text-xl font-semibold text-slate-900">Session-Key</h3>
-                      <div className="mt-3 text-2xl font-extrabold tracking-[0.12em] text-slate-900">{sessionKeyInfo.code}</div>
-                      {sessionKeyInfo.expiresAt && (
-                        <p className="mt-3 text-slate-600">Gueltig bis: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
-                      )}
+                {/* Active - Left Box */}
+                <section className="p-2 w-screen max-w-120 h-60 bg-red-200 rounded-lg shadow-sm">
+                  <div className="h-full bg-gray-200 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
+                      <p className="mt-2 text-slate-600">
+                        Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
+                      </p>
+                      <p className="mt-2 text-slate-500">
+                        Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "Teilnehmer mit Feed"}
+                      </p>
                     </div>
 
-                    <div className="p-2 flex justify-center rounded-xl bg-gray-300">
+                    <div className="p-2 rounded-lg bg-gray-300 w-full flex flex-row justify-between">
                       <button
                         type="button"
-                        onClick={() => void copySessionKey()}
-                        className="h-12 w-70 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
+                        onClick={leaveSession}
+                        className="h-12 w-70 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
                       >
-                        Session-Key kopieren
+                        Leave Session
                       </button>
+
+                      {/* Active Session Field */}
+                      {!activeSession.receiveOnly && (
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => void toggleAudio()}
+                            disabled={!localStream}
+                            className="px-4 py-3 rounded-lg border border-slate-300 bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          >
+                            {audioEnabled ? "🎤" : "🎤"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void toggleVideo()}
+                            disabled={!localStream}
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          >
+                            {videoEnabled ? "📷" : "📷"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
-              )}
-            </div>
 
-            {/* Video Area */}
-            <section className="p-2 bg-red-300 rounded-xl flex flex-row gap-2 flex-wrap">
-              {!activeSession.receiveOnly && (
-                <div className="h-82 p-2 w-screen max-w-120 bg-gray-300 rounded-xl shadow-sm flex justify-center items-center">
-                  {hasLocalVideo ? (
-                    <VideoTile title={`Ich (${activeSession.userName})`} stream={localStream} muted />
-                  ) : (
-                    <div className="h-full w-full p-4 rounded-xl bg-gray-200 flex flex-col shadow-sm justify-center items-center">
-                      <h3 className="text-lg font-semibold text-slate-900">Kamera wird gestartet</h3>
-                      <p className="mt-2 text-slate-700">
-                        Sobald Kamera und Mikrofon freigegeben sind, wird dein Bild hier angezeigt.
-                      </p>
+                {/* Active - Right Box */}
+                {sessionKeyInfo && (
+                  <section className="p-2 w-screen max-w-120 h-60 bg-red-200 rounded-lg shadow-sm">
+                    <div className="h-full p-2 bg-gray-200 rounded-lg flex flex-col justify-between">
+                      <div className="flex flex-col ">
+
+                        <h3 className="text-xl font-semibold text-slate-900">Session-Key</h3>
+                        <div className="mt-3 text-2xl font-extrabold tracking-[0.12em] text-slate-900">{sessionKeyInfo.code}</div>
+                        {sessionKeyInfo.expiresAt && (
+                          <p className="mt-3 text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
+                        )}
+                      </div>
+
+                      <div className="p-2 flex justify-center rounded-lg bg-gray-300">
+                        <button
+                          type="button"
+                          onClick={() => void copySessionKey()}
+                          className="h-12 w-70 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
+                        >
+                          Copy Session-Key
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                )}
+              </div>
+
+              <div className="flex flex-row flex-wrap gap-1">
+                {/* Active Video Area */}
+                <section className="rounded-lg flex flex-row flex-wrap">
+                  {!activeSession.receiveOnly && (
+                    <div className="h-82 p-1 w-screen max-w-120 bg-red-200 rounded-lg shadow-sm flex justify-center items-center">
+                      {hasLocalVideo ? (
+                        <VideoTile title={`Ich (${activeSession.userName})`} stream={localStream} muted />
+                      ) : (
+                        <div className="h-full w-full p-4 rounded-lg bg-gray-200 flex flex-col shadow-sm justify-center items-center">
+                          <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
+                          <p className="mt-2 text-slate-700">
+                            Once your camera and microphone are enabled, your image will be displayed here.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
+                </section>
 
-              {remoteVideoFeeds.length > 0 ? (
-                <div className="w-screen max-w-120 bg-gray-300 rounded-xl shadow-sm p-2">
-                  <div className="grid gap-4">
-                    {remoteVideoFeeds.map((feed) => (
-                      <VideoTile
-                        key={feed.peerId}
-                        title={feed.displayName}
-                        stream={feed.stream}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-2 w-screen max-w-120 bg-gray-300 rounded-xl">
-                  <div className="h-full p-4 rounded-xl bg-gray-200 flex flex-col shadow-sm justify-center items-center">
-                    <h3 className="text-lg font-semibold text-slate-900">Warte auf weitere Teilnehmende</h3>
-                    <p className="mt-2">
-                      Sobald andere Clients mit aktivem Kamerabild denselben Session-Key nutzen,
-                      werden ihre Streams hier angezeigt.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
+                {/* Remote Video Area */}
+                <section>
+                  {remoteVideoFeeds.length > 0 ? (
+                    <div className="h-82 p-2 w-screen max-w-120 bg-red-200 rounded-lg">
+                      <div className="grid gap-4">
+                        {remoteVideoFeeds.map((feed) => (
+                          <VideoTile
+                            key={feed.peerId}
+                            title={feed.displayName}
+                            stream={feed.stream}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-82 p-2 w-screen max-w-120 bg-red-200 rounded-lg">
+                      <div className="h-full p-4 rounded-lg bg-gray-200 flex flex-col shadow-sm justify-center items-center">
+                        <h3 className="text-lg font-semibold text-slate-900">Warte auf weitere Teilnehmende</h3>
+                        <p className="mt-2">
+                          As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
 
             {/* ChatBox */}
-            <section className="p-2 mt-2 w-screen max-w-180 bg-gray-300 rounded-xl shadow-sm">
-              <div className="p-2 bg-gray-200 rounded-xl">
+            <section className="max-w-120 mt-1 mb-6 p-2 bg-red-200 rounded-lg shadow-sm">
+              <div className="p-2 bg-gray-200 rounded-lg">
                 <h3 className="text-xl font-semibold text-slate-900">Chat</h3>
 
-                <div className="mt-4 p-4 grid max-h-80 bg-gray-300 gap-3 overflow-y-auto rounded-xl border border-slate-200">
+                <div className="mt-4 p-4 grid max-h-80 bg-gray-300 gap-3 overflow-y-auto rounded-lg border border-slate-200">
                   {messages.length === 0 ? (
-                    <p className="text-slate-500">Noch keine Nachrichten in dieser Session.</p>
+                    <p className="text-slate-500">No news yet in this session.</p>
                   ) : (
                     messages.map((message) => (
                       <div key={message.id}>
@@ -1189,16 +1196,16 @@ export default function LiveTalkClient({
                         void sendChatMessage();
                       }
                     }}
-                    placeholder="Kommentar schreiben"
-                    className="min-w-65 bg-white flex-1 rounded-xl border border-slate-300 px-4 py-3"
+                    placeholder="Write Comment"
+                    className="p-2 bg-white flex-1 rounded-lg"
                   />
                   <button
                     type="button"
                     onClick={() => void sendChatMessage()}
                     disabled={!chatInput.trim()}
-                    className="h-12 px-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
+                    className="h-12 px-4 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
                   >
-                    Senden
+                    Send
                   </button>
                 </div>
               </div>

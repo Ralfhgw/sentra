@@ -82,7 +82,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                   className="mx-auto mb-2 rounded-lg"
                   unoptimized
                 />
-                Events&nbsp;-&nbsp;Wetter&nbsp;-&nbsp;LiveView
+                Events&nbsp;-&nbsp;Wetter&nbsp;-&nbsp;LiveView&nbsp;-&nbsp;LiveTalk
               </div>
             </div>
 

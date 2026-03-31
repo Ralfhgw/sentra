@@ -199,7 +199,7 @@ export default function NewsClient({
   );
 
   const currentHeadlineTown =
-    locationFilter === "all" ? "allen gespeicherten Standorten" : locationFilter;
+    locationFilter === "all" ? "all saved locations" : locationFilter;
 
   const todayKey = formatDateKey(new Date());
   const selectedSingleDay =
@@ -210,14 +210,14 @@ export default function NewsClient({
 
   const meaningButtonLabel = useMemo(() => {
     if (filterMode === "all") {
-      return `Bedeutung des heutigen Tages - ${formatCalendarLabel(todayKey)}`;
+      return `Meaning of today - ${formatCalendarLabel(todayKey)}`;
     }
 
     if (selectedSingleDay) {
-      return `Bedeutung fuer ${formatCalendarLabel(selectedSingleDay)}`;
+      return `Meaning for ${formatCalendarLabel(selectedSingleDay)}`;
     }
 
-    return "Bedeutung des Tages";
+    return "Meaning of today";
   }, [filterMode, selectedSingleDay, todayKey]);
 
   const canOpenMeaning =
@@ -462,8 +462,8 @@ export default function NewsClient({
         <div className="mx-4 mt-4 rounded-lg border border-gray-300 bg-linear-to-b from-gray-100 to-gray-200 p-4 shadow-[4px_4px_0_0_rgba(156,163,175,1),4px_4px_10px_rgba(0,0,0,0.12)]">
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "Alle", value: "all" as const, title: "Alle Events anzeigen" },
-              { label: "Filter", value: "day" as const, title: "Kalender zum Filtern oeffnen" },
+              { label: "All", value: "all" as const, title: "View all events" },
+              { label: "Filter", value: "day" as const, title: "Open calendar for filtering" },
             ].map((option) => (
               <button
                 key={option.value}
@@ -481,13 +481,13 @@ export default function NewsClient({
           </div>
 
           <label className="mt-4 flex flex-col gap-2 text-sm font-semibold text-gray-700">
-            Standort
+            Location
             <select
               value={locationFilter}
               onChange={(event) => setLocationFilter(event.target.value)}
               className="rounded-lg border border-gray-400 bg-white px-3 py-2 text-sm font-normal text-gray-700 outline-none focus:border-gray-600"
             >
-              <option value="all">Alle Standorte</option>
+              <option value="all">All locations</option>
               {availableLocations.map((location) => (
                 <option key={location} value={location}>
                   {location}
@@ -573,21 +573,21 @@ export default function NewsClient({
           <div className="mt-4 text-xs text-gray-600">
             {filterMode === "all" &&
               (locationFilter === "all"
-                ? "Alle Events werden angezeigt."
-                : `Gefiltert auf den Standort ${locationFilter}.`)}
+                ? "All events are displayed."
+                : `Filtered by location ${locationFilter}.`)}
 
             {filterMode === "day" &&
               (rangeStart && rangeEnd
-                ? `Gefiltert von ${formatCalendarLabel(rangeStart)} bis ${formatCalendarLabel(rangeEnd)}.`
+                ? `Filtered from ${formatCalendarLabel(rangeStart)} to ${formatCalendarLabel(rangeEnd)}.`
                 : rangeStart
-                  ? `Gefiltert auf ${formatCalendarLabel(rangeStart)}.`
-                  : "Bitte einen Tag oder Zeitraum im Kalender auswaehlen.")}
+                  ? `Filtered to ${formatCalendarLabel(rangeStart)}.`
+                  : "Please select a day or period from the calendar.")}
 
-            {forceRefresh && " force ist aktiv: Es kann nur ein einzelner Tag abgefragt werden."}
+            {forceRefresh && " force is active: Only a single day can be queried."}
           </div>
 
           <div className="mt-2 text-xs font-semibold text-gray-500">
-            {filteredEvents.length} Event{filteredEvents.length === 1 ? "" : "s"} sichtbar
+            {filteredEvents.length} Event{filteredEvents.length === 1 ? "" : "s"}
           </div>
                   <div className="mt-10 px-4">
           <button
@@ -601,8 +601,8 @@ export default function NewsClient({
             }`}
             title={
               canOpenMeaning
-                ? "Tagesbedeutungen anzeigen"
-                : "Nur bei Alle oder einem einzelnen ausgewaehlten Tag verfuegbar"
+                ? "Show daily meanings"
+                : "Available only for all days or a single selected day."
             }
           >
             {meaningButtonLabel}
@@ -618,7 +618,7 @@ export default function NewsClient({
         {error && <div className="text-red-600 text-center mb-4">{error}</div>}
         {isRefreshing && (
           <div className="text-blue-700 text-center mb-4">
-            Event-Abfrage laeuft...
+            Event-Query running...
           </div>
         )}
 
@@ -653,7 +653,7 @@ export default function NewsClient({
                         unoptimized
                       />
                     ) : (
-                      <span className="text-white opacity-50 text-xs">Kein Bild</span>
+                      <span className="text-white opacity-50 text-xs">No Pic</span>
                     )}
                   </div>
 
@@ -669,7 +669,7 @@ export default function NewsClient({
                     {formatAddress(event.address)}
 
                     <div className="text-gray-700">
-                      <span className="font-semibold text-gray-700">Datum:</span>{" "}{event.date ? formatEventDate(event.date) : ""}
+                      <span className="font-semibold text-gray-700">Date:</span>{" "}{event.date ? formatEventDate(event.date) : ""}
                     </div>
 
 
@@ -689,7 +689,7 @@ export default function NewsClient({
                             className="text-gray-600 underline font-semibold"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            Mehr Infos
+                            More information
                           </a>
                         )}
                       </>
@@ -701,7 +701,7 @@ export default function NewsClient({
                       className="p-4 rounded-r-lg flex items-center justify-center bg-blue-600 shadow-lg cursor-pointer"
                       onClick={async () => {
                         if (!event.id) {
-                          alert("Event hat keine ID!");
+                          alert("Event has no ID!");
                           return;
                         }
                         try {
@@ -710,10 +710,10 @@ export default function NewsClient({
                           setOpenedDetailIdx(null);
                         } catch (deleteError) {
                           console.error(deleteError);
-                          alert("Fehler beim Loeschen!");
+                          alert("Error during deletion!");
                         }
                       }}
-                      title="Event loeschen"
+                      title="Delete event"
                     >
                       <h2 className="font-bold text-2xl">X</h2>
                     </div>
@@ -723,7 +723,7 @@ export default function NewsClient({
             })}
           </ul>
         ) : (
-          !error && <div className="text-center text-gray-500">Keine Events gefunden.</div>
+          !error && <div className="text-center text-gray-500">No Events found.</div>
         )}
       </MoveableScrollAreaVertical>
 
@@ -739,7 +739,7 @@ export default function NewsClient({
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">
-                  Bedeutung des Tages
+                  Meaning of the day
                 </h2>
                 <p className="text-sm text-gray-600">
                   {meaningDate ? formatCalendarLabel(meaningDate) : ""}
@@ -750,13 +750,13 @@ export default function NewsClient({
                 onClick={() => setInfoVisible(false)}
                 className="rounded-xl border border-gray-400 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-white"
               >
-                Schliessen
+                Close
               </button>
             </div>
 
             {meaningLoading && (
               <div className="rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-600">
-                Lade Tagesbedeutungen...
+                Loading daily meanings...
               </div>
             )}
 
@@ -768,7 +768,7 @@ export default function NewsClient({
 
             {!meaningLoading && !meaningError && meaningList.length === 0 && (
               <div className="rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-600">
-                Fuer diesen Tag sind keine Bedeutungen vermerkt.
+                No meanings are recorded for this day.
               </div>
             )}
 
@@ -801,7 +801,7 @@ export default function NewsClient({
                               window.open(meaning.url, "_blank", "noopener,noreferrer");
                             }}
                           >
-                            Mehr erfahren
+                            Learn more
                           </span>
                         </div>
                       )}

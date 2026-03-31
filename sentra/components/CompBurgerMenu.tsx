@@ -6,7 +6,7 @@ export function CompBurgerMenu() {
   const [open, setOpen] = useState(false);
   //TODO Logout from Burger Menu not working
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-1 right-1 z-50">
       {/* Burger Icon */}
       <button
         aria-label="Menü öffnen"

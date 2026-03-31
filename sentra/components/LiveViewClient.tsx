@@ -301,7 +301,7 @@ export default function LiveViewClient({
 
   return (
 
-    <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch w-full relative gap-2 md:gap-0">
+    <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch w-full relative gap-0 md:gap-0">
 
       {/* Configuration POPUP Window*/}
       {popupCell !== null && (
@@ -404,26 +404,26 @@ export default function LiveViewClient({
       )}
 
       {/* Grid Layout Button */}
-      <div className="w-full md:w-auto border-b md:border-b-0 md:border-r border-gray-300 bg-black">
+      <div className="w-full md:w-23 flex flex-col border-b md:border-b-0 md:border-r border-orange-300 bg-gray-600 ">
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="mt-3 mx-1 bg-gray-500 px-4 py-1.5 rounded border border-gray-700 text-xs text-gray-100 hover:bg-gray-800 transition flex items-center gap-3"
+            className="md:w-23 md:m-0 p-2 m-2 bg-gray-800 rounded border border-gray-300 text-xs text-gray-100 transition flex items-center gap-3"
           >
             Grid: {layoutId}
             <span className={`text-[8px] transition-transform ${showMenu ? "rotate-180" : ""}`}>▼</span>
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 mt-2 p-1.5 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50">
+            <div className="absolute bg-gray-800 border border-gray-700 rounded shadow-2xl z-50">
               {(Object.keys(LAYOUT_CONFIGS) as unknown as (keyof typeof LAYOUT_CONFIGS)[]).map((id) => (
                 <button
                   key={id}
                   onClick={() => { setLayoutId(id); setShowMenu(false); }}
-                  className={`w-full p-2 text-left rounded text-xs transition mb-0.5 ${layoutId === id ? "bg-orange-600/20 text-orange-500 font-bold" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                  className={`w-full p-2 text-left rounded text-xs transition mb-0.5 ${layoutId === id ? "bg-gray-600/20 text-gray-200" : "text-gray-100 hover:bg-gray-500"
                     }`}
                 >
-                  {id} Fenster
+                  Grid {id}
                 </button>
               ))}
             </div>
@@ -433,7 +433,7 @@ export default function LiveViewClient({
 
       {/* Video Grid */}
       <div
-        className="w-full md:w-[80%] h-full grid gap-px bg-blue-300 border border-gray-800"
+        className="w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
         style={{
           gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
           gridAutoRows: useCompactSpans ? "minmax(220px, auto)" : "minmax(0, 1fr)",
@@ -458,8 +458,7 @@ export default function LiveViewClient({
               onDrop={() => void handleDropOnSlot(slotId)}
               onDoubleClick={() => setPopupCell(slotId)}
             >
-              <div
-                className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
+              <div className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
                 draggable={Boolean(currentUserChannels[slotId]?.url)}
                 onDragStart={() => {
                   if (!currentUserChannels[slotId]?.url) return;

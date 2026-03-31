@@ -44,16 +44,16 @@ async function getNews(): Promise<NewsClientProps> {
         events: events ?? [],
         dayMeanings: dayMeanings ?? [],
         town: settings.town ?? "",
-        error: events.length > 0 ? "" : "Keine Events gefunden",
+        error: events.length > 0 ? "" : "No events found",
         evtEnabled: true,
       };
     } catch (err) {
-      console.error("Fehler beim direkten Datenbankzugriff:", err);
+      console.error("Error accessing the database directly:", err);
 
       const errorMessage =
         err instanceof Error && err.message.includes("Token")
           ? err.message
-          : "Fehler beim Laden der Events oder Tagesbedeutungen";
+          : "Error loading events or daily meanings";
 
       return {
         events: [],
@@ -64,12 +64,12 @@ async function getNews(): Promise<NewsClientProps> {
       };
     }
   } catch (err) {
-    console.error("Fehler beim Laden der User-Settings:", err);
+    console.error("Error loading user settings:", err);
 
     const errorMessage =
       err instanceof Error && err.message.includes("Token")
         ? err.message
-        : "Fehler beim Laden der Events oder Tagesbedeutungen";
+        : "Error loading events or daily meanings";
 
     return {
       events: [],

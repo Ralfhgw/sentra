@@ -398,12 +398,12 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-4 no-scrollbar shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
-        <header className="rounded-2xl border border-slate-200/70 bg-white/70 p-6 shadow-lg backdrop-blur-sm">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Einstellungen</h1>
+        <header className="rounded-lg p-6 bg-gray-300 shadow-lg backdrop-blur-sm">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Settings</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Verwalte Standort, Eventquellen und Sensor-Kalibrierung in einer Übersicht.
+            Manage location, event sources, and sensor calibration in one overview.
           </p>
         </header>
 
@@ -417,8 +417,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
-            <div className="w-100 h-100 rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
-               <MapSelector
+            <div className="w-100 h-100 rounded-lg overflow-hidden bg-gray-300 shadow-sm">
+                <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -447,8 +447,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
               /> 
             </div>
             {/* Location Details */}
-            <article className="w-100 h-100 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">
-              <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Standortdetails</h2>
+            <article className="w-100 h-100 p-4 rounded-lg bg-gray-300  shadow-md">
+              <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
               <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div className="rounded-lg bg-gray-200 p-3">
                   <dt className="text-slate-800">Lat</dt>
@@ -482,9 +482,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Settings */}
-            <article className="w-100 h-100 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-md">
+            <article className="w-100 h-100 flex flex-col gap-2 rounded-lg bg-gray-300 p-4 shadow-md">
               <div className="bg-gray-200 rounded-lg">
-                <h2 className=" text-center text-lg font-semibold  text-slate-800">Einstellungen</h2>
+                <h2 className=" text-center text-lg font-semibold  text-slate-800">Settings</h2>
               </div>
 
               <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-4">
@@ -538,13 +538,13 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Event-URLs */}
-            <article className="w-100 h-100 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg bg-gray-300 shadow-md">
               <h2 className="bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Event-URLs</h2>
 
               <div className="my-2 p-2 w-full bg-gray-200 rounded-lg flex flex-row items-center justify-between ">
                 <button
                   type="button"
-                  className="px-2 py-2 w-full rounded-lg border border-gray-300 bg-gray-100 text-center text-sm transition hover:bg-gray-50"
+                  className="px-2 py-1 w-full rounded-lg border border-gray-300 bg-gray-100 text-center text-sm transition hover:bg-gray-50"
                   onClick={() =>
                     setSettings((prev) => ({
                       ...prev,
@@ -566,7 +566,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <div>
                     <input
                       type="url"
-                      className="px-2 py-1 w-full bg-gray-100 rounded border text-sm border-gray-300"
+                      className="px-2 py-1 w-full bg-gray-100 rounded-lg border text-sm border-gray-300"
                       placeholder="https://website-of-events.com/"
                       value={urlInput}
                       onChange={e => setUrlInput(e.target.value)}
@@ -577,7 +577,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     <div>
                       <button
                         type="button"
-                        className="w-full rounded-lg border border-gray-300 bg-gray-200 px-2 py-2 text-center text-sm transition hover:bg-gray-100"
+                        className="inline-flex items-center justify-center px-3 py-1 bg-gray-600 text-white rounded-lg shadow-sm font-medium hover:bg-gray-700 active:scale-95 transition transform focus:outline-none focus:ring-2 focus:ring-gray-400"
                         onClick={() =>
                           setUrlRefreshInterval((current) =>
                             getNextEventRefreshInterval(current)
@@ -592,7 +592,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     <div className="flex justify-center">
                       <button
                         type="button"
-                        className="px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
+                        className="inline-flex items-center justify-center px-3 py-1 bg-amber-600 text-white rounded-lg shadow-sm font-medium hover:bg-amber-700 active:scale-95 transition transform focus:outline-none focus:ring-2 focus:ring-amber-400"
                         onClick={handleAddUrl}
                         disabled={!urlInput.trim()}
                       >
@@ -639,7 +639,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Sensors */}
-            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 p-4 shadow-md">
+            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 bg-gray-300 p-4 shadow-md">
               <div className="flex flex-row justify-between gap-2">
                 <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
                   <input
@@ -652,7 +652,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       }))
                     }
                   />
-                  Sensor Innen aktivieren
+                  Sensor Indoor active
                 </label>
 
                 <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
@@ -666,7 +666,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       }))
                     }
                   />
-                  Sensor Außen aktivieren
+                  Sensor Outdoor active
                 </label>
               </div>
 
@@ -677,7 +677,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     }`}
                 >
                   <div className="flex justify-between items-center">
-                    <p className="font-bold text-sm">Sensor Innen</p>
+                    <p className="font-bold text-sm">Sensor Indoor</p>
                     {sensorValues.indoorStatus === "offline" && (
                       <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
                     )}
@@ -685,13 +685,13 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
                   {sensorValues.indoor ? (
                     <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
-                      <p className="text-sm">Temperatur: {sensorValues.indoor.temp?.toFixed(1)} °C</p>
-                      {sensorValues.indoor.dew !== undefined && <p className="text-sm">Taupunkt: {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
-                      <p className="text-sm">Luftfeuchtigkeit: {sensorValues.indoor.hum?.toFixed(1)} %</p>
-                      <p className="text-sm">Luftdruck: {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                      <p className="text-sm">Temperature: {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                      {sensorValues.indoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                      <p className="text-sm">Humidity: {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                      <p className="text-sm">Air Pressure: {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
                     </div>
                   ) : (
-                    <p className="text-sm">Warte auf Innensensor...</p>
+                    <p className="text-sm">Waiting for Indoor Sensor...</p>
                   )}
                 </div>
               )}
@@ -703,7 +703,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     }`}
                 >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-sm">Sensor Außen</h4>
+                    <h4 className="font-bold text-sm">Sensor Outdoor</h4>
                     {sensorValues.outdoorStatus === "offline" && (
                       <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
                     )}
@@ -711,19 +711,19 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
                   {sensorValues.outdoor ? (
                     <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
-                      <p className="text-sm">Temperatur: {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
-                      {sensorValues.outdoor.dew !== undefined && <p className="text-sm">Taupunkt: {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
-                      <p className="text-sm">Luftfeuchtigkeit: {sensorValues.outdoor.hum?.toFixed(1)} %</p>
-                      <p className="text-sm">Luftdruck: {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                      <p className="text-sm">Temperature: {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                      {sensorValues.outdoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                      <p className="text-sm">Humidity: {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                      <p className="text-sm">Air Pressure: {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
                     </div>
                   ) : (
-                    <p className="text-sm">Warte auf Außensensor...</p>
+                    <p className="text-sm">Waiting for Outdoor Sensor...</p>
                   )}
                 </div>
               )}
 
-              <div className="bg-gray-200">
-                <p className="text-sm">Beachte, für die Offset Berechnung müssen beide Sensoren online und in der selben Umgebung sein.</p>
+              <div className="p-1 bg-gray-200 rounded-lg">
+                <p className="text-sm">Note that for offset calculation, both sensors must be online and in the same environment.</p>
               </div>
 
               {/* Button Calculate Offset */}
@@ -731,7 +731,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                 <div className="flex flex-col items-center">
                   <button
                     type="button"
-                    className="mt-2 px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
+                    className="mt-2 px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                     onClick={handleCalculateOffset}
                     disabled={
                       !(
@@ -742,51 +742,51 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       )
                     }
                   >
-                    Offset berechnen
+                    Calculate Offset
                   </button>
                 </div>
               )}
             </article>
 
             {/* Sensor channel data */}
-            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 p-4 shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-gray-300  shadow-md">
               <div className="h-full rounded-lg text-sm bg-gray-200 p-3">
-                <dt>Bitte verwende beim Senden deiner Sensordaten vom BM280 die folgenden Kanäle</dt>
-                <dt className="mt-1">Innensensor</dt>
+                <dt>Please use the following channels when sending your sensor data from the BM280.</dt>
+                <dt className="mt-1">Indoor Sensor</dt>
                 <dd className="opacity-70 text-slate-800 select-text">
                   {settings.user_id + "/in/climate" || "Unbekannt"}
                 </dd>
                 <dd className="opacity-70 text-slate-800 select-text">
                   {settings.user_id + "/in/stat" || "Unbekannt"}
                 </dd>
-                <dt className="mt-1">Außensensor</dt>
+                <dt className="mt-1">Outdoor Sensor</dt>
                 <dd className="opacity-70 text-slate-800 select-text">
                   {settings.user_id + "/out/climate" || "Unbekannt"}
                 </dd>
                 <dd className="opacity-70 text-slate-800 select-text">
                   {settings.user_id + "/out/stat" || "Unbekannt"}
                 </dd>
-                <p className="mt-5">Hier findest du den BME280 Code zum Download.</p>
+                <p className="mt-5">Here you can find the BME280 code for download.</p>
                 <a
                   href="/bme280_code.ino"
                   download
-                  className="mt-2 inline-block px-4 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition"
+                  className="mt-2 inline-block px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
                 >
                   Sensor BM280
                 </a>
-                <p className="mt-5">Die Verwendung der Sensoren mit Sentra erfordert einen MQTT Proxy. Eine Anleitung findest du in der README.</p>
+                <p className="mt-5">Using the sensors with Sentra requires an MQTT proxy. Instructions can be found in the README.</p>
               </div>
             </article>
 
             {/* Key Input */}
-            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-white/80 shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 bg-gray-300 shadow-md">
               <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
                   <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
                   <input
                     id="input1"
                     type="text"
-                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
                     value={keyInputs.key1 ?? ""}
                     onChange={(e) => handleKeyChange("key1", e.target.value)}
                     placeholder={getKeyPlaceholder(settings.key1)}
@@ -798,7 +798,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <input
                     id="input2"
                     type="text"
-                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
                     value={keyInputs.key2 ?? ""}
                     onChange={(e) => handleKeyChange("key2", e.target.value)}
                     placeholder={getKeyPlaceholder(settings.key2)}
@@ -810,7 +810,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <input
                     id="input3"
                     type="text"
-                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
                     value={keyInputs.key3 ?? ""}
                     onChange={(e) => handleKeyChange("key3", e.target.value)}
                     placeholder={getKeyPlaceholder(settings.key3)}
@@ -822,7 +822,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <input
                     id="input4"
                     type="text"
-                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
                     value={keyInputs.key4 ?? ""}
                     onChange={(e) => handleKeyChange("key4", e.target.value)}
                     placeholder={getKeyPlaceholder(settings.key4)}
@@ -834,7 +834,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <input
                     id="input5"
                     type="text"
-                    className="px-2 py-1 bg-gray-100 rounded border text-sm border-gray-300"
+                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
                     value={keyInputs.key5 ?? ""}
                     onChange={(e) => handleKeyChange("key5", e.target.value)}
                     placeholder={getKeyPlaceholder(settings.key5)}
@@ -846,18 +846,18 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
             {/* Global Data und Save Button */}
             <article
-              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-white/80 p-4 shadow-md
+              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-gray-300 p-4 shadow-md
     ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
     transition-colors duration-300`}
             >
               <div className="rounded-lg text-sm bg-gray-200 p-3">
-                <p>Drücke den Button zum Speichern aller nutzerspezifischen Daten.</p>
+                <p>Press the button to save all user-specific data.</p>
               </div>
 
 
               <button
                 type="submit"
-                className={`mt-1 px-6 py-1 rounded bg-amber-600 text-white shadow hover:bg-amber-700 transition
+                className={`mt-1 px-6 py-1 rounded-lg bg-amber-600 text-white shadow hover:bg-amber-700 transition
                   ${saving ? "opacity-50 pointer-events-none" : ""}
                   ${borderColor === "green"
                     ? "border-3 border-green-600"

@@ -1,7 +1,5 @@
 ##### Deutsche Sprache
 
-##### Deutsche Sprache
-
 ## LIVEVIEW Modul
 
 ### Überblick
@@ -44,11 +42,6 @@ Ohne aktiviertes `MTX` wird statt der LiveView-Seite nur ein Hinweis angezeigt.
 
 ### Konfiguration in den Einstellungen
 Die zugehörige Grundkonfiguration erfolgt auf der Settings-Seite.
-
-#### 1. Modul aktivieren
-Damit die LiveView-Seite nutzbar ist, muss das Modul `MTX` aktiviert sein.
-
-Weitere Slot-Zuweisungen erfolgen nicht in den Settings, sondern direkt in der LiveView-Seite.
 
 ### Verwendung der LiveView-Seite
 Die LiveView-Seite besteht aus Raster, Slot-Verwaltung und Stream-Anzeige.
@@ -136,13 +129,12 @@ Dadurch können auch RTSP-Quellen in der LiveView-Seite angezeigt werden.
 
 ### Typische Nutzung
 #### Nutzung mit vorhandenen Kanälen
-1. `MTX` in den Einstellungen aktivieren
-2. LiveView-Seite öffnen
-3. gewünschtes Grid auswählen
-4. per Doppelklick einen Slot öffnen
-5. Kanal filtern oder suchen
-6. Kanal auswählen
-7. `Speichern` klicken
+1. LiveView-Seite öffnen
+2. gewünschtes Grid auswählen
+3. per Doppelklick einen Slot öffnen
+4. Kanal filtern oder suchen
+5. Kanal auswählen
+6. `Speichern` klicken
 
 #### Nutzung mit eigenen Streams
 1. LiveView-Seite öffnen
@@ -154,10 +146,9 @@ Dadurch können auch RTSP-Quellen in der LiveView-Seite angezeigt werden.
 ### Wenn keine Streams erscheinen
 Mögliche Ursachen:
 
-- `MTX` ist nicht aktiviert
 - es ist kein gültiger Stream im Slot gespeichert
 - die Quelle ist nicht erreichbar
-- mediaMTX läuft nicht
+- mediaMTX läuft nicht (bei RTSP Streams)
 - der Kanal in der Datenbank ist ungültig
 - der Slot ist leer
 - die Quelle liefert zwar Daten, aber kein abspielbares Format
@@ -165,7 +156,6 @@ Mögliche Ursachen:
 ### Empfehlung für den Betrieb
 Für eine stabile Nutzung empfiehlt sich:
 
-- `MTX` aktivieren
 - nur erreichbare Streams speichern
 - RTSP-Quellen über einen stabilen mediaMTX-Dienst einbinden
 - das Grid passend zur Anzahl der tatsächlich genutzten Quellen wählen

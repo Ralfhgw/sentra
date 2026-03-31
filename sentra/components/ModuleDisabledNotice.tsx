@@ -12,11 +12,11 @@ export default function ModuleDisabledNotice({
       <div className="rounded-3xl border border-amber-300 bg-amber-50 p-6 text-slate-800 shadow-sm">
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="mt-3">
-          Das Modul ist vorhanden, aber in deinen Einstellungen ist{" "}
+          The module is present, but in your settings it is{" "}
           <code className="rounded bg-amber-100 px-1 py-0.5 text-sm font-semibold">
             {settingCode}
           </code>{" "}
-          aktuell nicht aktiviert.
+          currently not activated.
         </p>
       </div>
     </main>

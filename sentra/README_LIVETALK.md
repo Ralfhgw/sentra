@@ -16,7 +16,11 @@ Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikati
 
 ![MediaSoup](./webrtc-coturn-mediasoup.png)
 
-
+Die bestehende WebRTC Verbindung kann im Browser überprüft werden.
+```
+chrome://webrtc-internals/
+#Search for Candidate
+```
 ### Was die LiveTalk-Seite macht
 Die Seite dient als persönlicher Gesprächs- und Besprechungsbereich.
 

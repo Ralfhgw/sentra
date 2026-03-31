@@ -103,7 +103,6 @@ export default function WeatherClient({
       try {
         const response = await fetch('/api/sensor');
         const result = await response.json();
-
         if (result.wert) {
           const newSensorData: DualSensorState = {
             indoor: null,
@@ -117,8 +116,6 @@ export default function WeatherClient({
               console.log("calTemp:", s_cal_temp);
               console.log("calHumidity:", s_cal_humidity);
               console.log("calPressure:", s_cal_pressure);
-
-
 
               newSensorData.indoor = JSON.parse(result.wert.indoor);
 /*               console.log("indoor.temp:",newSensorData.indoor.temp)

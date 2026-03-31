@@ -7,13 +7,8 @@ export async function GET() {
         const { userId } = await getAuthenticatedUserFromCookies();
         const indoorClimateTopic = `${userId}/in/climate`;
         const outdoorClimateTopic = `${userId}/out/climate`;
-        const indoorStatusTopic = `${userId}/in/status`;
-        const outdoorStatusTopic = `${userId}/out/status`;
-
-/*      const indoorClimateTopic = `in/climate`;
-        const outdoorClimateTopic = `out/climate`;
-        const indoorStatusTopic = `in/status`;
-        const outdoorStatusTopic = `out/status`; */ 
+        const indoorStatusTopic = `${userId}/in/stat`;
+        const outdoorStatusTopic = `${userId}/out/stat`;
 
         const data = await new Promise((resolve, reject) => {
             const client = mqtt.connect({
@@ -37,7 +32,6 @@ export async function GET() {
 
             const timeout = setTimeout(() => {
                 if (client.connected) client.end();
-                // Besser das Objekt zurückgeben, auch wenn noch nicht alle Daten da sind
                 resolve(results);
             }, 4000);
 
@@ -59,7 +53,6 @@ export async function GET() {
                 else if (topic === indoorStatusTopic) results.indoorStatus = msgStr;
                 else if (topic === outdoorStatusTopic) results.outdoorStatus = msgStr;
 
-                // Optional: Warten, bis alles da ist, oder nach Timeout auflösen
                 if (results.indoor && results.outdoor && results.indoorStatus && results.outdoorStatus) {
                     clearTimeout(timeout);
                     client.end(true);
@@ -67,14 +60,13 @@ export async function GET() {
                 }
             });
 
-            // WICHTIG: Fehlerbehandlung für den MQTT-Client hinzufügen
             client.on('error', (err) => {
                 console.error("MQTT Fehler:", err);
                 clearTimeout(timeout);
                 client.end(true);
                 reject(err);
             });
-        }); // <-- FEHLTE VORHER: Hier wird das Promise geschlossen
+        }); 
 
         return NextResponse.json({ wert: data });
 

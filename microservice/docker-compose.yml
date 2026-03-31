@@ -63,7 +63,7 @@ services:
       - "40000-40100:40000-40100/tcp"
 
   coturn:
-    image: coturn/coturn:latest
+    image: coturn/coturn:4.9.0
     container_name: coturn
     restart: unless-stopped
     ports:
@@ -73,6 +73,9 @@ services:
     command:
       - -n
       - --log-file=stdout
+      - --no-cli
+      - --no-tls
+      - --no-dtls
       - --realm=sentra.local
       - --use-auth-secret
       - --static-auth-secret=${LIVETALK_JWT_SECRET}

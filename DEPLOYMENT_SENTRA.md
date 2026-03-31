@@ -149,6 +149,15 @@ sudo docker run hello-world
 sudo usermod -aG docker deploy (anschließend Relogin)
 docker compose up -d
 ```
+# Disable userland-proxy
+```
+deploy@v124:~/sentra/microservice$ sudo cat /etc/docker/daemon.json
+{
+  "data-root": "/data/docker",
+  "userland-proxy": false
+}
+deploy@v124:~/sentra/microservice$ sudo systemctl restart docker
+```
 #### Wireguard Installation
 
 ```

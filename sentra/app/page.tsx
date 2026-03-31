@@ -188,7 +188,7 @@ export default function Home() {
 
         {infoVisible && (
           <div
-            className="p-4 flex flex-col bg-white/70 rounded-xl shadow-2xl backdrop-blur-md"
+            className="mt-8 p-4 flex flex-col bg-white/70 rounded-xl shadow-2xl backdrop-blur-md"
             style={{
               maxWidth: "900px",
               boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
@@ -206,15 +206,20 @@ export default function Home() {
               <sup className="text-base align-top">&copy;</sup>
             </h1>
 
-            <p className="max-w-xl my-3 mx-2 text-gray-800 text-lg hidden lg:block">
+            <p className="max-w-xl my-3 mx-2 text-gray-800 text-lg">
+              {t.description}
+            </p>
+
+            <p className="max-w-xl my-3 mx-2 text-gray-800 font-bold text-lg hidden lg:block">
               {t.descriptionlg}
             </p>
 
-            <p className="max-w-xl my-3 mx-2 text-gray-800 text-lg block lg:hidden">
+            <p className="max-w-xl my-3 mx-2 text-gray-800 font-bold text-lg block lg:hidden">
               {t.descriptionsm}
             </p>
 
-            <p className="max-w-xl my-2 text-center font-medium text-gray-700 ">
+
+            <p className="max-w-xl my-2 text-center font-bold text-gray-700 ">
               {t.userinfo}
             </p>
 

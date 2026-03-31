@@ -24,8 +24,9 @@ export interface Translations {
 export const startpageTranslations = {
  en: {
     title: "Welcome to Sentra",
-    descriptionlg: "Your central info dashboard for local news, weather, live streams, video conferencing, and more – all in one place, accessible anytime. Click the screws 🔩 in the corners to open the modules.",
-    descriptionsm: "Your central info dashboard for local news, weather, live streams, video conferencing, and more – all in one place, accessible anytime. Select the modules from the hamburger menu ☰.",
+    description: "Your central info dashboard for local news, weather, live streams, video conferencing, and more – all in one place, accessible anytime.",
+    descriptionlg: "Click the screws 🔩 in the corners to open the modules.",
+    descriptionsm: "Select the modules from the hamburger menu ☰.",
     userinfo: "User Information and Technical Data",
     news: "📰 News: Your local cultural calendar for the coming days",
     weather: "🌦️ Weather: Forecast for the next few days",
@@ -36,8 +37,9 @@ export const startpageTranslations = {
  },
   de: {
     title: "Willkommen bei Sentra",
-    descriptionlg: "Dein zentrales Info-Dashboard für regionale Nachrichten, Wetter, Live-Streams, Videokonferenzen und mehr – alles an einem Ort, jederzeit erreichbar. Klicke auf die Schrauben 🔩 in den Ecken, um die Module zu öffnen.",
-    descriptionsm: "Dein zentrales Info-Dashboard für regionale Nachrichten, Wetter, Live-Streams, Videokonferenzen und mehr – alles an einem Ort, jederzeit erreichbar. Wähle die Module im Burger-Menü ☰ aus.",
+    description: "Dein zentrales Info-Dashboard für regionale Nachrichten, Wetter, Live-Streams, Videokonferenzen und mehr – alles an einem Ort, jederzeit erreichbar.",
+    descriptionlg: "Klicke auf die Schrauben 🔩 in den Ecken, um die Module zu öffnen.",
+    descriptionsm: "Wähle die Module im Burger-Menü ☰ aus.",
     userinfo: "Benutzerinformationen und technische Daten",
     news: "📰 Aktuelles: Dein regionaler Kulturkalender für die nächsten Tage",
     weather: "🌦️ Wetter: Aussichten für die nächsten Tage",

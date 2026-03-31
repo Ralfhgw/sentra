@@ -14,7 +14,6 @@ Das Modul ist in zwei Teile aufgeteilt:
 
 Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikation separat verarbeitet wird.
 
-
 ![MediaSoup](./webrtc-coturn-mediasoup.png)
 
 ### Was die LiveTalk-Seite macht

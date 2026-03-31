@@ -37,7 +37,6 @@ services:
       - ./init_sentra.sql:/docker-entrypoint-initdb.d/init.sql
       - ./day_meanings_export.csv:/docker-entrypoint-initdb.d/day_meanings_export.csv
       - ./liveview_channels.csv:/docker-entrypoint-initdb.d/liveview_channels.csv
-    ports:
 
   livetalk:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-ralfhgw}/sentra-livetalk:${IMAGE_TAG:-latest}

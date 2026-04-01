@@ -135,6 +135,7 @@ export default function LiveViewClient({
   const [selectedName, setSelectedName] = useState("");
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
     (typeof userChannels === "string"
@@ -203,27 +204,37 @@ export default function LiveViewClient({
   const handleAssignChannel = async () => {
     if (popupCell === null) return;
 
-    if (customUrl.trim()) {
-      await saveSlot({
-        slotId: popupCell,
-        name: customName.trim(),
-        url: customUrl.trim(),
-        transport: "tcp",
-      });
-    } else {
-      await saveSlot({
-        slotId: popupCell,
-        name: selectedName,
-        channelId: selectedChannelId || null,
-        url: null,
-      });
-    }
+    setErrorMessage("");
 
-    setPopupCell(null);
-    setCustomUrl("");
-    setCustomName("");
-    setSelectedName("");
-    setSelectedChannelId("");
+    try {
+      if (customUrl.trim()) {
+        await saveSlot({
+          slotId: popupCell,
+          name: customName.trim(),
+          url: customUrl.trim(),
+          transport: "tcp",
+        });
+      } else {
+        await saveSlot({
+          slotId: popupCell,
+          name: selectedName,
+          channelId: selectedChannelId || null,
+          url: null,
+        });
+      }
+
+      setPopupCell(null);
+      setCustomUrl("");
+      setCustomName("");
+      setSelectedName("");
+      setSelectedChannelId("");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Slot konnte nicht gespeichert werden."
+      );
+    }
   };
 
   const deleteSlot = async (slotId: number) => {
@@ -308,6 +319,11 @@ export default function LiveViewClient({
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-gray-300 rounded shadow-lg p-6 w-150">
             <h2 className="text-lg font-bold mb-4">Kanal zuweisen</h2>
+            {errorMessage && (
+              <p className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {errorMessage}
+              </p>
+            )}
             {/* Gruppenfilter */}
             <div className="mb-4">
               <label className="block text-sm mb-1">Gruppe filtern:</label>

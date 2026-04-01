@@ -42,7 +42,11 @@ function toUserFacingRtspSaveError(error: unknown) {
     return "RTSP source was rejected. Please check your camera username and password.";
   }
 
-  if (/MediaMTX-HLS was not ready in time/i.test(message)) {
+  if (
+    /MediaMTX-HLS was not ready in time|MediaMTX-HLS war nicht rechtzeitig bereit/i.test(
+      message
+    )
+  ) {
     return "RTSP source could not be activated. MediaMTX did not generate a playable stream. Please check the URL, login credentials, and network sharing settings for the camera on the server.";
   }
 
@@ -128,7 +132,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      await waitForMediaMtxHlsReady(mediamtxPath!);
+
       try {
         await syncRtspPathInMediaMtx({
           pathName: mediamtxPath!,

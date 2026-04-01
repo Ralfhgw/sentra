@@ -281,4 +281,28 @@ curl -i http://127.0.0.1:8888/testcam/index.m3u8tcam/index.m3u8
 deploy@v124:~$ curl -u admin:password -X DELETE http://127.0.0.1:9997/v3/config/paths/delete/testcam
 {"status":"ok"}
 
+Testen der Zeitdauer zum Aktivieren  des Streams
+deploy@v124:~/sentra/microservicecurl -u admin:password -X POST http://127.0.0.1:9997/v3/config/paths/add/lvtest -H 'Content-Type: application/json' -d '{"source":"rtsp://10.10.0.2:8554/cam","rtspTransport":"tcp"}'}'
+{"status":"ok"}deploy@v124:~/sentra/microservice$ for i in $(seq 1 30); do
+> date +%T
+> curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8888/lvtest/index.m3u8
+> sleep 1
+> done
+18:03:28
+200
+18:03:33
+200
+18:03:34
+200
+18:03:35
+200
+18:03:36
+200
+18:03:37
+200
+18:03:38
+200
+^C
+deploy@v124:~/sentra/microservice$ curl -u admin:password -X DELETE http://127.0.0.1:9997/v3/config/paths/delete/lvtest
+
 ##### English language

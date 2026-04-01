@@ -14,6 +14,8 @@ Das Modul ist in zwei Teile aufgeteilt:
 
 Dadurch bleibt die eigentliche Web-App schlank, während die Echtzeitkommunikation separat verarbeitet wird.
 
+![SENTRA LiveTalk module](./module_livetalk.png)
+
 ![MediaSoup](./webrtc-coturn-mediasoup.png)
 
 Die bestehende WebRTC Verbindung kann im Browser überprüft werden.

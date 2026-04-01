@@ -10,6 +10,8 @@ Die Weather-Seite zeigt Wetterdaten für den gespeicherten Standort an und kombi
 
 Zusätzlich werden die Daten in mehreren Diagrammen und Tabellen aufbereitet, damit nicht nur die aktuelle Lage, sondern auch der Verlauf der nächsten Stunden und Tage sichtbar ist.
 
+![SENTRA Weather module](./module_weather.png)
+
 ### Was die Weather-Seite macht
 Die Seite dient als persönliches Wetter- und Klima-Informationsportal.
 
@@ -254,3 +256,5 @@ Für die Verbindung des lokalen MQTT Broker ist eine permanente VPN Verbindung n
 ```
 
 ##### English language
+
+![SENTRA Weather module](./module_weather.png)

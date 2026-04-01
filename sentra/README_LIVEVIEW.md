@@ -13,6 +13,8 @@ Dabei können drei Quellarten verwendet werden:
 
 Die Seite ist dafür gedacht, persönliche Stream-Layouts dauerhaft zu speichern und später direkt wieder zu laden.
 
+![SENTRA LiveView module](./module_liveview.png)
+
 ### Was die LiveView-Seite macht
 Die Seite dient als persönlicher Multi-Stream-Monitor.
 

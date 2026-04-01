@@ -11,6 +11,8 @@ Die News-Seite zeigt lokale Veranstaltungen und den kulturellen Kontext eines Ta
 
 Ergänzend kann für einen Tag die Funktion **Bedeutung des Tages** angezeigt werden. Damit lassen sich Feiertage, Gedenktage oder besondere Kalendereinträge direkt in der News-Seite einsehen.
 
+![SENTRA News module](./module_news.png)
+
 ### Was die News-Seite macht
 Die Seite dient als persönlicher Event- und Tagesinformationsbereich.
 
@@ -249,6 +251,8 @@ The News page displays local events and the cultural context of a day. It combin
 - Additional event sources via user-defined event URLs
 
 Additionally, the **Significance of the Day** function can be displayed for a given day. This allows you to view holidays, commemorative days, or special calendar entries directly on the News page.
+
+![SENTRA News module](./module_news.png)
 
 ### What the News Page Does
 

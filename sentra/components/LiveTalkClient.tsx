@@ -1015,7 +1015,7 @@ export default function LiveTalkClient({
                     checked={receiveOnly}
                     onChange={(event) => setReceiveOnly(event.target.checked)}
                   />
-                  Start session without microphone and camera
+                  Session w/o microphone and camera
                 </label>
 
                 {/* Buttons */}

@@ -23,6 +23,8 @@ type UpsertLiveViewSourceInput = {
 type ExistingSourceRow = {
   source_kind: LiveViewSourceKind;
   mediamtx_path: string | null;
+  source_url: string | null;
+  transport: LiveViewTransport | null;
 };
 
 type RebuildRow = {
@@ -150,7 +152,7 @@ function getMediaMtxHeaders() {
 
 export async function getExistingLiveViewSource(userId: string, slotId: number) {
   const [row] = await sql<ExistingSourceRow[]>`
-    SELECT source_kind, mediamtx_path
+    SELECT source_kind, mediamtx_path, source_url, transport
     FROM liveview_sources
     WHERE user_id = ${userId}::uuid
       AND slot_id = ${slotId}
@@ -350,7 +352,12 @@ export async function rebuildUserChannels(userId: string) {
   return channels;
 }
 
-export async function reconcileAllLiveViewRtspSources() {
+export async function reconcileAllLiveViewRtspSources(input?: {
+  waitForReady?: boolean;
+  readyTimeoutMs?: number;
+}) {
+  const waitForReady = input?.waitForReady ?? false;
+  const readyTimeoutMs = input?.readyTimeoutMs ?? 15000;
   const rows = await sql<RtspReconcileRow[]>`
     SELECT mediamtx_path, source_url, transport
     FROM liveview_sources
@@ -368,7 +375,9 @@ export async function reconcileAllLiveViewRtspSources() {
         transport: row.transport ?? "tcp",
       });
 
-      await waitForMediaMtxHlsReady(row.mediamtx_path!);
+      if (waitForReady) {
+        await waitForMediaMtxHlsReady(row.mediamtx_path!, readyTimeoutMs);
+      }
     } catch (error) {
       console.warn(
         `[liveview] reconcile failed for path ${row.mediamtx_path}: ${error instanceof Error ? error.message : String(error)

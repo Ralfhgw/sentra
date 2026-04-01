@@ -26,6 +26,60 @@ type SaveSlotBody = {
   transport?: LiveViewTransport;
 };
 
+
+function toUserFacingRtspSaveError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (
+    /network is unreachable|no route to host|ehostunreach|enetunreach/i.test(
+      message
+    )
+  ) {
+    return "The RTSP source could not be reached by the MediaMTX container. Please check if the camera IP address is reachable from the Docker/server network.";
+  }
+
+  if (/401|403|unauthorized|authentication/i.test(message)) {
+    return "RTSP source was rejected. Please check your camera username and password.";
+  }
+
+  if (/MediaMTX-HLS was not ready in time/i.test(message)) {
+    return "RTSP source could not be activated. MediaMTX did not generate a playable stream. Please check the URL, login credentials, and network sharing settings for the camera on the server.";
+  }
+
+  return `RTSP source could not be activated: ${message}`;
+}
+
+async function rollbackFailedRtspSave(input: {
+  previous: Awaited<ReturnType<typeof getExistingLiveViewSource>>;
+  mediamtxPath: string;
+}) {
+  const { previous, mediamtxPath } = input;
+
+  try {
+    if (
+      previous?.source_kind === "mediamtx_rtsp" &&
+      previous.mediamtx_path === mediamtxPath &&
+      previous.source_url
+    ) {
+      await syncRtspPathInMediaMtx({
+        pathName: mediamtxPath,
+        sourceUrl: previous.source_url,
+        transport: previous.transport ?? "tcp",
+      });
+      return;
+    }
+
+    await deleteRtspPathFromMediaMtx(mediamtxPath);
+  } catch (rollbackError) {
+    console.warn(
+      `[liveview/slots] rollback failed for path ${mediamtxPath}: ${rollbackError instanceof Error
+        ? rollbackError.message
+        : String(rollbackError)
+      }`
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   let auth;
 
@@ -66,6 +120,37 @@ export async function POST(req: NextRequest) {
         ? buildMediamtxPath(auth.userId, body.slotId)
         : null;
 
+    if (sourceKind === "mediamtx_rtsp") {
+      if (!normalizedUrl) {
+        return NextResponse.json(
+          { error: "RTSP-URL fehlt." },
+          { status: 400 }
+        );
+      }
+
+
+
+      await waitForMediaMtxHlsReady(mediamtxPath!);
+      try {
+        await syncRtspPathInMediaMtx({
+          pathName: mediamtxPath!,
+          sourceUrl: normalizedUrl,
+          transport,
+        });
+
+        await waitForMediaMtxHlsReady(mediamtxPath!);
+      } catch (error) {
+        await rollbackFailedRtspSave({
+          previous,
+          mediamtxPath: mediamtxPath!,
+        });
+        console.warn(
+          `[liveview/slots] RTSP validation failed for path ${mediamtxPath}: ${error instanceof Error ? error.message : String(error)
+          }`
+        );
+        throw new Error(toUserFacingRtspSaveError(error));
+      }
+    }
     await upsertLiveViewSource({
       userId: auth.userId,
       slotId: body.slotId,
@@ -76,24 +161,6 @@ export async function POST(req: NextRequest) {
       mediamtxPath,
       transport,
     });
-
-    if (sourceKind === "mediamtx_rtsp") {
-      if (!normalizedUrl) {
-        return NextResponse.json(
-          { error: "RTSP-URL fehlt." },
-          { status: 400 }
-        );
-      }
-
-      await syncRtspPathInMediaMtx({
-        pathName: mediamtxPath!,
-        sourceUrl: normalizedUrl,
-        transport,
-      });
-
-      await waitForMediaMtxHlsReady(mediamtxPath!);
-    }
-
     if (
       previous?.source_kind === "mediamtx_rtsp" &&
       previous.mediamtx_path &&

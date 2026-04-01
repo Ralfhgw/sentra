@@ -128,8 +128,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-
-
       await waitForMediaMtxHlsReady(mediamtxPath!);
       try {
         await syncRtspPathInMediaMtx({
@@ -138,16 +136,19 @@ export async function POST(req: NextRequest) {
           transport,
         });
 
-        await waitForMediaMtxHlsReady(mediamtxPath!);
+        try {
+          await waitForMediaMtxHlsReady(mediamtxPath!, 60000);
+        } catch (error) {
+          console.warn(
+            `[liveview/slots] HLS not ready yet for path ${mediamtxPath}: ${error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
       } catch (error) {
         await rollbackFailedRtspSave({
           previous,
           mediamtxPath: mediamtxPath!,
         });
-        console.warn(
-          `[liveview/slots] RTSP validation failed for path ${mediamtxPath}: ${error instanceof Error ? error.message : String(error)
-          }`
-        );
         throw new Error(toUserFacingRtspSaveError(error));
       }
     }

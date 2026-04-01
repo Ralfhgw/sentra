@@ -11,6 +11,48 @@ const isProd = process.env.NODE_ENV === "production";
 const refreshTokenMaxAge =
   Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
 
+
+function getRefreshTokenFromCookieHeader(cookieHeader: string | null) {
+  if (!cookieHeader) return null;
+
+  const match = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("refreshToken="));
+
+  if (!match) return null;
+  return decodeURIComponent(match.slice("refreshToken=".length));
+}
+
+function buildUpstreamBody(
+  path: string,
+  rawBody: string | undefined,
+  cookieHeader: string | null
+) {
+  if (path !== "/api/auth/refresh") {
+    return rawBody;
+  }
+
+  const refreshToken = getRefreshTokenFromCookieHeader(cookieHeader);
+  if (!refreshToken) {
+    return rawBody;
+  }
+
+  if (!rawBody) {
+    return JSON.stringify({ refreshToken });
+  }
+
+  try {
+    const parsed = JSON.parse(rawBody) as Record<string, unknown>;
+    if (typeof parsed === "object" && parsed !== null && !parsed.refreshToken) {
+      return JSON.stringify({ ...parsed, refreshToken });
+    }
+    return rawBody;
+  } catch {
+    return JSON.stringify({ refreshToken });
+  }
+}
+
 function getAuthHost() {
   const authHost = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
   if (!authHost) {
@@ -103,8 +145,9 @@ export async function forwardAuthRequestWithBody<T = unknown>(
 ) {
   const contentType = req.headers.get("content-type");
   const cookie = req.headers.get("cookie");
-  const body =
+  const rawBody =
     req.method === "GET" || req.method === "HEAD" ? undefined : await req.text();
+    const body = buildUpstreamBody(path, rawBody, cookie);
 
   const upstreamHeaders = new Headers();
   if (contentType) {

@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify, type JWTPayload } from "jose";
 import type { EventRefreshInterval } from "@/types/typesSettings";
 import sql from "@/utils/db";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
@@ -19,6 +20,8 @@ type AuthTokenPayload = {
   sub?: string;
   id?: string;
 };
+
+type VerifiedAuthTokenPayload = JWTPayload & AuthTokenPayload;
 
 type RefreshResponse = AuthResponseEnvelope;
 
@@ -144,6 +147,13 @@ export type ServerAuthWithSettingsResult = ServerAuthResult & {
 };
 
 const REFRESH_TOKEN_MAX_AGE_SECONDS = Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
+const AUTH_JWKS_URL =
+  process.env.AUTH_JWKS_URL ??
+  (process.env.AUTH_HOST ? `${process.env.AUTH_HOST}/api/auth/jwks` : undefined);
+const AUTH_JWT_ISSUER = process.env.AUTH_JWT_ISSUER;
+
+const remoteJwks =
+  AUTH_JWKS_URL ? createRemoteJWKSet(new URL(AUTH_JWKS_URL)) : null;
 
 function getAuthHost() {
   const authHost = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
@@ -181,11 +191,27 @@ function getRefreshCookieOptions() {
   } as const;
 }
 
-function getUserIdFromToken(accessToken: string) {
-  const decoded = jwt.verify(
-    accessToken,
-    process.env.JWT_SECRET!
-  ) as AuthTokenPayload;
+async function verifyAuthToken(accessToken: string): Promise<VerifiedAuthTokenPayload> {
+  const header = decodeProtectedHeader(accessToken);
+
+  if (header.alg?.startsWith("RS")) {
+    if (!remoteJwks) {
+      throw new Error("AUTH_JWKS_URL not configured for RSA/JWKS token verification.");
+    }
+
+    const { payload } = await jwtVerify(accessToken, remoteJwks, {
+      algorithms: [header.alg],
+      ...(AUTH_JWT_ISSUER ? { issuer: AUTH_JWT_ISSUER } : {}),
+    });
+
+    return payload as VerifiedAuthTokenPayload;
+  }
+
+  return jwt.verify(accessToken, process.env.JWT_SECRET!) as VerifiedAuthTokenPayload;
+}
+
+async function getUserIdFromToken(accessToken: string) {
+  const decoded = await verifyAuthToken(accessToken);
 
   const userId = decoded.sub ?? decoded.id;
   if (!userId) {
@@ -343,15 +369,17 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
 
 async function requestRefreshedSession(refreshToken: string): Promise<RefreshedSession> {
   const headers = new Headers({
-    Cookie: "refreshToken=" + refreshToken,
     "Content-Type": "application/json",
   });
+
+  headers.set("Cookie", "refreshToken=" + refreshToken);
 
   applyAuthServiceHeaders(headers);
 
   const refreshRes = await fetch(getAuthHost() + "/api/auth/refresh", {
     method: "POST",
     headers,
+    body: JSON.stringify({ refreshToken }),
     cache: "no-store",
   });
 
@@ -385,13 +413,14 @@ async function authenticateWithCookies(
 
   if (accessToken) {
     try {
-      const userId = getUserIdFromToken(accessToken);
+      const userId = await getUserIdFromToken(accessToken);
       return {
         userId,
         accessToken,
       };
-    } catch {
-      // Access-Token fehlt, ist abgelaufen oder ist anderweitig ungültig.
+    } catch (error) {
+      console.error("[serverAuth] accessToken verification failed:", error);
+      console.error("[serverAuth] refreshToken present:", Boolean(refreshToken));
     }
   }
 

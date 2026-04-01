@@ -105,24 +105,42 @@ function mapUserToExternalShape(user) {
     updatedAt: user.updated_at
       ? new Date(user.updated_at).toISOString()
       : null,
+    lastSignInAt: user.last_sign_in_at
+      ? new Date(user.last_sign_in_at).toISOString()
+      : null,
   };
 }
 
-function buildSuccessResponse(message, user, tokens) {
-  const data = {
-    user: mapUserToExternalShape(user),
-  };
-
-  if (tokens) {
-    data.accessToken = tokens.accessToken;
-    data.refreshToken = tokens.refreshToken;
-    data.expiresAt = tokens.expiresAt.toISOString();
-  }
-
+function buildRegisterSuccessResponse(message, user) {
   return {
     success: true,
     message,
-    data,
+    data: mapUserToExternalShape(user),
+  };
+}
+
+function buildLoginSuccessResponse(message, user, tokens) {
+  return {
+    success: true,
+    message,
+    data: {
+      user: mapUserToExternalShape(user),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt.toISOString(),
+    },
+  };
+}
+
+function buildRefreshSuccessResponse(message, tokens) {
+  return {
+    success: true,
+    message,
+    data: {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt.toISOString(),
+    },
   };
 }
 
@@ -281,7 +299,7 @@ app.post("/api/auth/register", async (req, res) => {
       const [createdUser] = await tx`
         INSERT INTO users (username, email, status, updated_at)
         VALUES (${username}, ${email}, 'pending', now())
-        RETURNING id, public_id, username, email, email_verified_at, status, created_at, updated_at
+        RETURNING id, public_id, username, email, email_verified_at, last_sign_in_at, status, created_at, updated_at
       `;
 
       await tx`
@@ -294,8 +312,8 @@ app.post("/api/auth/register", async (req, res) => {
 
     console.log(`[AUTH] User registriert und wartet auf Freischaltung: ID ${user.id}, Name: ${user.username}`);
     return res.status(201).json(
-      buildSuccessResponse(
-        "Account created and pending administrator activation",
+      buildRegisterSuccessResponse(
+        "User registered successfully.",
         user
       )
     );
@@ -329,6 +347,7 @@ app.post("/api/auth/login", async (req, res) => {
         u.username,
         u.email,
         u.email_verified_at,
+        u.last_sign_in_at,
         u.status,
         u.created_at,
         u.updated_at,
@@ -367,16 +386,16 @@ app.post("/api/auth/login", async (req, res) => {
 
     const [updatedUser] = await sql`
       UPDATE users
-      SET updated_at = now()
+      SET last_sign_in_at = now(), updated_at = now()
       WHERE id = ${user.id}
-      RETURNING id, public_id, username, email, email_verified_at, status, created_at, updated_at
+      RETURNING id, public_id, username, email, email_verified_at, last_sign_in_at, status, created_at, updated_at
     `;
 
     const tokens = await issueAuthTokens(res, updatedUser.id);
     console.log(`[LOGIN] Erfolgreich: User ${updatedUser.username} (ID: ${updatedUser.id}) eingeloggt.`);
 
     return res.json(
-      buildSuccessResponse("Login successful", updatedUser, tokens)
+      buildLoginSuccessResponse("Login successful.", updatedUser, tokens)
     );
   } catch (err) {
     console.error(`[LOGIN] Kritischer Fehler bei ${identifier}:`, err);
@@ -385,7 +404,9 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 app.post("/api/auth/refresh", async (req, res) => {
-  const sessionToken = String(req.cookies.refreshToken || "").trim();
+  const sessionToken = String(
+    req.body?.refreshToken || req.cookies.refreshToken || ""
+  ).trim();
 
   if (!sessionToken) {
     console.warn("[REFRESH] Fehlgeschlagen: Kein Refresh-Token in Cookies gefunden.");
@@ -420,6 +441,7 @@ app.post("/api/auth/refresh", async (req, res) => {
         username,
         email,
         email_verified_at,
+        last_sign_in_at,
         status,
         created_at,
         updated_at
@@ -445,16 +467,16 @@ app.post("/api/auth/refresh", async (req, res) => {
 
     const [updatedUser] = await sql`
       UPDATE users
-      SET updated_at = now()
+      SET last_sign_in_at = now(), updated_at = now()
       WHERE id = ${user.id}
-      RETURNING id, public_id, username, email, email_verified_at, status, created_at, updated_at
+      RETURNING id, public_id, username, email, email_verified_at, last_sign_in_at, status, created_at, updated_at
     `;
 
     const tokens = await issueAuthTokens(res, updatedUser.id, sessionTokenHash);
 
     console.log(`[REFRESH] Erfolgreich: Neues AccessToken f?r User ID ${updatedUser.id} ausgestellt.`);
     return res.json(
-      buildSuccessResponse("Refresh successful", updatedUser, tokens)
+      buildRefreshSuccessResponse("Token refreshed successfully.", tokens)
     );
   } catch (err) {
     console.error("[REFRESH] Fehler bei Session-Verarbeitung:", err);
@@ -487,7 +509,11 @@ app.post("/api/auth/logout", async (req, res) => {
   res.clearCookie("refreshToken", base);
 
   console.log("[LOGOUT] Cookies gel?scht, User ausgeloggt.");
-  return res.json({ message: "Logout erfolgreich" });
+  return res.json({
+    success: true,
+    message: "Logout successful.",
+    data: null,
+  });
 });
 
 app.use((err, _req, res, _next) => {
@@ -503,7 +529,7 @@ app.use((err, _req, res, _next) => {
 app.get("/api/auth/users", async (_req, res) => {
   try {
     const users = await sql`
-      SELECT id, public_id, username, email, email_verified_at, status, created_at, updated_at
+      SELECT id, public_id, username, email, email_verified_at, last_sign_in_at, status, created_at, updated_at
       FROM users
       ORDER BY created_at DESC
     `;

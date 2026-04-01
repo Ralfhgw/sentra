@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   username varchar(255) UNIQUE NOT NULL,
   email varchar(254) UNIQUE NOT NULL,
   email_verified_at timestamptz,
+  last_sign_in_at timestamptz,
   status varchar(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()

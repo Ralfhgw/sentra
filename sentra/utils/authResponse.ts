@@ -20,12 +20,12 @@ export type AuthSessionPayload = {
 };
 
 export type AuthResponseEnvelope = AuthSessionPayload & {
-  data?: AuthSessionPayload | null;
+  data?: AuthSessionPayload | AuthUserPayload | null;
 };
 
 export function unwrapAuthResponse(
   data: AuthResponseEnvelope | null | undefined
-): AuthSessionPayload {
+): AuthResponseEnvelope {
   if (!data || typeof data !== "object") {
     return {};
   }
@@ -35,16 +35,24 @@ export function unwrapAuthResponse(
       ? data.data
       : undefined;
 
+  const isUser =
+    nested &&
+    ("id" in nested || "publicId" in nested || "username" in nested);
+
+  const sessionPart = nested && !isUser ? (nested as AuthSessionPayload) : undefined;
+  const userPart = isUser ? (nested as AuthUserPayload) : undefined;
+
   return {
     ...data,
-    ...nested,
-    user: nested?.user ?? data.user,
-    accessToken: nested?.accessToken ?? data.accessToken,
-    refreshToken: nested?.refreshToken ?? data.refreshToken,
-    expiresAt: nested?.expiresAt ?? data.expiresAt,
-    error: nested?.error ?? data.error,
-    message: nested?.message ?? data.message,
-    success: nested?.success ?? data.success,
+    ...sessionPart,
+    user: userPart ?? sessionPart?.user ?? data.user,
+    data: userPart ?? (sessionPart ? sessionPart : data.data ?? null),
+    accessToken: sessionPart?.accessToken ?? data.accessToken,
+    refreshToken: sessionPart?.refreshToken ?? data.refreshToken,
+    expiresAt: sessionPart?.expiresAt ?? data.expiresAt,
+    error: sessionPart?.error ?? data.error,
+    message: sessionPart?.message ?? data.message,
+    success: sessionPart?.success ?? data.success,
   };
 }
 
@@ -52,16 +60,17 @@ export function getAuthUser(
   data: AuthResponseEnvelope | null | undefined
 ): User | null {
   const payload = unwrapAuthResponse(data);
-  if (!payload.user?.id) {
+  const u = payload.user ?? (payload.data as AuthUserPayload | undefined);
+  if (!u?.id) {
     return null;
   }
 
   return {
-    id: String(payload.user.id),
-    username: payload.user.username,
-    email: payload.user.email,
-    publicId: payload.user.publicId ?? payload.user.public_id,
-    status: payload.user.status,
+    id: String(u.id),
+    username: u.username,
+    email: u.email,
+    publicId: u.publicId ?? u.public_id,
+    status: u.status,
   };
 }
 

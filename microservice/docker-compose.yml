@@ -97,6 +97,7 @@ volumes:
 # docker compose logs -f livetalk
 # docker compose exec db psql -U dbuser -d sentra
 # docker compose exec db psql -U user -d authdb
+# docker compose exec db psql -U dbuser -d sentra -c "TRUNCATE TABLE liveview_sources RESTART IDENTITY CASCADE;"
 
 # docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v
 # Proxy: mosquitto_sub -h localhost -t "#" -v-v

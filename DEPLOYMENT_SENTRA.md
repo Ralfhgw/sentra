@@ -301,6 +301,7 @@ uname -m
 wget https://github.com/bluenviron/mediamtx/releases/download/v1.17.0/mediamtx_v1.17.0_linux_arm64.tar.gz
 tar -xzf mediamtx_v1.17.0_linux_arm64.tar.gz
 
+
 vi /home/pi/mediamtx.yml
 cat /home/pi/mediamtx.yml
 paths:

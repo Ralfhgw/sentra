@@ -124,16 +124,33 @@ export async function readStartpageBackground(
   const settings = await getUserSettings(userId);
   const hasCloudinaryKeys = Boolean(settings.key3 && settings.key4 && settings.key5);
 
+  console.log("[startpage/read] settings loaded", {
+    userId,
+    hasCloudinaryKeys,
+    hasOpenAiKey: Boolean(settings.key2),
+    hasLat: typeof settings.lat === "number",
+    hasLon: typeof settings.lon === "number",
+  });
+
   if (!hasCloudinaryKeys) {
+    console.log("[startpage/read] missing Cloudinary keys, returning gradient", {
+      userId,
+    });
     return gradientResponse(false);
   }
-  
-  // Get Cloudinary Settings
+
   configureCloudinary(settings);
 
-  
   const existingImage = await getExistingImage(userId);
   const pending = isStartpageBackgroundPending(userId);
+
+  console.log("[startpage/read] Cloudinary lookup result", {
+    userId,
+    hasExistingImage: Boolean(existingImage),
+    pending,
+    version: existingImage?.version ?? null,
+    urlPreview: existingImage?.secure_url?.slice(0, 80) ?? null,
+  });
 
   if (!existingImage) {
     return gradientResponse(pending);
@@ -150,6 +167,14 @@ export async function warmStartpageBackground(userId: string) {
   const hasCloudinaryKeys = Boolean(settings.key3 && settings.key4 && settings.key5);
   const hasOpenAiKey = Boolean(settings.key2);
 
+  console.log("[startpage/warmup] begin", {
+    userId,
+    hasCloudinaryKeys,
+    hasOpenAiKey,
+    hasLat: typeof settings.lat === "number",
+    hasLon: typeof settings.lon === "number",
+  });
+
   if (!hasCloudinaryKeys) {
     console.log("Skipping startpage warmup without Cloudinary keys for userId:", userId);
     return null;
@@ -161,15 +186,27 @@ export async function warmStartpageBackground(userId: string) {
   const needsRefresh =
     !existingImage || isOlderThanOneWeek(existingImage.version);
 
+  console.log("[startpage/warmup] refresh decision", {
+    userId,
+    hasExistingImage: Boolean(existingImage),
+    version: existingImage?.version ?? null,
+    needsRefresh,
+  });
+
   if (!hasOpenAiKey) {
     if (!needsRefresh && existingImage) {
+      console.log("[startpage/warmup] existing image kept, OpenAI key missing", {
+        userId,
+      });
       return existingImage.secure_url;
     }
 
+    console.log("[startpage/warmup] uploading placeholder image", { userId });
     return runSingleRefresh(userId, () => uploadPlaceholder(userId));
   }
 
   if (!needsRefresh && existingImage) {
+    console.log("[startpage/warmup] existing image still fresh", { userId });
     return existingImage.secure_url;
   }
 
@@ -177,8 +214,19 @@ export async function warmStartpageBackground(userId: string) {
   const lon = settings.lon;
 
   if (typeof lat !== "number" || typeof lon !== "number") {
+    console.log("[startpage/warmup] missing lat/lon, uploading placeholder", {
+      userId,
+      lat,
+      lon,
+    });
     return runSingleRefresh(userId, () => uploadPlaceholder(userId));
   }
+
+  console.log("[startpage/warmup] generating image via OpenAI", {
+    userId,
+    lat,
+    lon,
+  });
 
   return runSingleRefresh(userId, () =>
     getBackgroundImage({

@@ -10,7 +10,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    console.log("[api/startpage] request", { userId });
     const background = await readStartpageBackground(userId);
+    console.log("[api/startpage] response", {
+      userId,
+      hasUrl: Boolean(background.url),
+      pending: background.pending ?? false,
+      background: "background" in background ? background.background : "image",
+      urlPreview: background.url ? background.url.slice(0, 80) : null,
+    });
     return NextResponse.json(background);
   } catch (error) {
     console.error("Startpage background handling failed:", error);

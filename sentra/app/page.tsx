@@ -60,11 +60,18 @@ export default function Home() {
     let retryTimeout: number | undefined;
 
     async function fetchImageUrl(attempt = 0) {
+        console.log("[startpage] fetchImageUrl()", {
+        userId,
+        attempt,
+        isAuthLoading,
+      });
+
       if (isAuthLoading) {
         return;
       }
 
       if (!userId) {
+        console.log("[startpage] no userId, using gradient fallback");
         setImageUrl(undefined);
         setBackgroundMode("gradient");
         return;
@@ -75,12 +82,25 @@ export default function Home() {
 
       try {
         const data = await fetchStartpageBackground(userId);
+          console.log("[startpage] /api/startpage response", {
+          userId,
+          attempt,
+          hasUrl: Boolean(data.url),
+          pending: data.pending ?? false,
+          background: data.background ?? "image",
+          urlPreview: data.url ? data.url.slice(0, 80) : null,
+        });
 
         if (cancelled) {
           return;
         }
 
         if (!data.url) {
+            console.log("[startpage] no background URL returned, using gradient", {
+            userId,
+            pending: data.pending ?? false,
+            attempt,
+          });
           setImageUrl(undefined);
           setBackgroundMode("gradient");
 
@@ -100,6 +120,12 @@ export default function Home() {
             return;
           }
 
+        console.log("[startpage] image preload success", {
+          userId,
+          attempt,
+          urlPreview: data.url ? data.url.slice(0, 80) : null,
+        });
+
           setImageUrl(data.url ?? undefined);
           setBackgroundMode("image");
 
@@ -114,6 +140,12 @@ export default function Home() {
           if (cancelled) {
             return;
           }
+
+          console.error("[startpage] image preload failed", {
+            userId,
+            attempt,
+            urlPreview: data.url ? data.url.slice(0, 80) : null,
+          });
 
           setImageUrl(undefined);
           setBackgroundMode("gradient");

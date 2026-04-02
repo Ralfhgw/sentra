@@ -76,6 +76,15 @@ export async function getBackgroundImage({
     openAiApiKey,
     cloudinaryConfig,
 }: GetBackgroundImageParams): Promise<string> {
+    console.log("[startpage/generate] begin", {
+        userId,
+        lat,
+        lon,
+        hasOpenAiKey: Boolean(openAiApiKey),
+        hasCloudName: Boolean(cloudinaryConfig.cloudName),
+        hasApiKey: Boolean(cloudinaryConfig.apiKey),
+        hasApiSecret: Boolean(cloudinaryConfig.apiSecret),
+    });
     if (!openAiApiKey) {
         throw new Error("OpenAI-Key fehlt in user_settings.key2.");
     }
@@ -118,6 +127,12 @@ export async function getBackgroundImage({
 
     const weatherCode = daily.variables(0)?.valuesArray()?.[0];
     const maxTemp = daily.variables(1)?.valuesArray()?.[0];
+
+    console.log("[startpage/generate] weather data", {
+       userId,
+       weatherCode,
+       maxTemp,
+    });
 
     if (weatherCode === undefined || maxTemp === undefined) {
         throw new Error("Keine Wetterdaten für diesen Tag gefunden.");
@@ -174,6 +189,11 @@ Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fot
 `.trim();
 
     console.log("GPT prompt:", prompt);
+    console.log("[startpage/generate] requesting image from OpenAI", {
+        userId,
+        model: "gpt-image-1",
+        size: "1536x1024",
+    });
 
     const imageRes = await openai.images.generate({
         model: "gpt-image-1",
@@ -187,6 +207,11 @@ Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fot
         throw new Error("Kein Bild von OpenAI erhalten.");
     }
 
+    console.log("[startpage/generate] received image payload from OpenAI", {
+        userId,
+        base64Length: base64Image.length,
+    });
+
     const result = await cloudinary.uploader.upload(
         `data:image/png;base64,${base64Image}`,
         {
@@ -198,6 +223,11 @@ Natürlich, hochwertig, wie ein echtes Landschaftsfoto eines professionellen Fot
     );
 
     console.log("Cloudinary Upload Result:", result.secure_url);
+    console.log("[startpage/generate] upload finished", {
+        userId,
+        urlPreview: result.secure_url?.slice(0, 80) ?? null,
+        version: result.version ?? null,
+    });
 
     return result.secure_url;
 }

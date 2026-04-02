@@ -747,20 +747,20 @@ export default function LiveTalkClient({
       );
 
       if (joinAck.role !== "viewer") {
-        setStatusText("Starte Kamera und Mikrofon...");
+        setStatusText("Start Camera and Microphon...");
         await startLocalMedia();
       } else {
         setAudioEnabled(false);
         setVideoEnabled(false);
       }
 
-      setStatusText(`Verbunden mit Session ${selectedRoom.code}.`);
+      setStatusText(`Connected with Session ${selectedRoom.code}.`);
 
     } catch (error) {
       console.error("[LiveTalk] openRoom failed", error);
       cleanupSession();
-      setErrorMessage(error instanceof Error ? error.message : "LiveTalk-Verbindung fehlgeschlagen.");
-      setStatusText("Verbindung fehlgeschlagen.");
+      setErrorMessage(error instanceof Error ? error.message : "LiveTalk-Connection failed.");
+      setStatusText("Connection failed.");
     } finally {
       setIsJoining(false);
     }
@@ -848,7 +848,7 @@ export default function LiveTalkClient({
 
   const leaveSession = () => {
     cleanupSession();
-    setStatusText("Session verlassen.");
+    setStatusText("Session left.");
     setErrorMessage("");
   };
 
@@ -953,10 +953,10 @@ export default function LiveTalkClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="p-2 bg-gray-200 flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="p-1 bg-gray-200 flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
 
         {/* Header */}
-        <section className="mb-2 bg-gray-300 rounded-lg shadow-sm">
+        <section className="mb-1 bg-gray-300 rounded-lg shadow-sm">
           <h1 className="p-3 text-3xl font-bold text-slate-900">LiveTalk</h1>
           <p className="ml-3 w-100 text-slate-600">
             Enter a username, generate a session key if needed, and then connect to the session.
@@ -970,7 +970,7 @@ export default function LiveTalkClient({
         {!activeSession && (
           <section className="mt-1 p-1 flex flex-row gap-2 flex-wrap rounded-lg shadow-sm">
             {/* left Box */}
-            <div className="p-2 w-screen max-w-120 h-60 bg-blue-200 rounded-lg flex flex-col justify-between">
+            <div className="p-2 w-screen max-w-102 h-60 bg-blue-200 rounded-lg flex flex-col justify-between">
               <div className="p-2 bg-gray-200 rounded-lg ">
                 {/* Username Input */}
                 <label className="flex flex-col">
@@ -1006,7 +1006,7 @@ export default function LiveTalkClient({
             </div>
 
             {/* Right Box */}
-            <div className="p-2 w-screen max-w-120 h-60 bg-blue-200 rounded-lg ">
+            <div className="p-2 w-screen max-w-102 h-60 bg-blue-200 rounded-lg ">
               <div className="h-full p-5 bg-gray-200 rounded-lg flex flex-col items-center justify-between">
                 {/* Checkbox */}
                 <label className="w-100 ml-16 flex gap-3 text-slate-700">
@@ -1047,7 +1047,7 @@ export default function LiveTalkClient({
               <div className="flex flex-row flex-wrap gap-1">
 
                 {/* Active - Left Box */}
-                <section className="p-2 w-screen max-w-120 h-60 bg-red-200 rounded-lg shadow-sm">
+                <section className="p-2 w-screen max-w-106 h-60 bg-red-200 rounded-lg shadow-sm">
                   <div className="h-full bg-gray-200 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between gap-4">
                     <div>
                       <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
@@ -1063,7 +1063,7 @@ export default function LiveTalkClient({
                       <button
                         type="button"
                         onClick={leaveSession}
-                        className="h-12 w-70 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
+                        className="h-12 w-60 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
                       >
                         Leave Session
                       </button>
@@ -1096,7 +1096,7 @@ export default function LiveTalkClient({
 
                 {/* Active - Right Box */}
                 {sessionKeyInfo && (
-                  <section className="p-2 w-screen max-w-120 h-60 bg-red-200 rounded-lg shadow-sm">
+                  <section className="p-2 w-screen max-w-106 h-60 bg-red-200 rounded-lg shadow-sm">
                     <div className="h-full p-2 bg-gray-200 rounded-lg flex flex-col justify-between">
                       <div className="flex flex-col ">
 
@@ -1123,7 +1123,7 @@ export default function LiveTalkClient({
 
               <div className="flex flex-row flex-wrap gap-1">
                 {/* Active Video Area */}
-                <section className="rounded-lg flex flex-row flex-wrap">
+                <section className="max-w-106 rounded-lg flex flex-row flex-wrap">
                   {!activeSession.receiveOnly && (
                     <div className="h-82 p-1 w-screen max-w-120 bg-red-200 rounded-lg shadow-sm flex justify-center items-center">
                       {hasLocalVideo ? (

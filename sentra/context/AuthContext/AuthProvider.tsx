@@ -12,6 +12,7 @@ import {
 } from "@/utils/authResponse";
 
 const API_BASE = "/api/auth";
+const LOGIN_ENDPOINT = "/api/login";
 
 function decodeUserFromToken(token: string) {
   try {
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const loginRes = await axios.post<AuthResponseEnvelope>(
-        `${API_BASE}/login`,
+        LOGIN_ENDPOINT,
         payload,
         {
           headers: { "Content-Type": "application/json" },

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { forwardAuthRequest } from "@/utils/authProxy";
+import { handleLoginWithWarmup } from "@/utils/loginFlow";
 
 export async function POST(req: NextRequest) {
-  return forwardAuthRequest(req, "/api/auth/login");
+  return handleLoginWithWarmup(req);
 }

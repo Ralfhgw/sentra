@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import sql from "@/utils/db";
-import { getLocationFromCoords } from "./reverseGeoCode";
+import { getLocationFromCoords } from "@/utils/reverseGeoCode";
 import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import {
   getAuthErrorMessage,
   getAuthUser,
+  getAuthUserId,
   type AuthResponseEnvelope,
 } from "@/utils/authResponse";
+import { warmStartpageBackground } from "@/app/api/startpage/backgroundService";
+import { warmEventsForUser } from "@/utils/eventsService";
+import { forwardAuthRequestWithBody } from "@/utils/authProxy";
 
 type RegisterPayload = {
   username?: string;
@@ -38,7 +42,30 @@ function parseJsonSafe(value: string): AuthRegisterResponse {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function handleAuthLogin(req: NextRequest): Promise<NextResponse> {
+  const { response, data, ok } = await forwardAuthRequestWithBody<AuthResponseEnvelope>(
+    req,
+    "/api/auth/login"
+  );
+
+  const userId = getAuthUserId(data);
+
+  if (ok && userId) {
+    console.log("[auth/login] Starting post-login warmup for userId:", userId);
+
+    void warmStartpageBackground(userId).catch((error) => {
+      console.error("[auth/login] Startpage warmup after login failed:", error);
+    });
+
+    void warmEventsForUser(userId).catch((error) => {
+      console.error("[auth/login] Event warmup after login failed:", error);
+    });
+  }
+
+  return response;
+}
+
+export async function handleAuthRegister(req: NextRequest): Promise<NextResponse> {
   const body = (await req.json()) as RegisterPayload;
 
   const username = body.username?.trim();

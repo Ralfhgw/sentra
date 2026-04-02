@@ -12,7 +12,7 @@ import {
 } from "@/utils/authResponse";
 
 const API_BASE = "/api/auth";
-const LOGIN_ENDPOINT = "/api/login";
+const LOGIN_ENDPOINT = `${API_BASE}/login`;
 
 function decodeUserFromToken(token: string) {
   try {

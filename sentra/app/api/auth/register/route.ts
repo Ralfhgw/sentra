@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { handleAuthLogin } from "@/utils/authFlow";
+import { handleAuthRegister } from "@/utils/authFlow";
 
 export async function POST(req: NextRequest) {
-  return handleAuthLogin(req);
+  return handleAuthRegister(req);
 }

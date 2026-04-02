@@ -133,7 +133,7 @@ async function refreshSession(refreshToken: string) {
   };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   console.log("[middleware] path:", request.nextUrl.pathname);
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;

@@ -47,7 +47,7 @@ export default function RegisterClient() {
 
         try {
             const response = await axios.post<RegisterRouteResponse>(
-                "/api/register",
+                "/api/auth/register",
                 {
                     username,
                     email,

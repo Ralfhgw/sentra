@@ -89,6 +89,7 @@ services:
 volumes:
   pg-data:
 
+
 # docker compose down -v  (-v löschen der Datenbank)
 # docker compose up -d
 # docker compose logs db

@@ -136,6 +136,7 @@ export default function LiveViewClient({
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState<"" | "copied" | "error">("");
 
   const [currentUserChannels, setCurrentUserChannels] = useState<UserChannel[]>(
     (typeof userChannels === "string"
@@ -149,10 +150,23 @@ export default function LiveViewClient({
       };
     })
   );
+  const [availableChannels, setAvailableChannels] = useState(channels);
   const [locationFilter, setLocationFilter] = useState<string>("");
   const [channelSearchTerm, setChannelSearchTerm] = useState("");
 
   const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
+
+  const resetPopupState = () => {
+    setPopupCell(null);
+    setCustomUrl("");
+    setCustomName("");
+    setSelectedName("");
+    setSelectedChannelId("");
+    setLocationFilter("");
+    setChannelSearchTerm("");
+    setErrorMessage("");
+    setCopyFeedback("");
+  };
 
   useEffect(() => {
     const updateViewport = () => setViewportWidth(window.innerWidth);
@@ -161,6 +175,10 @@ export default function LiveViewClient({
 
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  useEffect(() => {
+    setAvailableChannels(channels);
+  }, [channels]);
 
   if (!mtxEnabled) {
     return <ModuleDisabledNotice title="LiveView" settingCode="MTX" />;
@@ -172,7 +190,7 @@ export default function LiveViewClient({
   // Extract all location from channel list
   const locations = Array.from(
     new Set(
-      channels
+      availableChannels
         .map(ch => ch.location)
         .filter((loc): loc is string => !!loc)
     )
@@ -180,25 +198,76 @@ export default function LiveViewClient({
 
   // Create filtered list
   const locationFilteredChannels = locationFilter
-    ? channels.filter(ch => ch.location === locationFilter)
-    : channels;
+    ? availableChannels.filter(ch => ch.location === locationFilter)
+    : availableChannels;
 
-  const filteredChannels = locationFilteredChannels.filter(ch => {
-    if (!channelSearchTerm.trim()) return true;
+  const filteredChannels = locationFilteredChannels.filter((ch) => {
+    if (!channelSearchTerm.trim()) {
+      return true;
+    }
 
     const searchTerms = channelSearchTerm
       .toLowerCase()
       .split(" ")
-      .map(term => term.trim())
+      .map((term) => term.trim())
       .filter(Boolean);
+
+    const favoriteTokens = new Set(["fav", "favorite", "is:favorite"]);
+    const favoriteOnly = searchTerms.some((term) => favoriteTokens.has(term));
+    const textSearchTerms = searchTerms.filter(
+      (term) => !favoriteTokens.has(term)
+    );
+
+    if (favoriteOnly && !ch.isFavorite) {
+      return false;
+    }
+
+
 
     const searchText = [ch.channel, ch.location, ch.stream_url]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
-    return searchTerms.every(term => searchText.includes(term));
+    if (textSearchTerms.length === 0) {
+      return true;
+    }
+
+    return textSearchTerms.every((term) => searchText.includes(term));
   });
+
+  const selectedCatalogChannel =
+    availableChannels.find((ch) => ch.id === selectedChannelId) ?? null;
+
+  const selectedStreamUrl = selectedCatalogChannel?.stream_url?.trim() ?? "";
+
+  const canDeleteSelectedChannel = selectedCatalogChannel?.isHidden === true;
+
+  const openPopupForSlot = (slotId: number) => {
+    const currentSlot = currentUserChannels[slotId];
+    const matchedCatalogChannel = currentSlot?.url
+      ? availableChannels.find((ch) => ch.stream_url === currentSlot.url)
+      : null;
+
+    setPopupCell(slotId);
+    setErrorMessage("");
+    setChannelSearchTerm("");
+
+    if (matchedCatalogChannel) {
+      setLocationFilter(matchedCatalogChannel.location ?? "");
+      setSelectedChannelId(matchedCatalogChannel.id);
+      setSelectedName(matchedCatalogChannel.channel ?? "");
+      setCustomName("");
+      setCustomUrl("");
+      return;
+    }
+
+    setLocationFilter("");
+    setSelectedChannelId("");
+    setSelectedName("");
+    setCustomName(currentSlot?.name ?? "");
+    setCustomUrl(currentSlot?.url ?? "");
+  };
 
   // Save channelassignment
   const handleAssignChannel = async () => {
@@ -207,6 +276,16 @@ export default function LiveViewClient({
     setErrorMessage("");
 
     try {
+
+      const shouldDeleteSlot =
+        !locationFilter.trim() &&
+        !selectedChannelId &&
+        !customUrl.trim();
+      if (shouldDeleteSlot) {
+        await deleteSlot(popupCell);
+        resetPopupState();
+        return;
+      }
       if (customUrl.trim()) {
         await saveSlot({
           slotId: popupCell,
@@ -223,11 +302,7 @@ export default function LiveViewClient({
         });
       }
 
-      setPopupCell(null);
-      setCustomUrl("");
-      setCustomName("");
-      setSelectedName("");
-      setSelectedChannelId("");
+      resetPopupState();
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -253,6 +328,138 @@ export default function LiveViewClient({
     }
   };
 
+  const handleDeleteSelectedChannel = async () => {
+    if (!selectedCatalogChannel) return;
+
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/liveview/channel-preferences", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: selectedCatalogChannel.id }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Kanal konnte nicht gelöscht werden.");
+      }
+
+      setAvailableChannels((prev) =>
+        prev.filter((channel) => channel.id !== selectedCatalogChannel.id)
+      );
+
+      if (Array.isArray(data?.channels)) {
+        setCurrentUserChannels(data.channels);
+      }
+
+      setSelectedChannelId("");
+      setSelectedName("");
+      setCustomName("");
+      setCustomUrl("");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Kanal konnte nicht gelöscht werden."
+      );
+    }
+  };
+
+  const handleToggleHidden = async () => {
+    if (!selectedCatalogChannel) return;
+
+    const nextHiddenState = !selectedCatalogChannel.isHidden;
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/liveview/channel-preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelId: selectedCatalogChannel.id,
+          hidden: nextHiddenState,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ?? "Hide-Status konnte nicht gespeichert werden."
+        );
+      }
+
+      setAvailableChannels((prev) =>
+        prev.map((channel) =>
+          channel.id === selectedCatalogChannel.id
+            ? { ...channel, isHidden: nextHiddenState }
+            : channel
+        )
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Hide-Status konnte nicht gespeichert werden."
+      );
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!selectedCatalogChannel) return;
+
+    const nextIsFavorite = !selectedCatalogChannel.isFavorite;
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/liveview/channel-preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelId: selectedCatalogChannel.id,
+          isFavorite: nextIsFavorite,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ?? "Favoritenstatus konnte nicht gespeichert werden."
+        );
+      }
+
+      setAvailableChannels((prev) =>
+        prev.map((channel) =>
+          channel.id === selectedCatalogChannel.id
+            ? { ...channel, isFavorite: nextIsFavorite }
+            : channel
+        )
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Favoritenstatus konnte nicht gespeichert werden."
+      );
+    }
+  };
+
+  const handleCopySelectedStreamUrl = async () => {
+    if (!selectedStreamUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(selectedStreamUrl);
+      setCopyFeedback("copied");
+      window.setTimeout(() => setCopyFeedback(""), 1500);
+    } catch {
+      setCopyFeedback("error");
+      window.setTimeout(() => setCopyFeedback(""), 2000);
+    }
+  };
 
   const saveSlot = async (payload: {
     slotId: number;
@@ -318,21 +525,80 @@ export default function LiveViewClient({
       {popupCell !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-gray-300 rounded shadow-lg p-6 w-150">
-            <h2 className="text-lg font-bold mb-4">Kanal zuweisen</h2>
+            <div className="bg-gray-200 h-27 p-2 mb-2 rounded-lg flex flex-col">
+
+              <h2 className="text-lg font-bold mb-4 text-center">Channel Assignment</h2>
+
+              <div className="flex flex-row">
+                {selectedCatalogChannel && (
+                  <>
+
+                    <button
+                      className="w-32 ml-2 px-4 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                      onClick={handleCopySelectedStreamUrl}
+                    >
+                      {copyFeedback === "copied"
+                        ? "Copied"
+                        : copyFeedback === "error"
+                          ? "Error"
+                          : "Copy URL"}
+                    </button>
+
+                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isFavorite
+                        ? "border-blue-400 bg-blue-100 text-gray-900"
+                        : "border-gray-500 bg-gray-100 text-gray-900"
+                      }`}
+                      onClick={handleToggleFavorite}
+                    >
+                      Favorite: {selectedCatalogChannel.isFavorite ? "On" : "Off"}
+                    </button>
+
+                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isHidden
+                        ? "border-blue-400 bg-blue-100 text-gray-900"
+                        : "border-gray-500 bg-gray-100 text-gray-900"
+                      }`}
+                      onClick={handleToggleHidden}
+                    >
+                      {selectedCatalogChannel.isHidden ? "Unhide" : "Hide"}
+                    </button>
+
+                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg ${canDeleteSelectedChannel
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-500 text-gray-300 cursor-not-allowed"
+                      }`}
+                      disabled={!canDeleteSelectedChannel}
+                      onClick={handleDeleteSelectedChannel}
+                    >
+                      Delete
+                    </button>
+
+
+                  </>
+                )}
+
+
+              </div>
+            </div>
+
             {errorMessage && (
               <p className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {errorMessage}
               </p>
             )}
-            {/* Gruppenfilter */}
+
+            {/* Channel Filter */}
             <div className="mb-4">
-              <label className="block text-sm mb-1">Gruppe filtern:</label>
+              <label className="block text-sm mb-1">Filter channel:</label>
               <select
                 className="w-full p-2 border rounded"
                 value={locationFilter ?? ""}
-                onChange={e => setLocationFilter(e.target.value)}
+                onChange={(e) => {
+                  setLocationFilter(e.target.value);
+                  setSelectedChannelId("");
+                  setSelectedName("");
+                }}
               >
-                <option value="">Alle Orte</option>
+                <option value="">All Locations</option>
                 {locations.map(location => (
                   <option key={location || ""} value={location || ""}>
                     {location || "Unbekannt"}
@@ -341,79 +607,74 @@ export default function LiveViewClient({
               </select>
             </div>
 
-            {/* Auswahl aus gefilterten Channels */}
-            <input
-              type="text"
-              placeholder="Suchbegriff eingeben (z. B. Name oder Ort)"
+            {/* Filter Enter Search tetm */}
+            <input type="text"
+              placeholder="Enter search term (e.g. name, location or fav)"
               value={channelSearchTerm}
               onChange={e => setChannelSearchTerm(e.target.value)}
               className="w-full mb-2 p-2 border rounded"
             />
+
+            {/* Select of filterted channels */}
             <select
               className="w-full mb-4 p-2 border rounded"
               value={selectedChannelId}
               onChange={(e) => {
                 const nextId = e.target.value;
                 setSelectedChannelId(nextId);
+                setCustomName("");
+                setCustomUrl("");
+                setCopyFeedback("");
 
                 const selected = filteredChannels.find((ch) => ch.id === nextId);
                 setSelectedName(selected?.channel ?? "");
               }}
             >
-              <option value="">Bitte wählen...</option>
+              <option value="">Please choose...</option>
               {filteredChannels
-                .sort((a, b) => (a.channel || "").localeCompare(b.channel || ""))
+                .sort((a, b) =>
+                  Number(b.isFavorite) - Number(a.isFavorite) ||
+                  (a.channel || "").localeCompare(b.channel || "")
+                )
                 .map((ch) => (
-                  <option key={ch.id} value={ch.id}>
-                    {ch.channel}
+                  <option
+                    key={ch.id}
+                    value={ch.id}
+                    className={ch.isHidden ? "text-gray-400" : ""}
+                    style={ch.isHidden ? { color: "#9ca3af" } : undefined}
+                  >
+                    {`${ch.isFavorite ? "★ " : ""}${ch.channel ?? ""}`}
                   </option>
                 ))}
             </select>
 
-            {/* Eigener Stream */}
-            <input
-              type="text"
-              placeholder="Name des eigenen Streams"
+            {/* Own stream name */}
+            <input type="text"
+              placeholder="Name of Stream"
               value={customName}
               onChange={e => setCustomName(e.target.value)}
               className="w-full mb-4 p-2 border rounded"
             />
-            <input
-              type="text"
-              placeholder="Eigene Stream-URL"
+
+            {/* Own Stream URL */}
+            <input type="text"
+              placeholder="Stream-URL"
               value={customUrl}
               onChange={
                 e => setCustomUrl(e.target.value)}
               className="w-full mb-2 p-2 border rounded"
             />
 
-            <button
-              className="bg-gray-700 text-white px-4 py-2 rounded"
+            {/* Button Display */}
+            <button className="border-gray-500 border w-32 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800"
               onClick={handleAssignChannel}
             >
-              Speichern
+              Display
             </button>
 
-            <button
-              className="ml-2 bg-red-700 text-white px-4 py-2 rounded"
-              disabled={!currentUserChannels[popupCell]?.url}
-              onClick={async () => {
-                if (popupCell === null) return;
-
-                await deleteSlot(popupCell);
-
-                setPopupCell(null);
-                setCustomUrl("");
-                setCustomName("");
-                setSelectedName("");
-                setSelectedChannelId("");
-              }}
-            >
-              Entfernen
-            </button>
-
-            <button className="ml-2" onClick={() => setPopupCell(null)}>
-              Schließen
+            {/* Button Close */}
+            <button className="w-32 px-4 py-2 ml-3 rounded-lg border border-gray-500 bg-gray-200 hover:bg-gray-300 text-gray-800" onClick={resetPopupState}>
+              Close
             </button>
           </div>
         </div>
@@ -448,8 +709,7 @@ export default function LiveViewClient({
       </div>
 
       {/* Video Grid */}
-      <div
-        className="w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
+      <div className="w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
         style={{
           gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
           gridAutoRows: useCompactSpans ? "minmax(220px, auto)" : "minmax(0, 1fr)",
@@ -461,8 +721,7 @@ export default function LiveViewClient({
           const slotId = cell.id;
 
           return (
-            <div
-              key={`cell-${idx}-${slotId}`}
+            <div key={`cell-${idx}-${slotId}`}
               className={`${useCompactSpans
                 ? "col-span-1 row-span-1 min-h-55"
                 : cell.span.replace(
@@ -472,8 +731,10 @@ export default function LiveViewClient({
                 } relative bg-black border border-gray-900/50 group overflow-hidden`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => void handleDropOnSlot(slotId)}
-              onDoubleClick={() => setPopupCell(slotId)}
+              onDoubleClick={() => openPopupForSlot(slotId)}
             >
+
+              {/* Webcam Item Container */}
               <div className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
                 draggable={Boolean(currentUserChannels[slotId]?.url)}
                 onDragStart={() => {
@@ -481,12 +742,12 @@ export default function LiveViewClient({
                   setDragFrom(slotId);
                 }}
                 onDragEnd={() => setDragFrom(null)}
-                title="Zum Verschieben hier ziehen"
+                title="Drag here to move"
                 aria-label="Drag handle"
               />
 
-              <WebcamItem
-                url={currentUserChannels[slotId]?.url ?? null}
+              {/* Webcam Item */}
+              <WebcamItem url={currentUserChannels[slotId]?.url ?? null}
                 isHuge={cell.span.includes("col-span-4")}
                 isLarge={cell.span.includes("col-span-2")}
                 channel={slotId + 1}
@@ -497,6 +758,7 @@ export default function LiveViewClient({
           );
         })}
       </div>
+
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { getAuthenticatedUserWithSettingsFromCookies } from "@/utils/serverAuth"
 import type { Channel } from "@/types/typesLiveView";
 import { reconcileAllLiveViewRtspSources } from "@/utils/liveviewSources";
 
+type RawChannel = Omit<Channel, "isFavorite" | "isHidden">;
+
 async function getWebcams() {
   try {
     const { settings } = await getAuthenticatedUserWithSettingsFromCookies();
@@ -31,7 +33,7 @@ async function getWebcams() {
     }
 
     try {
-      const channelsResult = await sql<Channel[]>`
+      const channelsResult = await sql<RawChannel[]>`
         SELECT
           id::text AS id,
           tvg_name,
@@ -45,9 +47,31 @@ async function getWebcams() {
         ORDER BY created_at DESC
       `;
 
+      const preferenceMap = new Map(
+        settings.liveviewChannelPreferences.map((entry) => [
+          entry.channelId,
+          entry,
+        ])
+      );
+
+      const channels = Array.from(channelsResult)
+        .filter((channel) => preferenceMap.get(channel.id)?.deleted !== true)
+        .map((channel) => ({
+          ...channel,
+          isFavorite: preferenceMap.get(channel.id)?.isFavorite === true,
+          isHidden: preferenceMap.get(channel.id)?.hidden === true,
+        }))
+        .sort(
+          (a, b) =>
+            Number(b.isFavorite) - Number(a.isFavorite) ||
+            (a.channel || "").localeCompare(b.channel || "", undefined, {
+              sensitivity: "base",
+            })
+        );
+
       return {
         mtxEnabled: true,
-        channels: Array.from(channelsResult),
+        channels,
         userChannels: settings.channels,
         error: undefined as string | undefined,
       };

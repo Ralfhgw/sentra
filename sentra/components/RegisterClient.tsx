@@ -7,12 +7,10 @@ import { registerTranslations } from "@/types/translations";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
 import axios from "axios";
 
-
 const MapSelector = dynamic(() => import("@/components/CompMapSelector"), { ssr: false });
 
 export default function RegisterClient() {
     const router = useRouter();
-
     const [lat, setLat] = useState(52.520008);
     const [lon, setLon] = useState(13.404954);
     const [username, setUsername] = useState("");
@@ -40,6 +38,7 @@ export default function RegisterClient() {
         error?: string;
     };
 
+    // handleSubmit()
     async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
         setLoading(true);
@@ -106,9 +105,7 @@ export default function RegisterClient() {
                                 }}
                             />
                             <div className="mt-3 flex flex-row items-center justify-between">
-
                                 <div className="grid grid-cols-[120px_auto] gap-y-2 gap-x-3 my-2 mr-11 items-center">
-
                                     <label className="text-[16px] opacity-70 text-right">
                                         {t.latitude}
                                     </label>
@@ -117,7 +114,6 @@ export default function RegisterClient() {
                                         readOnly
                                         className="w-25 h-6 pl-2 py-1 rounded bg-gray-700"
                                     />
-
                                     <label className="text-[16px] opacity-70 text-right">
                                         {t.longitude}
                                     </label>
@@ -126,7 +122,6 @@ export default function RegisterClient() {
                                         readOnly
                                         className="w-25 h-6 pl-2 py-1 rounded bg-gray-700"
                                     />
-
                                 </div>
 
                                 <div className="flex flex-row item-center gap-2">

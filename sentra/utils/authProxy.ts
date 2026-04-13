@@ -168,6 +168,16 @@ export async function forwardAuthRequestWithBody<T = unknown>(
 
   const bodyText = await upstream.text();
 
+  if (!upstream.ok && path === "/api/auth/refresh") {
+    console.error("[auth/refresh proxy] upstream failed", {
+      status: upstream.status,
+      body: bodyText,
+      hasCookieHeader: Boolean(cookie),
+      forwardedBody: body,
+    });
+  }
+
+
   const response = new NextResponse(bodyText, {
     status: upstream.status,
   });

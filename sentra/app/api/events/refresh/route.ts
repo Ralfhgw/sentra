@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
 import { getEvents } from "@/app/api/events/getEvents";
+import { refreshCustomEventSourcesForUser } from "@/utils/eventUrlService";
 import type { Event } from "@/types/typesNews";
 
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await getAuthenticatedUserFromCookies();
-    const { dayString, town } = await req.json();
+    const { dayString, town, refreshCustomEventUrls } = await req.json();
 
     if (!dayString || !town) {
       return NextResponse.json(
@@ -17,6 +18,14 @@ export async function POST(req: NextRequest) {
     }
 
     await getEvents(userId, town, dayString);
+
+    if (refreshCustomEventUrls) {
+      try {
+        await refreshCustomEventSourcesForUser(userId, { force: true });
+      } catch (customRefreshError) {
+        console.error("Custom event URL refresh failed:", customRefreshError);
+      }
+    }
 
     const events = await sql<Event[]>`
       SELECT

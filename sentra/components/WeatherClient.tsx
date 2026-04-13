@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { Thermometer, Hygrometer, Compass, Barometer } from "@/app/weather/Instruments";
 import { useState, useEffect, useMemo } from "react";
 import { WeatherClientProps, weatherDataCurrent } from "@/types/typesWeather";
@@ -46,6 +46,31 @@ const mixColor = (
     mix(from[2], to[2], t),
   ];
 
+const toDateKey = (value: Date | string) =>
+  new Date(value).toISOString().slice(0, 10);
+
+type SelectedDateRange = {
+  start: string;
+  end: string;
+};
+
+const normalizeDateRange = (from: string, to: string): SelectedDateRange =>
+  from <= to ? { start: from, end: to } : { start: to, end: from };
+
+const isDateInRange = (dateKey: string, range: SelectedDateRange | null) =>
+  range ? dateKey >= range.start && dateKey <= range.end : false;
+
+const formatSelectedDateLabel = (value: string) => {
+  const formatted = new Date(value).toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+};
+
 export default function WeatherClient({
   weaEnabled,
   weatherDataCurrent,
@@ -59,8 +84,8 @@ export default function WeatherClient({
 }: WeatherClientProps) {
   console.log("WeatherClient Elevation:", elevation);
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  // Sensordata
+  const [selectedRange, setSelectedRange] = useState<SelectedDateRange | null>(null);
+  const [showHourlyTables, setShowHourlyTables] = useState(false);
 
   const [sensorValues, setSensorValues] = useState<DualSensorState>({ indoor: null, outdoor: null });
 
@@ -91,7 +116,28 @@ export default function WeatherClient({
       : [];
   }, [weatherDataDaily]);
 
+  const filteredHourlyData = useMemo(() => {
+    if (!selectedRange) {
+      return weatherDataHourly ?? [];
+    }
 
+    return (weatherDataHourly ?? []).filter((item) => {
+      const itemDateKey = toDateKey(item.time);
+      return itemDateKey >= selectedRange.start && itemDateKey <= selectedRange.end;
+    });
+  }, [selectedRange, weatherDataHourly]);
+
+  const selectedRangeLabel = useMemo(() => {
+    if (!selectedRange) {
+      return null;
+    }
+
+    if (selectedRange.start === selectedRange.end) {
+      return formatSelectedDateLabel(selectedRange.start);
+    }
+
+    return `${formatSelectedDateLabel(selectedRange.start)} bis ${formatSelectedDateLabel(selectedRange.end)}`;
+  }, [selectedRange]);
 
   // Update MQTT data every 15 minutes
   useEffect(() => {
@@ -118,10 +164,10 @@ export default function WeatherClient({
               console.log("calPressure:", s_cal_pressure);
 
               newSensorData.indoor = JSON.parse(result.wert.indoor);
-/*            console.log("indoor.temp:",newSensorData.indoor.temp)
-              console.log("indoor.dew:",newSensorData.indoor.dew)
-              console.log("indoor.hum:",newSensorData.indoor.hum)
-              console.log("indoor.pres:",newSensorData.indoor.pres) */
+              /*            console.log("indoor.temp:",newSensorData.indoor.temp)
+                            console.log("indoor.dew:",newSensorData.indoor.dew)
+                            console.log("indoor.hum:",newSensorData.indoor.hum)
+                            console.log("indoor.pres:",newSensorData.indoor.pres) */
               if (newSensorData.indoor) {
                 newSensorData.indoor.temp -= s_cal_temp;
                 if (typeof newSensorData.indoor.dew === "number") newSensorData.indoor.dew -= s_cal_temp;
@@ -133,10 +179,10 @@ export default function WeatherClient({
           if (result.wert.outdoor) {
             try {
               newSensorData.outdoor = JSON.parse(result.wert.outdoor);
-/*               console.log("outdoor.temp:",newSensorData.outdoor.temp)
-              console.log("outdoor.dew:",newSensorData.outdoor.dew)
-              console.log("outdoor.hum:",newSensorData.outdoor.hum)
-              console.log("outdoor.pres:",newSensorData.outdoor.pres) */
+              /*               console.log("outdoor.temp:",newSensorData.outdoor.temp)
+                            console.log("outdoor.dew:",newSensorData.outdoor.dew)
+                            console.log("outdoor.hum:",newSensorData.outdoor.hum)
+                            console.log("outdoor.pres:",newSensorData.outdoor.pres) */
               if (newSensorData.outdoor) {
                 newSensorData.outdoor.temp += s_cal_temp;
                 if (typeof newSensorData.outdoor.dew === "number") newSensorData.outdoor.dew += s_cal_temp;
@@ -161,7 +207,7 @@ export default function WeatherClient({
 
   useEffect(() => { }, [dailyArray]);
 
-// Calculation BackgroundColor
+  // Calculation BackgroundColor
   const skyBackground = useMemo(() => {
     const currentTimestamp = weatherDataCurrent?.time ?? null;
     const cloudCoverValue = typeof weatherDataCurrent?.cloud_cover === 'number'
@@ -375,7 +421,6 @@ export default function WeatherClient({
           </div>
         </div>
 
-
         {/* Weather Instruments Mobile */}
         <div className="lg:hidden w-full bg-gray-200 p-3 shadow-xl flex flex-col md:flex-row items-center justify-center" style={{ background: skyBackground }}>
           <div>
@@ -396,7 +441,7 @@ export default function WeatherClient({
                   </div>
 
                   <p className="mt-2 text-sm text-white/80">
-                    Gefühlt {c_apparentTemperature.toFixed(1)} °C
+                    Gefühlte Temperatur {c_apparentTemperature.toFixed(1)} °C
                   </p>
                 </div>
 
@@ -497,49 +542,15 @@ export default function WeatherClient({
             </div>
           </div>
         </div>
-        <div>
-          <h3 className="text-lg font-bold my-3 text-center">Tägliche Wetterprognose</h3>
-        </div>
-        <div className="p-4 space-y-3">
-          <p>
-            Dieser Chart vergleicht die objektiv messbare Lufttemperatur mit der gefühlten Temperatur. Letztere integriert Faktoren wie Windchill und Luftfeuchtigkeit, um die tatsächliche thermische Belastung auf den Organismus abzubilden. Die Gegenüberstellung verdeutlicht die energetische Differenz zwischen Messwert und subjektivem Wärmeempfinden.
-          </p>
-        </div>
-        <ChartTemperature data={weatherDataHourly} />
-        <div className="p-4 space-y-3">
-          <p>
-            Dieser Chart visualisiert die kinetische Energie der Atmosphäre. Während die Windgeschwindigkeit die stetige Luftmassenbewegung darstellt, erfassen die Böengeschwindigkeiten kurzzeitige Turbulenzen und Druckunterschiede. Zusammen mit der Windrichtung ermöglicht dies eine präzise Bewertung der aerodynamischen Lasten und Strömungsdynamik.
-          </p>
-        </div>
-        <ChartWind data={weatherDataHourly} />
-        <div className="p-4 space-y-3">
-          <p>
-            Dieser Chart visualisiert die hydrologische Dynamik der Atmosphäre. Die Balken geben die absolute Niederschlagsmenge in Millimetern an, während die Niederschlagswahrscheinlichkeit die statistische Sicherheit des Ereignisses basierend auf vergleichbaren Wetterlagen beschreibt. Ergänzt wird dies durch die relative Luftfeuchtigkeit, welche den aktuellen Wasserdampfgehalt im Verhältnis zur maximalen Sättigungskapazität der Luft bei gegebener Temperatur darstellt. Das Zusammenspiel dieser Parameter ermöglicht eine präzise Beurteilung von Kondensationsprozessen und der allgemeinen Feuchtebilanz
-          </p>
-        </div>
-        <ChartPrecipitation data={weatherDataHourly} />
-        <div className="p-4 space-y-3">
-          <p>
-            Dieser Chart visualisiert das Zusammenspiel von Wasserbedarf und Pflanzenstress. Während die <strong>ET0 (FAO-Methode)</strong> den maximalen theoretischen Wasserbedarf unter aktuellen Wetterbedingungen angibt, zeigt die <strong>Evapotranspiration</strong> die real modellierte Verdunstung von Boden und Pflanzen. Die Differenz dieser Werte verdeutlicht das aktuelle Defizit. Ergänzend misst der <strong>VPD (Vapour Pressure Deficit)</strong> die Saugkraft der Luft: Je höher dieser Wert in kPa, desto trockener ist die Luft und desto größer der Stress für die Pflanze. Die farbige <strong>Heatmap</strong> im Hintergrund dient dabei als direktes Signal – von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot). Steigt der VPD stark an und bleibt die reale Verdunstung hinter der ET0 zurück, ist dies ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.
-          </p>
-        </div>
-        <ChartTranspiration data={weatherDataHourly} />
-        <div className="p-4 space-y-3">
-          <p>
-            Dieser Chart stellt die optische Durchlässigkeit der Atmosphäre der großräumigen Druckverteilung gegenüber. Die Sichtweite gibt die maximale Distanz an, bei der dunkle Objekte vor hellem Hintergrund erkennbar sind – sie ist ein direktes Maß für die Partikelkonzentration und Luftreinheit. Der Luftdruck hingegen visualisiert das Gewicht der Luftsäule über dem Standort. Signifikante Druckänderungen dienen als Indikator für herannahende Frontensysteme, während die Sichtweite Aufschluss über die aktuelle Schichtung und Stabilität der unteren Luftmassen gibt.
-          </p>
-        </div>
-        <ChartAtmosphere data={weatherDataHourly} dailyData={weatherDataDaily} />
-        <div>
-          <h3 className="text-lg font-bold my-3 text-center">Tabellen Wetterprognose </h3>
-        </div>
 
-
-
+        <div className="bg-gray-300 border m-1 rounded-lg">
+          <h3 className="text-lg font-bold my-2 text-center">Tabellen Wetterprognose </h3>
+        </div>
         { /* Daily Weather Date Table */}
         <MoveableScrollAreaHorizontal className="bg-gray-400 rounded-xl flex flex-row gap-1 p-2 w-full overflow-x-auto no-scrollbar">
           {dailyArray.length > 0 && dailyArray.map((item, idx) => {
-            const isSelected = selectedDate === new Date(item.date).toISOString().slice(0, 10);
+            const dateKey = toDateKey(item.date);
+            const isSelected = isDateInRange(dateKey, selectedRange);
             return (
               <div
                 key={idx}
@@ -551,13 +562,19 @@ export default function WeatherClient({
 
                     hover:shadow-md hover:ring-1 hover:ring-gray-400`}
 
-                onClick={() =>
-                  setSelectedDate(
-                    isSelected
-                      ? selectedDate
-                      : new Date(item.date).toISOString().slice(0, 10)
-                  )
-                }
+                onClick={(event) => {
+                  if (isSelected) {
+                    setSelectedRange(null);
+                    return;
+                  }
+
+                  if (event.shiftKey && selectedRange) {
+                    setSelectedRange(normalizeDateRange(selectedRange.start, dateKey));
+                    return;
+                  }
+
+                  setSelectedRange({ start: dateKey, end: dateKey });
+                }}
               >
                 <div className="h-11 p-2 bg-gray-300 rounded-tl-xl rounded-tr-xl flex flex-col items-center justify-center border-b border-slate-400">
                   {new Date(item.date)
@@ -593,7 +610,7 @@ export default function WeatherClient({
                 </div>
                 {/*Strahling*/}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">Strahlung (MJ/m²) / ET₀ (mm)</span>
+                  <span className="text-xs text-gray-500">Strahlung (MJ/m²) / ET0 (mm)</span>
                   <span className="text-sm font-bold font-sans">{(item.shortwave_radiation_sum ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
                 </div>
                 {/* Sonnenaufgang */}
@@ -612,180 +629,212 @@ export default function WeatherClient({
         </MoveableScrollAreaHorizontal>
 
         {/* Hourly Weather Date Table, zweigeteilt */}
-        <div className="flex flex-col gap-2 items-center justify-center">
-          <h3 className="text-lg font-bold mt-3 text-center">
-            Stündliche Wetterprognose
-            {selectedDate && (
-              <span className="ml-2 text-base font-normal text-gray-600">
-                (
-                {new Date(selectedDate).toLocaleDateString("de-DE", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric"
-                }).replace(/^([a-zäöüß]+),\s?/, (match) => match.charAt(0).toUpperCase() + match.slice(1))}
-                )
+        <div className="bg-gray-300 border m-1 rounded-lg flex flex-col gap-2 items-center justify-center">
+          <h3 className="my-2 text-lg font-bold text-center">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1 transition hover:bg-gray-200"
+              onClick={() => setShowHourlyTables((prev) => !prev)}
+              aria-expanded={showHourlyTables}
+            >
+              <span>Stündliche Wetterprognose</span>
+              <span className="text-sm font-normal text-gray-600">
+                {showHourlyTables ? "👁️" : "👁️"}
               </span>
-            )}
+            </button>
           </h3>
 
-          {/* Erste Zeile: 00:00 - 11:00 */}
-          <MoveableScrollAreaHorizontal className="p-2 w-full rounded-xl bg-gray-400 flex flex-row gap-1">
-            {Array.isArray(weatherDataHourly) &&
-              weatherDataHourly
-                .filter((item) => {
-                  const itemDate = new Date(item.time);
-                  const itemUTCDate = itemDate.toISOString().slice(0, 10);
-                  return selectedDate ? itemUTCDate === selectedDate : true;
-                })
-                .filter((item) => {
-                  const hour = new Date(item.time).getUTCHours();
-                  return hour >= 0 && hour <= 11;
-                })
-                .map((item, idx) => {
-                  const hourDate = new Date(item.time);
-                  const daily = dailyArray.find(d =>
-                    new Date(d.date).toDateString() === hourDate.toDateString()
-                  );
-                  let isDay: 0 | 1 = 1;
-                  if (daily && daily.sunrise && daily.sunset) {
-                    const sunrise = new Date(daily.sunrise);
-                    const sunset = new Date(daily.sunset);
-                    isDay = hourDate >= sunrise && hourDate < sunset ? 1 : 0;
-                  }
-                  return (
-                    <div key={idx}
-                      className="pb-1 flex flex-col rounded-xl w-full bg-white  border-r border-slate-400">
-                      <div className="h-11 p-2 rounded-tl-xl rounded-tr-xl w-full min-w-35 flex flex-col items-center justify-center border-b bg-gray-300 border-slate-400">
-                        <span className="text-center">
-                          {hourDate.toLocaleDateString("de-DE", { day: "2-digit", month: "short" }).replace(/\.$/, "")}
-                          <br />
-                          {hourDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
+          {showHourlyTables && (
+            <>
+              {/* Erste Zeile: 00:00 - 11:00 */}
+              <MoveableScrollAreaHorizontal className="p-2 w-full rounded-xl bg-gray-400 flex flex-row gap-1">
+                {filteredHourlyData
+                  .filter((item) => {
+                    const hour = new Date(item.time).getUTCHours();
+                    return hour >= 0 && hour <= 11;
+                  })
+                  .map((item, idx) => {
+                    const hourDate = new Date(item.time);
+                    const daily = dailyArray.find(d =>
+                      new Date(d.date).toDateString() === hourDate.toDateString()
+                    );
+                    let isDay: 0 | 1 = 1;
+                    if (daily && daily.sunrise && daily.sunset) {
+                      const sunrise = new Date(daily.sunrise);
+                      const sunset = new Date(daily.sunset);
+                      isDay = hourDate >= sunrise && hourDate < sunset ? 1 : 0;
+                    }
+                    return (
+                      <div key={idx}
+                        className="pb-1 flex flex-col rounded-xl w-full bg-white  border-r border-slate-400">
+                        <div className="h-11 p-2 rounded-tl-xl rounded-tr-xl w-full min-w-35 flex flex-col items-center justify-center border-b bg-gray-300 border-slate-400">
+                          <span className="text-center">
+                            {hourDate.toLocaleDateString("de-DE", { day: "2-digit", month: "short" }).replace(/\.$/, "")}
+                            <br />
+                            {hourDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          </span>
+                        </div>
+                        <div className="h-17 text-orange-400 flex items-center justify-center">
+                          <WeatherIcon code={Number(item.weather_code)} isDay={isDay} size={42} showName={true} />
+                        </div>
+                        {/* Temperature */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
+                          <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
+                        </div>
+                        {/* Feuchte */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.relative_humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
+                        </div>
+                        {/* Niederschlag */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Niederschlag</span>
+                          <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
+                        </div>
+                        {/* Wind Speed / Direction */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Wind km/h Richtung</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
+                        </div>
+                        {/* Sichtweite */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Sichtweite km</span>
+                          <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
+                        </div>
+                        {/* Luftdruck */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Luftdruck kPa</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
+                        </div>
+                        {/* Evapotrans */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
+                          <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
+                        </div>
                       </div>
-                      <div className="h-17 text-orange-400 flex items-center justify-center">
-                        <WeatherIcon code={Number(item.weather_code)} isDay={isDay} size={42} showName={true} />
-                      </div>
-                      {/* Temperature */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
-                        <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
-                      </div>
-                      {/* Feuchte */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.relative_humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
-                      </div>
-                      {/* Niederschlag */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Niederschlag</span>
-                        <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
-                      </div>
-                      {/* Wind Speed / Direction */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Wind km/h Richtung</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
-                      </div>
-                      {/* Sichtweite */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Sichtweite km</span>
-                        <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
-                      </div>
-                      {/* Luftdruck */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Luftdruck kPa</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
-                      </div>
-                      {/* Evapotrans */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
-                        <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-          </MoveableScrollAreaHorizontal>
+                    );
+                  })}
+              </MoveableScrollAreaHorizontal>
 
-          {/* Zweite Zeile: 12:00 - 23:00 */}
-          <MoveableScrollAreaHorizontal className="w-full p-2 rounded-xl bg-gray-400 flex flex-row gap-1
-          ">
-            {Array.isArray(weatherDataHourly) &&
-              weatherDataHourly
-                .filter((item) => {
-                  const itemDate = new Date(item.time);
-                  const itemUTCDate = itemDate.toISOString().slice(0, 10);
-                  return selectedDate
-                    ? itemUTCDate === selectedDate
-                    : true;
-                })
-                .filter((item) => {
-                  const hour = new Date(item.time).getUTCHours();
-                  return hour >= 12 && hour <= 23;
-                })
-                .map((item, idx) => {
-                  const hourDate = new Date(item.time);
-                  const daily = dailyArray.find(d =>
-                    new Date(d.date).toDateString() === hourDate.toDateString()
-                  );
-                  let isDay: 0 | 1 = 1;
-                  if (daily && daily.sunrise && daily.sunset) {
-                    const sunrise = new Date(daily.sunrise);
-                    const sunset = new Date(daily.sunset);
-                    isDay = hourDate >= sunrise && hourDate < sunset ? 1 : 0;
-                  }
-                  return (
-                    <div key={idx}
-                      className="pb-1 flex flex-col rounded-xl w-full bg-white  border-r border-slate-400">
-                      <div className="h-11 p-2 rounded-tl-xl rounded-tr-xl w-full min-w-35 flex flex-col items-center justify-center border-b bg-gray-300 border-slate-400">
-                        <span className="text-center">
-                          {hourDate.toLocaleDateString("de-DE", { day: "2-digit", month: "short" }).replace(/\.$/, "")}
-                          <br />
-                          {hourDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
+              {/* Zweite Zeile: 12:00 - 23:00 */}
+              <MoveableScrollAreaHorizontal className="w-full p-2 rounded-xl bg-gray-400 flex flex-row gap-1">
+                {filteredHourlyData
+                  .filter((item) => {
+                    const hour = new Date(item.time).getUTCHours();
+                    return hour >= 12 && hour <= 23;
+                  })
+                  .map((item, idx) => {
+                    const hourDate = new Date(item.time);
+                    const daily = dailyArray.find(d =>
+                      new Date(d.date).toDateString() === hourDate.toDateString()
+                    );
+                    let isDay: 0 | 1 = 1;
+                    if (daily && daily.sunrise && daily.sunset) {
+                      const sunrise = new Date(daily.sunrise);
+                      const sunset = new Date(daily.sunset);
+                      isDay = hourDate >= sunrise && hourDate < sunset ? 1 : 0;
+                    }
+                    return (
+                      <div key={idx}
+                        className="pb-1 flex flex-col rounded-xl w-full bg-white  border-r border-slate-400">
+                        <div className="h-11 p-2 rounded-tl-xl rounded-tr-xl w-full min-w-35 flex flex-col items-center justify-center border-b bg-gray-300 border-slate-400">
+                          <span className="text-center">
+                            {hourDate.toLocaleDateString("de-DE", { day: "2-digit", month: "short" }).replace(/\.$/, "")}
+                            <br />
+                            {hourDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          </span>
+                        </div>
+                        <div className="h-17 p-2 text-orange-400 flex items-center justify-center">
+                          <WeatherIcon code={Number(item.weather_code)} isDay={isDay} size={42} showName={true} />
+                        </div>
+                        {/* Temperature */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
+                          <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
+                        </div>
+                        {/* Feuchte */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
+                        </div>
+                        {/* Niederschlag */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Niederschlag</span>
+                          <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
+                        </div>
+                        {/* Wind Speed / Direction */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Wind km/h Richtung</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
+                        </div>
+                        {/* Sichtweite */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Sichtweite km</span>
+                          <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
+                        </div>
+                        {/* Luftdruck */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Luftdruck kPa</span>
+                          <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
+                        </div>
+                        {/* Evapotrans */}
+                        <div className="h-12 p-2 flex flex-col items-center justify-center">
+                          <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
+                          <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
+                        </div>
                       </div>
-                      <div className="h-17 p-2 text-orange-400 flex items-center justify-center">
-                        <WeatherIcon code={Number(item.weather_code)} isDay={isDay} size={42} showName={true} />
-                      </div>
-                      {/* Temperature */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
-                        <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
-                      </div>
-                      {/* Feuchte */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
-                      </div>
-                      {/* Niederschlag */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Niederschlag</span>
-                        <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
-                      </div>
-                      {/* Wind Speed / Direction */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Wind km/h Richtung</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
-                      </div>
-                      {/* Sichtweite */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Sichtweite km</span>
-                        <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
-                      </div>
-                      {/* Luftdruck */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Luftdruck kPa</span>
-                        <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
-                      </div>
-                      {/* Evapotrans */}
-                      <div className="h-12 p-2 flex flex-col items-center justify-center">
-                        <span className="text-xs text-gray-500">Evapotrans. mm/h</span>
-                        <span className="text-sm font-bold font-sans">{(item.evapotranspiration ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-          </MoveableScrollAreaHorizontal>
+                    );
+                  })}
+              </MoveableScrollAreaHorizontal>
+            </>
+          )}
         </div>
+
+        <div className="bg-gray-300 border m-1 rounded-lg">
+          <h3 className="text-lg font-bold my-3 text-center">Wetterprognosen Charts</h3>
+        </div>
+
+        {/* Temperature Chart */}
+        <div className="p-4 space-y-3">
+          <p>
+            Dieser Chart vergleicht die objektiv messbare Lufttemperatur mit der gefühlten Temperatur. Letztere integriert Faktoren wie Windchill und Luftfeuchtigkeit, um die tatsächliche thermische Belastung auf den Organismus abzubilden. Die Gegenüberstellung verdeutlicht die energetische Differenz zwischen Messwert und subjektivem Wärmeempfinden.
+          </p>
+        </div>
+        <ChartTemperature data={filteredHourlyData} />
+
+        {/* Wind Chart */}
+        <div className="p-4 space-y-3">
+          <p>
+            Dieser Chart visualisiert die kinetische Energie der Atmosphäre. Während die Windgeschwindigkeit die stetige Luftmassenbewegung darstellt, erfassen die Böengeschwindigkeiten kurzzeitige Turbulenzen und Druckunterschiede. Zusammen mit der Windrichtung ermöglicht dies eine präzise Bewertung der aerodynamischen Lasten und Strömungsdynamik.
+          </p>
+        </div>
+        <ChartWind data={filteredHourlyData} />
+
+        {/* Precipitation Chart */}
+        <div className="p-4 space-y-3">
+          <p>
+            Dieser Chart visualisiert die hydrologische Dynamik der Atmosphäre. Die Balken geben die absolute Niederschlagsmenge in Millimetern an, während die Niederschlagswahrscheinlichkeit die statistische Sicherheit des Ereignisses basierend auf vergleichbaren Wetterlagen beschreibt. Ergänzt wird dies durch die relative Luftfeuchtigkeit, welche den aktuellen Wasserdampfgehalt im Verhältnis zur maximalen Sättigungskapazität der Luft bei gegebener Temperatur darstellt. Das Zusammenspiel dieser Parameter ermöglicht eine präzise Beurteilung von Kondensationsprozessen und der allgemeinen Feuchtebilanz.
+          </p>
+        </div>
+        <ChartPrecipitation data={filteredHourlyData} />
+
+        {/* Transpiration Chart */}
+        <div className="p-4 space-y-3">
+          <p>
+            Dieser Chart visualisiert das Zusammenspiel von Wasserbedarf und Pflanzenstress. Während die <strong>ET0 (FAO-Methode)</strong> den maximalen theoretischen Wasserbedarf unter aktuellen Wetterbedingungen angibt, zeigt die <strong>Evapotranspiration</strong> die real modellierte Verdunstung von Boden und Pflanzen. Die Differenz dieser Werte verdeutlicht das aktuelle Defizit. Ergänzend misst der <strong>VPD (Vapour Pressure Deficit)</strong> die Saugkraft der Luft: Je höher dieser Wert in kPa, desto trockener ist die Luft und desto größer der Stress für die Pflanze. Die farbige <strong>Heatmap</strong> im Hintergrund dient dabei als direktes Signal - von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot). Steigt der VPD stark an und bleibt die reale Verdunstung hinter der ET0 zurück, ist dies ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.
+          </p>
+        </div>
+        <ChartTranspiration data={filteredHourlyData} />
+
+        {/* Athmosphere Chart */}
+        <div className="p-4 space-y-3">
+          <p>
+            Dieser Chart stellt die optische Durchlässigkeit der Atmosphäre der großräumigen Druckverteilung gegenüber. Die Sichtweite gibt die maximale Distanz an, bei der dunkle Objekte vor hellem Hintergrund erkennbar sind - sie ist ein direktes Maß für die Partikelkonzentration und Luftreinheit. Der Luftdruck hingegen visualisiert das Gewicht der Luftsäule über dem Standort. Signifikante Druckänderungen dienen als Indikator für herannahende Frontensysteme, während die Sichtweite Aufschluss über die aktuelle Schichtung und Stabilität der unteren Luftmassen gibt.
+          </p>
+        </div>
+        <ChartAtmosphere data={filteredHourlyData} dailyData={weatherDataDaily} />
+
       </MoveableScrollAreaVertical>
     </div>
   );

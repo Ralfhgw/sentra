@@ -1,18 +1,25 @@
 "use client";
 
-import { useEffect, useReducer, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import axios from "axios";
-import { AuthContext } from "./AuthContext";
-import { authReducer } from "./AuthReducer";
-import {
-  getAccessToken,
-  getAuthErrorMessage,
-  getAuthUser,
-  type AuthResponseEnvelope,
-} from "@/utils/authResponse";
+import type { AuthContextType, User } from "@/types/authContext";
+import { getAccessToken, getAuthErrorMessage, getAuthUser, type AuthResponseEnvelope } from "@/utils/authResponse";
 
 const API_BASE = "/api/auth";
+
 const LOGIN_ENDPOINT = `${API_BASE}/login`;
+
+export const AuthContext = createContext<AuthContextType | null>(null);
+
+export function useAuth() {
+  const authContext = useContext(AuthContext);
+  if (!authContext) {
+    throw new Error(
+      "Auth Context not available. Did you wrap AuthProvider around your components?"
+    );
+  }
+  return authContext;
+}
 
 function decodeUserFromToken(token: string) {
   try {
@@ -56,15 +63,14 @@ function getUserFromAuthResponse(data: AuthResponseEnvelope) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, {
-    user: null,
-    isLoading: false,
-    error: null,
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkAuth() {
-      dispatch({ type: "SET_LOADING" });
+      setIsLoading(true);
+      setError(null);
       try {
         const refreshRes = await axios.post<AuthResponseEnvelope>(
           `${API_BASE}/refresh`,
@@ -72,14 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           { withCredentials: true }
         );
 
-        const user = getUserFromAuthResponse(refreshRes.data);
-        if (user) {
-          dispatch({ type: "LOGIN_USER", payload: user });
+        const nextUser = getUserFromAuthResponse(refreshRes.data);
+        if (nextUser) {
+          setUser(nextUser);
+          setError(null);
         } else {
-          dispatch({ type: "LOGOUT_USER" });
+          setUser(null);
+          setError(null);
         }
       } catch {
-        dispatch({ type: "LOGOUT_USER" });
+        setUser(null);
+        setError(null);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -87,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(identifier: string, password: string) {
-    dispatch({ type: "SET_LOADING" });
+    setIsLoading(true);
+    setError(null);
 
     const normalized = identifier.trim();
     const payload = {
@@ -106,11 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       );
 
-      const user = getUserFromAuthResponse(loginRes.data);
-      if (user) {
-        dispatch({ type: "LOGIN_USER", payload: user });
+      const nextUser = getUserFromAuthResponse(loginRes.data);
+      if (nextUser) {
+        setUser(nextUser);
+        setError(null);
       } else {
-        dispatch({ type: "SET_ERROR", payload: "Login failed. Please try again" });
+        setUser(null);
+        setError("Login failed. Please try again");
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -118,17 +132,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const apiError = getAuthErrorMessage(data);
 
         console.error("Login error:", err.response?.status, data, err.message);
-        dispatch({
-          type: "SET_ERROR",
-          payload:
-            apiError ??
+        setUser(null);
+        setError(
+          apiError ??
             (err.code === "ERR_NETWORK"
               ? "Auth server or CORS not reachable."
-              : "Login failed. Please try again"),
-        });
+              : "Login failed. Please try again")
+        );
       } else {
-        dispatch({ type: "SET_ERROR", payload: "Login failed. Please try again" });
+        setUser(null);
+        setError("Login failed. Please try again");
       }
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -138,20 +154,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Fallback: local logout even if endpoint fails
     }
-    dispatch({ type: "LOGOUT_USER" });
+
+    setUser(null);
+    setError(null);
+    setIsLoading(false);
   }
 
   return (
-    <AuthContext
+    <AuthContext.Provider
       value={{
-        user: state.user,
-        isLoading: state.isLoading,
-        error: state.error,
+        user,
+        isLoading,
+        error,
         login,
         logout,
       }}
     >
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   );
 }

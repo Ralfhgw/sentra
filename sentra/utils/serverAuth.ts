@@ -38,6 +38,13 @@ type UserChannel = {
   name: string;
 };
 
+type LiveViewChannelPreference = {
+  channelId: string;
+  isFavorite: boolean;
+  hidden: boolean;
+  deleted: boolean;
+};
+
 type EventUrl = {
   url: string;
   refreshInterval: EventRefreshInterval;
@@ -46,6 +53,7 @@ type EventUrl = {
 type EventUrlsValue = EventUrl[] | string[] | string | null;
 
 type UserChannelsValue = UserChannel[] | string | null;
+type LiveViewChannelPreferencesValue = LiveViewChannelPreference[] | string | null;
 
 type UserSettingsRow = {
   lang: string | null;
@@ -58,6 +66,7 @@ type UserSettingsRow = {
   country: string | null;
   country_code: string | null;
   channels: UserChannelsValue;
+  liveview_channel_preferences: LiveViewChannelPreferencesValue;
   event_urls: EventUrlsValue;
   event_refresh_interval: string | null;
   key1: string | null;
@@ -87,6 +96,7 @@ export type UserSettings = {
   country: string | null;
   countryCode: string | null;
   channels: UserChannel[];
+  liveviewChannelPreferences: LiveViewChannelPreference[];
   event_urls: EventUrl[];
   eventRefreshInterval: EventRefreshInterval;
   key1: string | null;
@@ -116,6 +126,7 @@ export const defaultUserSettings: UserSettings = {
   country: null,
   countryCode: null,
   channels: [],
+  liveviewChannelPreferences: [],
   event_urls: [],
   eventRefreshInterval: "daily",
   key1: null,
@@ -249,6 +260,38 @@ function normalizeUserChannels(value: UserChannelsValue): UserChannel[] {
   return [];
 }
 
+function normalizeLiveViewChannelPreferences(
+  value: LiveViewChannelPreferencesValue
+): LiveViewChannelPreference[] {
+  const rawValue =
+    typeof value === "string"
+      ? (() => {
+          try {
+            return JSON.parse(value);
+          } catch {
+            return [];
+          }
+        })()
+      : value;
+
+  if (!Array.isArray(rawValue)) {
+    return [];
+  }
+
+  return rawValue
+    .map((entry) => {
+      const item = entry as Partial<LiveViewChannelPreference> | null;
+
+      return {
+        channelId: String(item?.channelId ?? "").trim(),
+        isFavorite: item?.isFavorite === true,
+        hidden: item?.hidden === true,
+        deleted: item?.deleted === true,
+      };
+    })
+    .filter((entry) => entry.channelId.length > 0);
+}
+
 function normalizeEventRefreshInterval(value: unknown): EventRefreshInterval {
   if (value === "weekly" || value === "monthly") {
     return value;
@@ -312,6 +355,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       country,
       country_code,
       channels,
+      liveview_channel_preferences,
       event_urls,
       event_refresh_interval,
       key1,
@@ -348,6 +392,9 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     country: row.country,
     countryCode: row.country_code,
     channels: normalizeUserChannels(row.channels),
+    liveviewChannelPreferences: normalizeLiveViewChannelPreferences(
+      row.liveview_channel_preferences
+    ),
     event_urls: normalizeEventUrls(row.event_urls),
     eventRefreshInterval: normalizeEventRefreshInterval(row.event_refresh_interval),
     key1: row.key1,

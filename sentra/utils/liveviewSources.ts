@@ -2,7 +2,6 @@ import sql from "@/utils/db";
 
 export type LiveViewSourceKind = "catalog" | "custom_hls" | "mediamtx_rtsp";
 export type LiveViewTransport = "tcp" | "udp" | "automatic";
-
 export type ClientLiveViewChannel = {
   name: string;
   url: string;
@@ -44,6 +43,9 @@ type RtspReconcileRow = {
   transport: LiveViewTransport | null;
 };
 
+// normalizeLiveViewSourceUrl(rawUrl: string): 
+// Trimmt die URL; bei RTSP(s) entfernt Fragment/hash und gibt 
+// eine saubere URL zurück.
 export function normalizeLiveViewSourceUrl(rawUrl: string) {
   const trimmed = rawUrl.trim();
 
@@ -64,6 +66,9 @@ export function normalizeLiveViewSourceUrl(rawUrl: string) {
   }
 }
 
+// detectSourceKind(input) : Ermittelt anhand von channelId/url 
+// den Source-Typ (catalog, custom_hls, mediamtx_rtsp) oder wirft 
+// einen Fehler.
 export function detectSourceKind(input: {
   channelId?: string | null;
   url?: string | null;
@@ -82,9 +87,12 @@ export function detectSourceKind(input: {
     return "custom_hls";
   }
 
-  throw new Error("Unbekannter Stream-Typ.");
+  throw new Error("Unknown Stream-Type.");
 }
 
+// swapLiveViewSlots(userId, fromSlotId, toSlotId): Vertauscht 
+// zwei Slot-IDs für einen Benutzer in der DB und baut die 
+// Kanalliste neu auf.
 export async function swapLiveViewSlots(
   userId: string,
   fromSlotId: number,
@@ -120,18 +128,26 @@ export async function swapLiveViewSlots(
   return rebuildUserChannels(userId);
 }
 
+// buildMediamtxPath(userId, slotId): Erzeugt den MediaMTX-Pfadnamen 
+// (lv_<userId ohne ->_<slotId>).
 export function buildMediamtxPath(userId: string, slotId: number) {
   return `lv_${userId.replace(/-/g, "")}_${slotId}`;
 }
 
+// getMediaMtxApiBaseUrl(): Liefert die (hardcodierte) 
+// Basis-API-URL für MediaMTX.
 function getMediaMtxApiBaseUrl() {
   return ("http://127.0.0.1:9997").replace(/\/$/, "");
 }
 
+// getMediaMtxHlsBaseUrl(): Liefert die (hardcodierte) 
+// Basis-HLS-URL für MediaMTX.
 function getMediaMtxHlsBaseUrl() {
   return ("http://127.0.0.1:8888").replace(/\/$/, "");
 }
 
+// getMediaMtxHeaders(): Baut die HTTP-Header für 
+// MediaMTX-API-Aufrufe (inkl. Basic-Auth).
 function getMediaMtxHeaders() {
   const headers = new Headers({
     "Content-Type": "application/json",
@@ -150,6 +166,8 @@ function getMediaMtxHeaders() {
   return headers;
 }
 
+// getExistingLiveViewSource(userId, slotId): Liest die vorhandene Quelle 
+// (Source-Kind, Pfad, URL, Transport) für einen Slot aus der DB.
 export async function getExistingLiveViewSource(userId: string, slotId: number) {
   const [row] = await sql<ExistingSourceRow[]>`
     SELECT source_kind, mediamtx_path, source_url, transport
@@ -162,6 +180,8 @@ export async function getExistingLiveViewSource(userId: string, slotId: number) 
   return row ?? null;
 }
 
+// upsertLiveViewSource(input): Legt eine LiveView-Quelle an oder aktualisiert 
+// sie (INSERT ... ON CONFLICT).
 export async function upsertLiveViewSource(input: UpsertLiveViewSourceInput) {
   await sql`
     INSERT INTO liveview_sources (
@@ -198,6 +218,8 @@ export async function upsertLiveViewSource(input: UpsertLiveViewSourceInput) {
   `;
 }
 
+// deleteLiveViewSource(userId, slotId): Löscht eine 
+// LiveView-Quelle aus der DB.
 export async function deleteLiveViewSource(userId: string, slotId: number) {
   await sql`
     DELETE FROM liveview_sources
@@ -206,6 +228,22 @@ export async function deleteLiveViewSource(userId: string, slotId: number) {
   `;
 }
 
+export async function removeLiveViewChannelForUser(
+  userId: string,
+  channelId: string
+) {
+  await sql`
+    DELETE FROM liveview_sources
+    WHERE user_id = ${userId}::uuid
+      AND channel_id = ${channelId}::uuid
+  `;
+
+  return rebuildUserChannels(userId);
+}
+
+// syncRtspPathInMediaMtx({pathName, sourceUrl, transport}): 
+// Erstellt oder patched einen RTSP-Path in MediaMTX via API 
+// (POST then PATCH fallback).
 export async function syncRtspPathInMediaMtx(input: {
   pathName: string;
   sourceUrl: string;
@@ -241,7 +279,7 @@ export async function syncRtspPathInMediaMtx(input: {
 
   if (!shouldTryPatch) {
     throw new Error(
-      `MediaMTX-Pfad konnte nicht angelegt werden: path=${input.pathName} | transport=${input.transport} | status=${addResponse.status} | statusText=${addResponse.statusText} | body=${addMessage || "<empty>"}`
+      `The MediaMTX path could not be created: path=${input.pathName} | transport=${input.transport} | status=${addResponse.status} | statusText=${addResponse.statusText} | body=${addMessage || "<empty>"}`
     );
   }
 
@@ -258,11 +296,14 @@ export async function syncRtspPathInMediaMtx(input: {
   if (!patchResponse.ok) {
     const patchMessage = await patchResponse.text().catch(() => "");
     throw new Error(
-      `MediaMTX-Pfad konnte nicht gespeichert werden: path=${input.pathName} | transport=${input.transport} | status=${patchResponse.status} | statusText=${patchResponse.statusText} | body=${patchMessage || "<empty>"}`
+      `MediaMTX path could not be saved: path=${input.pathName} | transport=${input.transport} | status=${patchResponse.status} | statusText=${patchResponse.statusText} | body=${patchMessage || "<empty>"}`
     );
   }
 }
 
+// syncRtspPathInMediaMtx({pathName, sourceUrl, transport}): 
+// Erstellt oder patched einen RTSP-Path in MediaMTX via API 
+// (POST then PATCH fallback).
 export async function deleteRtspPathFromMediaMtx(pathName: string) {
   const response = await fetch(
     `${getMediaMtxApiBaseUrl()}/v3/config/paths/delete/${encodeURIComponent(pathName)}`,
@@ -276,11 +317,13 @@ export async function deleteRtspPathFromMediaMtx(pathName: string) {
   if (!response.ok && response.status !== 404) {
     const message = await response.text().catch(() => "");
     throw new Error(
-      `MediaMTX-Pfad konnte nicht gelöscht werden (${response.status}): ${message}`
+      `MediaMTX path could not be deleted (${response.status}): ${message}`
     );
   }
 }
 
+// removeLiveViewSlot(userId, slotId): Entfernt einen Slot: löscht 
+// ggf. MediaMTX-Path, entfernt DB-Eintrag und rebuilt Channels.
 export async function removeLiveViewSlot(userId: string, slotId: number) {
   const existing = await getExistingLiveViewSource(userId, slotId);
 
@@ -296,6 +339,8 @@ export async function removeLiveViewSlot(userId: string, slotId: number) {
   return rebuildUserChannels(userId);
 }
 
+// removeLiveViewSlot(userId, slotId): Entfernt einen Slot: 
+// löscht ggf. MediaMTX-Path, entfernt DB-Eintrag und rebuilt Channels.
 export async function rebuildUserChannels(userId: string) {
   const rows = await sql<RebuildRow[]>`
     SELECT
@@ -352,6 +397,9 @@ export async function rebuildUserChannels(userId: string) {
   return channels;
 }
 
+// rebuildUserChannels(userId): Baut das channels-Array aus 
+// DB-Daten (verschiedene Source-Typen) und speichert es in 
+// user_settings.
 export async function reconcileAllLiveViewRtspSources(input?: {
   waitForReady?: boolean;
   readyTimeoutMs?: number;
@@ -387,10 +435,13 @@ export async function reconcileAllLiveViewRtspSources(input?: {
   }
 }
 
+// sleep(ms): Kleine Hilfsfunktion: Promise-basiertes Delay.
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// waitForMediaMtxHlsReady(pathName, timeoutMs): Pollt das 
+// HLS-Manifest bis #EXTM3U erscheint oder bis Timeout, sonst Fehler.
 export async function waitForMediaMtxHlsReady(
   pathName: string,
   timeoutMs = 15000
@@ -410,19 +461,19 @@ export async function waitForMediaMtxHlsReady(
         if (text.includes("#EXTM3U")) {
           return;
         }
-        lastStatus = "Manifest ohne #EXTM3U";
+        lastStatus = "Manifest without #EXTM3U";
       } else {
         lastStatus = `HTTP ${response.status}`;
       }
     } catch (error) {
       lastStatus =
-        error instanceof Error ? error.message : "Request fehlgeschlagen";
+        error instanceof Error ? error.message : "Request failed";
     }
 
     await sleep(500);
   }
 
   throw new Error(
-    `MediaMTX-HLS war nicht rechtzeitig bereit (${lastStatus}).`
+    `MediaMTX-HLS was not ready in time (${lastStatus}).`
   );
 }

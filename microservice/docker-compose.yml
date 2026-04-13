@@ -98,6 +98,7 @@ volumes:
 # docker compose exec db psql -U dbuser -d sentra
 # docker compose exec db psql -U user -d authdb
 # docker compose exec db psql -U dbuser -d sentra -c "TRUNCATE TABLE liveview_sources RESTART IDENTITY CASCADE;"
+# docker compose exec db psql -U dbuser -d sentra -c "SELECT jsonb_pretty(liveview_channel_preferences) FROM user_settings WHERE user_id = '089aae1b-1cf7-4fb1-8f42-07e8a66319c7';"
 
 # docker exec -it mosquitto mosquitto_sub -h localhost -t "#" -v
 # Proxy: mosquitto_sub -h localhost -t "#" -v-v

@@ -132,11 +132,12 @@ function buildLoginSuccessResponse(message, user, tokens) {
   };
 }
 
-function buildRefreshSuccessResponse(message, tokens) {
+function buildRefreshSuccessResponse(message, user, tokens) {
   return {
     success: true,
     message,
     data: {
+      user: mapUserToExternalShape(user),
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresAt: tokens.expiresAt.toISOString(),
@@ -475,8 +476,8 @@ app.post("/api/auth/refresh", async (req, res) => {
     const tokens = await issueAuthTokens(res, updatedUser.id, sessionTokenHash);
 
     console.log(`[REFRESH] Erfolgreich: Neues AccessToken f?r User ID ${updatedUser.id} ausgestellt.`);
-    return res.json(
-      buildRefreshSuccessResponse("Token refreshed successfully.", tokens)
+      return res.json(
+      buildRefreshSuccessResponse("Token refreshed successfully.", updatedUser, tokens)
     );
   } catch (err) {
     console.error("[REFRESH] Fehler bei Session-Verarbeitung:", err);

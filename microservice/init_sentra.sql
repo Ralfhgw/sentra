@@ -41,6 +41,7 @@ CREATE TABLE "user_settings" (
     "country" text,
     "country_code" text,
     "channels" jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(channels) = 'array'),
+    "liveview_channel_preferences" jsonb NOT NULL DEFAULT '[]'::jsonb,
     "event_urls" jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(event_urls) = 'array'),
     "event_refresh_interval" text NOT NULL DEFAULT 'daily' CHECK (event_refresh_interval IN ('daily', 'weekly', 'monthly')),
     "key1" text,

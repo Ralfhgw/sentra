@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
 import { invalidatePrimaryEventRefreshState, warmEventsForUser } from "@/utils/eventsService";
-import { invalidateCustomEventRefreshState, refreshCustomEventSourcesForUser } from "@/utils/eventUrlService";
 import type { EventRefreshInterval, EventUrlSetting } from "@/types/typesSettings";
 
 function normalizeEventRefreshInterval(value: unknown): EventRefreshInterval {
@@ -68,12 +67,10 @@ export async function POST(req: NextRequest) {
       lon: number | null;
       town: string | null;
       key1: string | null;
-      key2: string | null;
       evt: boolean | null;
-      event_urls: unknown;
       event_refresh_interval: string | null;
     }[]>`
-      SELECT lat, lon, town, key1, key2, evt, event_urls, event_refresh_interval
+      SELECT lat, lon, town, key1, evt, event_refresh_interval
       FROM user_settings
       WHERE user_id = ${userId}
     `;
@@ -83,27 +80,16 @@ export async function POST(req: NextRequest) {
     const locationChanged = latChanged || lonChanged;
     const townChanged = oldSettings?.town !== safeData.town;
     const serpApiKeyChanged = oldSettings?.key1 !== safeData.key1;
-    const openAiKeyChanged = oldSettings?.key2 !== safeData.key2;
     const evtChanged = (oldSettings?.evt ?? false) !== safeData.evt;
     const intervalChanged =
       normalizeEventRefreshInterval(oldSettings?.event_refresh_interval) !==
       safeData.event_refresh_interval;
-
-    const normalizedOldEventUrls = normalizeEventUrls(oldSettings?.event_urls);
-    const eventUrlsChanged =
-      JSON.stringify(normalizedOldEventUrls) !==
-      JSON.stringify(safeData.event_urls);
-
     const serpRefreshInputsChanged =
       locationChanged ||
       townChanged ||
       serpApiKeyChanged ||
       evtChanged ||
       intervalChanged;
-
-    const customEventRefreshInputsChanged =
-      eventUrlsChanged ||
-      openAiKeyChanged;
 
     console.log("[settings] primary refresh flags:", {
       userId,
@@ -114,12 +100,6 @@ export async function POST(req: NextRequest) {
       intervalChanged,
     });
 
-    console.log("[settings] custom refresh flags:", {
-      userId,
-      eventUrlsChanged,
-      openAiKeyChanged,
-      eventUrls: safeData.event_urls,
-    });
 
     const result = await sql`
       UPDATE user_settings
@@ -162,13 +142,6 @@ export async function POST(req: NextRequest) {
       intervalChanged,
     });
 
-    console.log("[settings] customEventRefreshInputsChanged:", {
-      userId,
-      eventUrlsChanged,
-      openAiKeyChanged,
-      eventUrls: safeData.event_urls,
-    });
-
     if (serpRefreshInputsChanged) {
       await invalidatePrimaryEventRefreshState(userId);
     }
@@ -176,14 +149,6 @@ export async function POST(req: NextRequest) {
     if (intervalChanged && safeData.evt && safeData.town) {
       void warmEventsForUser(userId).catch((error) => {
         console.error("Event warmup after global interval change failed:", error);
-      });
-    }
-
-    if (customEventRefreshInputsChanged) {
-      await invalidateCustomEventRefreshState(userId);
-
-      void refreshCustomEventSourcesForUser(userId).catch((error) => {
-        console.error("Custom event URL refresh failed:", error);
       });
     }
 

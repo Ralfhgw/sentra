@@ -7,7 +7,8 @@ export type Channel = {
   channel: string | null;
   stream_url: string | null;
   created_at: string | null;
-
+  isFavorite: boolean;
+  isHidden: boolean;
 };
 
 export type UserChannel = {

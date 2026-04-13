@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  applyRefreshedAccessToken,
-  getAuthenticatedUserFromRequest,
-} from "@/utils/serverAuth";
+import { applyRefreshedAccessToken, getAuthenticatedUserFromRequest } from "@/utils/serverAuth";
 import { swapLiveViewSlots } from "@/utils/liveviewSources";
 
 export async function POST(req: NextRequest) {
@@ -12,7 +9,7 @@ export async function POST(req: NextRequest) {
     auth = await getAuthenticatedUserFromRequest(req);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Nicht eingeloggt";
+      error instanceof Error ? error.message : "Not logged in.";
 
     return NextResponse.json({ error: message }, { status: 401 });
   }
@@ -27,7 +24,7 @@ export async function POST(req: NextRequest) {
       toSlotId < 0
     ) {
       return NextResponse.json(
-        { error: "Ungültige Slot-IDs." },
+        { error: "Invalid Slot-IDs." },
         { status: 400 }
       );
     }
@@ -44,7 +41,7 @@ export async function POST(req: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Slots konnten nicht getauscht werden.",
+            : "Slots could not be exchanged.",
       },
       { status: 500 }
     );

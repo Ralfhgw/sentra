@@ -197,7 +197,7 @@ export default function LiveTalkClient({
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [sessionKeyInfo, setSessionKeyInfo] = useState<LiveTalkRoomSummary | null>(null);
   const [socketId, setSocketId] = useState("");
-  const [statusText, setStatusText] = useState("Noch nicht verbunden.");
+  const [statusText, setStatusText] = useState("Not yet connected.");
   const [errorMessage, setErrorMessage] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { applyAuthServiceHeaders } from "@/utils/authHeaders";
 import {
   getAccessToken,
   getExpiresAt,
@@ -12,14 +11,6 @@ const refreshTokenMaxAge =
   Number(process.env.AUTH_REFRESH_TOKEN_MAX_AGE_SECONDS ?? 7 * 24 * 60 * 60);
 const refreshMarginMs =
   Number(process.env.AUTH_ACCESS_TOKEN_REFRESH_MARGIN_SECONDS ?? 60) * 1000;
-
-function getAuthHost() {
-  const authHost = process.env.AUTH_HOST ?? process.env.NEXT_PUBLIC_AUTH_HOST;
-  if (!authHost) {
-    throw new Error("Missing AUTH_HOST (or NEXT_PUBLIC_AUTH_HOST) env var");
-  }
-  return authHost;
-}
 
 function getCookieBase() {
   return {
@@ -100,15 +91,13 @@ function upsertCookieHeader(
     .join("; ");
 }
 
-async function refreshSession(refreshToken: string) {
+async function refreshSession(request: NextRequest, refreshToken: string) {
   const headers = new Headers({
     "Content-Type": "application/json",
     Cookie: `refreshToken=${encodeURIComponent(refreshToken)}`,
   });
 
-  applyAuthServiceHeaders(headers);
-
-  const refreshRes = await fetch(`${getAuthHost()}/api/auth/refresh`, {
+  const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
     method: "POST",
     headers,
     body: JSON.stringify({ refreshToken }),
@@ -142,7 +131,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
   console.log("[middleware] refreshing token for", request.nextUrl.pathname);
-  const refreshed = await refreshSession(refreshToken);
+  const refreshed = await refreshSession(request, refreshToken);
   if (!refreshed) {
     return NextResponse.next();
   }

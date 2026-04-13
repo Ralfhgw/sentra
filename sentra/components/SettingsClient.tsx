@@ -240,7 +240,6 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
   // UseState -  List of Events
   const [urlInput, setUrlInput] = useState("");
-  const [urlRefreshInterval, setUrlRefreshInterval] = useState<EventRefreshInterval>("daily");
 
   console.log("User Settings:", userSettings);
   console.log("Lang:", userSettings.lang);
@@ -279,9 +278,9 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         return prev;
       }
 
-      const updatedUrls = [
+      const updatedUrls: EventUrlSetting[] = [
         ...prev.event_urls,
-        { url: trimmedUrl, refreshInterval: urlRefreshInterval },
+        { url: trimmedUrl, refreshInterval: "daily" as EventRefreshInterval },
       ];
       console.log("Aktuelle URLs:", updatedUrls);
       return {
@@ -290,7 +289,6 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
       };
     });
     setUrlInput("");
-    setUrlRefreshInterval("daily");
   };
 
   const handleRemoveUrl = (url: string) => {
@@ -573,21 +571,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                       onKeyDown={e => { if (e.key === "Enter") handleAddUrl(); }}
                     />
                   </div>
-                  <div className="flex flex-row justify-between">
-                    <div>
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center px-3 py-1 bg-gray-600 text-white rounded-lg shadow-sm font-medium hover:bg-gray-700 active:scale-95 transition transform focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        onClick={() =>
-                          setUrlRefreshInterval((current) =>
-                            getNextEventRefreshInterval(current)
-                          )
-                        }
-                        title="Klicken, um zwischen Taeglich, Woechentlich und Monatlich zu wechseln"
-                      >
-                        {getEventRefreshIntervalLabel(urlRefreshInterval)}
-                      </button>
-                    </div>
+                  <div className="flex justify-end">
 
                     <div className="flex justify-center">
                       <button
@@ -603,16 +587,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   </div>
                 </div>
               </div>
-
-              <div className="mb-1 mt-1 flex flex-wrap justify-between items-center gap-2 text-sm">
-                <label className="font-medium">Event URLs:</label>
-                <div className="p-1 rounded-lg border border-gray-300 flex flex-row gap-2">
-                <span className="w-20 text-center rounded-lg bg-green-100 py-1 text-xs">Täglich</span>
-                <span className="w-20 text-center rounded-lg bg-blue-100 py-1 text-xs">Wöchentlich</span>
-                <span className="w-20 text-center rounded-lg bg-red-100 py-1 text-xs">Monatlich</span>
-                </div>
-              </div>
-
+              <label className="text.sm">Event URLs:</label>
               <ul>
                 {Array.isArray(settings.event_urls) && settings.event_urls.length > 0
                   ? settings.event_urls.map((entry, idx) => (

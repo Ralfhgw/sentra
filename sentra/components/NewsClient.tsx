@@ -382,6 +382,7 @@ export default function NewsClient({
           body: JSON.stringify({
             dayString: dateKey,
             town: requestTown,
+            refreshCustomEventUrls: true,
           }),
         });
 

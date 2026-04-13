@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  applyRefreshedAccessToken,
-  getAuthenticatedUserFromRequest,
-} from "@/utils/serverAuth";
+import { applyRefreshedAccessToken, getAuthenticatedUserFromRequest } from "@/utils/serverAuth";
 import {
   buildMediamtxPath,
   deleteRtspPathFromMediaMtx,
@@ -29,7 +26,6 @@ type SaveSlotBody = {
 
 function toUserFacingRtspSaveError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-
   if (
     /network is unreachable|no route to host|ehostunreach|enetunreach/i.test(
       message
@@ -91,7 +87,7 @@ export async function POST(req: NextRequest) {
     auth = await getAuthenticatedUserFromRequest(req);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Nicht eingeloggt";
+      error instanceof Error ? error.message : "Not logged in.";
 
     return NextResponse.json({ error: message }, { status: 401 });
   }
@@ -101,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     if (!Number.isInteger(body.slotId) || body.slotId < 0) {
       return NextResponse.json(
-        { error: "slotId ist ungültig." },
+        { error: "slotId not valid." },
         { status: 400 }
       );
     }
@@ -127,7 +123,7 @@ export async function POST(req: NextRequest) {
     if (sourceKind === "mediamtx_rtsp") {
       if (!normalizedUrl) {
         return NextResponse.json(
-          { error: "RTSP-URL fehlt." },
+          { error: "RTSP-URL missing." },
           { status: 400 }
         );
       }
@@ -190,7 +186,7 @@ export async function POST(req: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Slot konnte nicht gespeichert werden.",
+            : "The slot could not be saved.",
       },
       { status: 500 }
     );

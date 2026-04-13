@@ -10,7 +10,7 @@ interface LoginFormProps {
   translations: { [key: string]: LoginTranslation };
   defaultLanguage?: "en" | "de";
 }
-//TODO Login soll nur mit email erfolgen
+
 export default function LoginForm({ translations, defaultLanguage = "en" }: LoginFormProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -32,22 +32,21 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
       ? "Dein Konto wurde angelegt. Ein Administrator muss es im Auth-Server zuerst freischalten, bevor du dich anmelden kannst."
       : "Your account has been created. An administrator must activate it in the auth server before you can log in.";
 
+  // Verify if user logged in --> "/", user is handled in @/context/AuthContext
   useEffect(() => {
     if (user) {
       router.push(redirectUrl ? redirectUrl : "/");
     }
   }, [user, redirectUrl, router]);
+  if (user) { return null; }
 
+  // handleSubmit()
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
       await login(useremail, password);
     } catch {
     }
-  }
-
-  if (user) {
-    return null;
   }
 
   return (
@@ -64,7 +63,6 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
               <sup className="ml-1 text-base align-top">&copy;</sup>
             </h1>
 
-
             {/* Title small */}
             <div className="text-orange-400 mt-4 text-center text-[16px] tracking-wide opacity-70">
               {t.slogan}
@@ -72,6 +70,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
 
             <p className="text-[16px] tracking-wide opacity-70">{t.description}</p>
 
+            {/* Animation */}
             <div className="flex flex-col">
               <div className="mt-4 text-center text-[16px] tracking-wide opacity-70">
                 <Image
@@ -349,7 +348,6 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
       {/*       <div className="w-full max-w-3xl text-gray-500 text-center text-[16px] opacity-70 tracking-wide">
         {t.pinfo}
       </div> */}
-
     </div >
   );
 }

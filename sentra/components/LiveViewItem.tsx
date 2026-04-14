@@ -270,7 +270,7 @@ export default function WebcamItem({
                     </div>
                 </>
             ) : (
-                <div className="w-full h-full bg-black flex items-center justify-center">
+                <div className="w-full h-full bg-blue-400/30 flex items-center justify-center">
                     <span className="text-white text-base font-semibold">No Signal</span>
                 </div>
             )}

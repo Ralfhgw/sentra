@@ -30,6 +30,10 @@ export type LiveTalkRoomResponse = {
   room: LiveTalkRoomSummary;
 };
 
+export type LiveTalkRoomsResponse = {
+  rooms: LiveTalkRoomSummary[];
+};
+
 export type LiveTalkTokenResponse = {
   token: string;
   socketUrl: string;

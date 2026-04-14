@@ -70,7 +70,7 @@ function createEmptyKeyInputs(): KeyInputState {
 }
 
 function getKeyPlaceholder(value: string | null | undefined) {
-  if (!value) return "Kein Key hinterlegt";
+  if (!value) return "No key stored";
   return `${value.slice(0, 5)}...`;
 }
 
@@ -457,23 +457,23 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <dd className="font-medium text-slate-500">{typeof settings.lon === "number" ? settings.lon.toFixed(6) : "0.000000"}</dd>
                 </div>
                 <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Stadt</dt>
+                  <dt className="text-slate-800">Town</dt>
                   <dd className="font-medium text-slate-500">{settings.town || "Unbekannt"}</dd>
                 </div>
                 <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Landkreis</dt>
+                  <dt className="text-slate-800">County</dt>
                   <dd className="font-medium text-slate-500">{settings.county || "Unbekannt"}</dd>
                 </div>
                 <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Bundesland</dt>
+                  <dt className="text-slate-800">State</dt>
                   <dd className="font-medium text-slate-500">{settings.state || "Unbekannt"}</dd>
                 </div>
                 <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Land</dt>
+                  <dt className="text-slate-800">Country</dt>
                   <dd className="font-medium text-slate-500">{settings.country || "Unbekannt"}</dd>
                 </div>
                 <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Land Code</dt>
+                  <dt className="text-slate-800">Country Code</dt>
                   <dd className="font-medium text-slate-500">{settings.country_code || "Unbekannt"}</dd>
                 </div>
               </dl>
@@ -580,7 +580,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                         onClick={handleAddUrl}
                         disabled={!urlInput.trim()}
                       >
-                        Hinzufügen
+                        Add
                       </button>
                     </div>
 
@@ -846,7 +846,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                 `}
                 disabled={saving}
               >
-                {saving ? "Speichere..." : "Speichern"}
+                {saving ? "Save..." : "Save"}
               </button>
             </article>
           </div>

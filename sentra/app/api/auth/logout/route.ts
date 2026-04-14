@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { forwardAuthRequest } from "@/utils/authProxy";
+import { clearLocalAuthCookies, forwardAuthRequest } from "@/utils/authProxy";
 
 export async function POST(req: NextRequest) {
-  return forwardAuthRequest(req, "/api/auth/logout");
+  const response = await forwardAuthRequest(req, "/api/auth/logout");
+  return clearLocalAuthCookies(response);
 }

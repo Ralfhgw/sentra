@@ -84,7 +84,7 @@ export default function RegisterClient() {
     }
 
     return (
-        <div className="w-full bg-gray-400 flex flex-col items-center justify-center">
+        <div className="w-full bg-[url('/background-02.png')] flex flex-col items-center justify-center">
             <div className="h-153 p-1 bg-gray-300 rounded-lg border border-gray-500">
                 <MoveableScrollAreaVertical className="sm:h-150 max-w-5xl rounded-lg shadow-2xl overflow-hidden bg-gray-800 grid grid-cols-1 md:grid-cols-2">
 

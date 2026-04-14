@@ -279,7 +279,7 @@ export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProp
     return (
         <div style={styles.grid}>
             <section style={styles.card}>
-                <h2 style={styles.cardTitle}>Sichtweite / Luftdruck</h2>
+                <h2 style={styles.cardTitle}>Visibility / Air pressure</h2>
                 <div style={styles.chartWrap}>
                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <ComposedChart data={chartData}  margin={CHART_MARGIN}>
@@ -387,14 +387,14 @@ export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProp
                                     const wmoText =
                                         typeof code === "number" ? ` | WMO ${code} (${describeWmo(code)})` : "";
 
-                                    return `Datum: ${datum} | Uhrzeit: ${uhrzeit}${wmoText}`;
+                                    return `Date: ${datum} | Time: ${uhrzeit}${wmoText}`;
                                 }}
                                 formatter={(value, _name, item) => {
                                     const num = typeof value === "number" ? value : Number(value);
                                     if (!Number.isFinite(num)) return ["-", String(_name)];
 
-                                    if (item?.dataKey === "visibility_km") return [`${num.toFixed(1)} km`, "Sichtweite"];
-                                    if (item?.dataKey === "surface_pressure") return [`${num.toFixed(1)} hPa`, "Luftdruck"];
+                                    if (item?.dataKey === "visibility_km") return [`${num.toFixed(1)} km`, "Visiblity"];
+                                    if (item?.dataKey === "surface_pressure") return [`${num.toFixed(1)} hPa`, "Air Pressure"];
                                     return [`${num.toFixed(1)}`, String(_name)];
                                 }}
                             />
@@ -403,7 +403,7 @@ export default function ChartAtmosphere({ data, dailyData }: ChartAtmosphereProp
                                 yAxisId="left"
                                 type="monotone"
                                 dataKey="visibility_km"
-                                name="Sichtweite"
+                                name="Visibility"
                                 stroke="#60A5FA"
                                 strokeWidth={2}
                                 dot={false}

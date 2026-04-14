@@ -133,7 +133,7 @@ export default function ChartWind({ data }: ChartWindProps) {
   return (
     <div style={styles.grid}>
       <section style={styles.card}>
-        <h2 style={styles.cardTitle}>Wind km/h und Richtung</h2>
+        <h2 style={styles.cardTitle}>Wind km/h and Direction</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <ComposedChart data={chartData} margin={CHART_MARGIN}>
@@ -232,12 +232,12 @@ export default function ChartWind({ data }: ChartWindProps) {
                     minute: "2-digit",
                     hour12: false,
                   });
-                  return `Datum: ${datum} | Uhrzeit: ${uhrzeit}`;
+                  return `Date: ${datum} | Time: ${uhrzeit}`;
                 }}
                 formatter={(value, name) => {
                   const num = typeof value === "number" ? value : Number(value);
                   if (!Number.isFinite(num)) return ["-", String(name)];
-                  if (name === "Windrichtung") return [`${num.toFixed(0)}°`, String(name)];
+                  if (name === "Direction") return [`${num.toFixed(0)}°`, String(name)];
                   return [`${num.toFixed(1)} km/h`, String(name)];
                 }}
               />
@@ -285,7 +285,7 @@ export default function ChartWind({ data }: ChartWindProps) {
                 yAxisId="left"
                 type="monotone"
                 dataKey="wind_gusts_10m"
-                name="Windböen"
+                name="Gusts"
                 stroke="#F59E0B"
                 strokeDasharray="5 3"
                 strokeWidth={1.8}
@@ -297,7 +297,7 @@ export default function ChartWind({ data }: ChartWindProps) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="wind_direction_10m"
-                name="Windrichtung"
+                name="Direction"
                 stroke="#A78BFA"
                 strokeWidth={1.6}
                 strokeDasharray="2 3"

@@ -139,6 +139,22 @@ export async function forwardAuthRequest(
   return response;
 }
 
+export function clearLocalAuthCookies(response: NextResponse) {
+  const base = getCookieBase();
+
+  response.cookies.set("accessToken", "", {
+    ...base,
+    maxAge: 0,
+  });
+
+  response.cookies.set("refreshToken", "", {
+    ...base,
+    maxAge: 0,
+  });
+
+  return response;
+}
+
 export async function forwardAuthRequestWithBody<T = unknown>(
   req: NextRequest,
   path: string

@@ -459,7 +459,8 @@ export default function NewsClient({
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full mx-auto overflow-hidden">
-      <div className="lg:w-[24%] w-full bg-gray-200 rounded-lg flex flex-col shrink-0">
+      {/* left Box */}
+      <div className="lg:w-[24%] w-full pb-4 bg-gray-800/80 rounded-r-lg flex flex-col shrink-0">
         <div className="mx-4 mt-4 rounded-lg border border-gray-300 bg-linear-to-b from-gray-100 to-gray-200 p-4 shadow-[4px_4px_0_0_rgba(156,163,175,1),4px_4px_10px_rgba(0,0,0,0.12)]">
           <div className="flex flex-wrap gap-2">
             {[
@@ -571,7 +572,7 @@ export default function NewsClient({
             </div>
           )}
 
-          <div className="mt-4 text-xs text-gray-600">
+          <div className="mt-3 text-xs text-gray-600">
             {filterMode === "all" &&
               (locationFilter === "all"
                 ? "All events are displayed."
@@ -590,7 +591,7 @@ export default function NewsClient({
           <div className="mt-2 text-xs font-semibold text-gray-500">
             {filteredEvents.length} Event{filteredEvents.length === 1 ? "" : "s"}
           </div>
-                  <div className="mt-10 px-4">
+                  <div className="mt-8 px-4">
           <button
             type="button"
             onClick={handleMeaningButtonClick}
@@ -610,9 +611,11 @@ export default function NewsClient({
           </button>
         </div>
         </div> 
-</div>
-      <MoveableScrollAreaVertical className="flex-1 bg-gray-200 rounded-lg text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
-        <h1 className="text-xl lg:text-2xl my-6 text-center font-extrabold text-gray-700 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
+      </div>
+
+      {/* Right Box */}
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-800/80 rounded-l-lg text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
+        <h1 className="text-xl lg:text-2xl my-6 text-center font-extrabold text-gray-300 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
           Events in {currentHeadlineTown}
         </h1>
 
@@ -728,6 +731,7 @@ export default function NewsClient({
         )}
       </MoveableScrollAreaVertical>
 
+      {/* Day Meaning PopUp Box */}
       {infoVisible && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4"

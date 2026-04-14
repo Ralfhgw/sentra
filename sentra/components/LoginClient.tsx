@@ -50,7 +50,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
   }
 
   return (
-    <div className="w-full h-full bg-gray-400 flex flex-col items-center justify-center">
+    <div className="w-full h-full bg-gray-400 bg-[url('/background-02.png')] bg-cover bg-center flex flex-col items-center justify-center">
       <div className="p-1 rounded-lg border bg-gray-300 border-gray-500">
         <div className="w-full max-w-3xl max-h-295 grid grid-cols-1 md:grid-cols-2 rounded-lg shadow-2xl overflow-hidden">
 

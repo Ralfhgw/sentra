@@ -195,7 +195,7 @@ export default function WeatherClient({
           setSensorValues(newSensorData);
         }
       } catch (error) {
-        console.error("Fehler beim Laden der Sensordaten:", error);
+        console.error("Error loading sensor data:", error);
       }
     }
 
@@ -312,7 +312,7 @@ export default function WeatherClient({
   const c_precipitation = getNumber(weatherDataCurrent, "precipitation");
   const c_cloudCover = getNumber(weatherDataCurrent, "cloud_cover");
   const c_surfacePressure = getNumber(weatherDataCurrent, "surface_pressure");
-  console.log("Aktuelle Wetterdaten (Current):", {
+  console.log("Current weather data:", {
     c_temperature_2m,
     c_isDay,
     c_windSpeed_10m,
@@ -335,7 +335,7 @@ export default function WeatherClient({
 
           <div>
             <div className="w-full">
-              <h1 className="bg-gray-300/40 py-4 rounded-xl text-xl font-bold text-center">Aktuelle Wetterdaten ({town})</h1>
+              <h1 className="bg-gray-300/40 py-4 rounded-xl text-xl font-bold text-center">Current weather data ({town})</h1>
             </div>
 
             <div className=" bg-gray-300/40 mt-4 p-2 rounded-xl flex flex-row gap-10 justify-center">
@@ -357,13 +357,13 @@ export default function WeatherClient({
                   <div className="bg-white/30 flex flex-col p-6 rounded-xl shadow-sm min-w-50">
                     <WeatherIcon code={c_weatherCode} isDay={c_isDay} size={75} />
                     <span className="text-gray-700 font-bold text-lg">
-                      {Math.round(c_cloudCover)}% Bewölkung
+                      {Math.round(c_cloudCover)}% Cloud cover
                     </span>
                     <span className="text-gray-700 font-bold text-lg">
-                      Höhe: {elevation} m ü. NN
+                      Height: {elevation} m a.s.l.
                     </span>
                     <span className="text-gray-700 font-bold text-lg">
-                      {Number(c_precipitation).toFixed(1)} mm Niederschlag
+                      {Number(c_precipitation).toFixed(1)} mm Precipitation
                     </span>
                   </div>
 
@@ -374,7 +374,7 @@ export default function WeatherClient({
                     style={{ backgroundColor: sensorValues.indoorStatus === "online" ? indoorSignalColor : undefined }}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-bold text-lg">Sensor Innen</h4>
+                      <h4 className="font-bold text-lg">Sensor Indoor</h4>
                       {sensorValues.indoorStatus === "offline" && (
                         <span className="text-red-600 font-black text-xs">OFFLINE</span>
                       )}
@@ -382,13 +382,13 @@ export default function WeatherClient({
 
                     {sensorValues.indoor ? (
                       <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
-                        <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
-                        {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
-                        <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
-                        <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                        <p><strong>Temperature:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.indoor.dew !== undefined && <p><strong>Dew point:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                        <p><strong>Humidity:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                        <p><strong>Pressure:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
                       </div>
                     ) : (
-                      <p>Warte auf Innensensor...</p>
+                      <p>Waiting for indoor sensor...</p>
                     )}
                   </div>
 
@@ -398,7 +398,7 @@ export default function WeatherClient({
                       }`}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-bold text-lg">Sensor Außen</h4>
+                      <h4 className="font-bold text-lg">Sensor Outdoor</h4>
                       {sensorValues.outdoorStatus === "offline" && (
                         <span className="text-red-600 font-black text-xs">OFFLINE</span>
                       )}
@@ -406,13 +406,13 @@ export default function WeatherClient({
 
                     {sensorValues.outdoor ? (
                       <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
-                        <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
-                        {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
-                        <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
-                        <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                        <p><strong>Temperature:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.outdoor.dew !== undefined && <p><strong>Dew point:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                        <p><strong>Humidity:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                        <p><strong>Pressure:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
                       </div>
                     ) : (
-                      <p>Warte auf Außensensor...</p>
+                      <p>Waiting for outdoor sensor...</p>
                     )}
                   </div>
                 </div>
@@ -430,7 +430,7 @@ export default function WeatherClient({
               <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.35em] text-white/70">
-                    Wetterdaten
+                    Weather data
                   </p>
 
                   <div className="mt-3 flex items-end gap-2">
@@ -441,7 +441,7 @@ export default function WeatherClient({
                   </div>
 
                   <p className="mt-2 text-sm text-white/80">
-                    Gefühlte Temperatur {c_apparentTemperature.toFixed(1)} °C
+                    Apparent temperature {c_apparentTemperature.toFixed(1)} °C
                   </p>
                 </div>
 
@@ -454,11 +454,11 @@ export default function WeatherClient({
                 <div className="rounded-2xl bg-black/20 p-3 ring-1 ring-white/10">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Wind</p>
                   <p className="mt-2 text-2xl font-bold">{Math.round(c_windSpeed_10m)} km/h</p>
-                  <p className="text-sm text-white/70">Böen {Math.round(c_windGusts_10m)} km/h</p>
+                  <p className="text-sm text-white/70">Gusts {Math.round(c_windGusts_10m)} km/h</p>
                 </div>
 
                 <div className="rounded-2xl bg-black/20 p-3 ring-1 ring-white/10">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Richtung</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Direction</p>
                   <p className="mt-2 text-2xl font-bold">{Math.round(c_windDirection_10m)}°</p>
                   <p className="text-sm text-white/70">
                     {["N", "NO", "O", "SO", "S", "SW", "W", "NW", "N"][Math.round(c_windDirection_10m / 45)]}
@@ -466,23 +466,23 @@ export default function WeatherClient({
                 </div>
 
                 <div className="rounded-2xl bg-black/20 p-3 ring-1 ring-white/10">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Himmel</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Sky</p>
                   <p className="mt-2 text-2xl font-bold">{Math.round(c_cloudCover)}%</p>
-                  <p className="text-sm text-white/70">Bewölkung</p>
+                  <p className="text-sm text-white/70">Cloud cover</p>
                 </div>
 
                 <div className="rounded-2xl bg-black/20 p-3 ring-1 ring-white/10">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Regen</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Rain</p>
                   <p className="mt-2 text-2xl font-bold">{Number(c_precipitation).toFixed(1)} mm</p>
-                  <p className="text-sm text-white/70">aktuell</p>
+                  <p className="text-sm text-white/70">current</p>
                 </div>
               </div>
 
               <div className="relative mt-4 flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Standort</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Location</p>
                   <p className="mt-1 text-sm font-medium text-white/85">
-                    Höhe: {elevation ?? "-"} m ü. NN
+                    Elevation: {elevation ?? "-"} m a.s.l.
                   </p>
                 </div>
 
@@ -500,7 +500,7 @@ export default function WeatherClient({
               style={{ backgroundColor: sensorValues.indoorStatus === "online" ? indoorSignalColor : undefined }}
             >
               <div className="flex justify-between items-center mb-2">
-                <h4 className="font-bold text-lg">Sensor Innen</h4>
+                <h4 className="font-bold text-lg">Sensor Indoor</h4>
                 {sensorValues.indoorStatus === "offline" && (
                   <span className="text-red-600 font-black text-xs">OFFLINE</span>
                 )}
@@ -508,13 +508,13 @@ export default function WeatherClient({
 
               {sensorValues.indoor ? (
                 <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
-                  <p><strong>Temperatur:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
-                  {sensorValues.indoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
-                  <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
-                  <p><strong>Luftdruck:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                  <p><strong>Temperature:</strong> {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                  {sensorValues.indoor.dew !== undefined && <p><strong>Dew point:</strong> {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                  <p><strong>Humidity:</strong> {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                  <p><strong>Pressure:</strong> {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
                 </div>
               ) : (
-                <p>Warte auf Innensensor...</p>
+                <p>Waiting for indoor sensor...</p>
               )}
             </div>
             {/* Anzeige Outdoor */}
@@ -523,7 +523,7 @@ export default function WeatherClient({
                 }`}
             >
               <div className="flex justify-between items-center mb-2">
-                <h4 className="font-bold text-lg">Sensor Außen</h4>
+                <h4 className="font-bold text-lg">Sensor Outdoor</h4>
                 {sensorValues.outdoorStatus === "offline" && (
                   <span className="text-red-600 font-black text-xs">OFFLINE</span>
                 )}
@@ -531,20 +531,20 @@ export default function WeatherClient({
 
               {sensorValues.outdoor ? (
                 <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
-                  <p><strong>Temperatur:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
-                  {sensorValues.outdoor.dew !== undefined && <p><strong>Taupunkt:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
-                  <p><strong>Luftfeuchtigkeit:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
-                  <p><strong>Luftdruck:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                  <p><strong>Temperature:</strong> {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                  {sensorValues.outdoor.dew !== undefined && <p><strong>Dew point:</strong> {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                  <p><strong>Humidity:</strong> {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                  <p><strong>Pressure:</strong> {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
                 </div>
               ) : (
-                <p>Warte auf Außensensor...</p>
+                <p>Waiting for outdoor sensor...</p>
               )}
             </div>
           </div>
         </div>
 
         <div className="bg-gray-300 border m-1 rounded-lg">
-          <h3 className="text-lg font-bold my-2 text-center">Tabellen Wetterprognose </h3>
+          <h3 className="text-lg font-bold my-2 text-center">Tables - daily weather forecast </h3>
         </div>
         { /* Daily Weather Date Table */}
         <MoveableScrollAreaHorizontal className="bg-gray-400 rounded-xl flex flex-row gap-1 p-2 w-full overflow-x-auto no-scrollbar">
@@ -588,39 +588,39 @@ export default function WeatherClient({
                 {/* Temperature */}
                 <div className="p-2 flex flex-col items-center justify-center">
                   <span className="text-xs text-gray-500">min / max</span>
-                  <span className="text-xs text-gray-500">Temperatur °C</span>
+                  <span className="text-xs text-gray-500">Temperature °C</span>
                   <span className="text-sm font-bold font-sans">{(item.temperature_2m_min ?? 0).toFixed(1)} / {(item.temperature_2m_max ?? 0).toFixed(1)}</span>
                 </div>
                 {/* gef. Temperature */}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">gef. Temp. °C</span>
+                  <span className="text-xs text-gray-500">app. Temp. °C</span>
                   <span className="text-sm font-bold font-sans">{(item.apparent_temperature_min ?? 0).toFixed(1)} / {(item.apparent_temperature_max ?? 0).toFixed(1)}</span>
                 </div>
                 {/* Wind km/h Direction */}
                 <div className="p-2 flex flex-col items-center justify-center">
                   <span className="text-xs text-gray-500">Wind km/h</span>
-                  <span className="text-xs text-gray-500">Richtung °</span>
+                  <span className="text-xs text-gray-500">Direction °</span>
                   <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed_10m_max ?? 0)} / {Math.round(item.wind_gusts_10m_max ?? 0)}</span>
                   <span className="text-sm font-bold font-sans">{Math.round(item.wind_direction_10m_dominant ?? 0)} </span>
                 </div>
                 {/* Rain */}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">Regen mm / h</span>
+                  <span className="text-xs text-gray-500">Rain mm / h</span>
                   <span className="text-sm font-bold font-sans">{(item.precipitation_sum ?? 0).toFixed(1)} / {item.precipitation_hours ?? 0}</span>
                 </div>
                 {/*Strahling*/}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">Strahlung (MJ/m²) / ET0 (mm)</span>
+                  <span className="text-xs text-gray-500">Radiation (MJ/m²) / ET0 (mm)</span>
                   <span className="text-sm font-bold font-sans">{(item.shortwave_radiation_sum ?? 0).toFixed(1)} / {(item.et0_fao_evapotranspiration ?? 0).toFixed(1)}</span>
                 </div>
                 {/* Sonnenaufgang */}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">Sonnenaufgang</span>
+                  <span className="text-xs text-gray-500">Sunrise</span>
                   <span className="text-sm font-bold font-sans">{item.sunrise ? new Date(item.sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</span>
                 </div>
                 {/* Sonnenuntergang */}
                 <div className="p-2 flex flex-col items-center justify-center">
-                  <span className="text-xs text-gray-500">Sonnenuntergang</span>
+                  <span className="text-xs text-gray-500">Sunset</span>
                   <span className="text-sm font-bold font-sans">{item.sunset ? new Date(item.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</span>
                 </div>
               </div>
@@ -637,7 +637,7 @@ export default function WeatherClient({
               onClick={() => setShowHourlyTables((prev) => !prev)}
               aria-expanded={showHourlyTables}
             >
-              <span>Stündliche Wetterprognose</span>
+              <span>Tables - hourly weather forecast</span>
               <span className="text-sm font-normal text-gray-600">
                 {showHourlyTables ? "👁️" : "👁️"}
               </span>
@@ -679,32 +679,32 @@ export default function WeatherClient({
                         </div>
                         {/* Temperature */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
+                          <span className="text-xs text-gray-500">Temp. °C / Apparent °C</span>
                           <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
                         </div>
                         {/* Feuchte */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
+                          <span className="text-xs text-gray-500">Humidity % / VPD kPa</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.relative_humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
                         </div>
                         {/* Niederschlag */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Niederschlag</span>
+                          <span className="text-xs text-gray-500">Precipitation</span>
                           <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
                         </div>
                         {/* Wind Speed / Direction */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Wind km/h Richtung</span>
+                          <span className="text-xs text-gray-500">Wind km/h Direction</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
                         </div>
                         {/* Sichtweite */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Sichtweite km</span>
+                          <span className="text-xs text-gray-500">Visibility km</span>
                           <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
                         </div>
                         {/* Luftdruck */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Luftdruck kPa</span>
+                          <span className="text-xs text-gray-500">Pressure kPa</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
                         </div>
                         {/* Evapotrans */}
@@ -750,32 +750,32 @@ export default function WeatherClient({
                         </div>
                         {/* Temperature */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Temp. °C / Gefühlte °C</span>
+                          <span className="text-xs text-gray-500">Temp. °C / Apparent °C</span>
                           <span className="text-sm font-bold font-sans">{(item.temperature ?? 0).toFixed(1)} / {(item.apparent_temperature ?? 0).toFixed(1)}</span>
                         </div>
                         {/* Feuchte */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Feuchte % / VPD kPa</span>
+                          <span className="text-xs text-gray-500">Humidity % / VPD kPa</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.humidity ?? 0)} / {Math.round(item.vapour_pressure_deficit ?? 0)}</span>
                         </div>
                         {/* Niederschlag */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Niederschlag</span>
+                          <span className="text-xs text-gray-500">Precipitation</span>
                           <span className="text-sm font-bold font-sans">{(item.precipitation_probability ?? 0).toFixed(1)} % / {(item.precipitation ?? 0).toFixed(1)} mm</span>
                         </div>
                         {/* Wind Speed / Direction */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Wind km/h Richtung</span>
+                          <span className="text-xs text-gray-500">Wind km/h Direction</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.wind_speed ?? 0)} / {Math.round(item.wind_gusts ?? 0)} / {Math.round(item.wind_direction ?? 0)}°</span>
                         </div>
                         {/* Sichtweite */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Sichtweite km</span>
+                          <span className="text-xs text-gray-500">Visibility km</span>
                           <span className="text-sm font-bold font-sans">{((item.visibility ?? 0) / 1000).toFixed(1)}</span>
                         </div>
                         {/* Luftdruck */}
                         <div className="h-12 p-2 flex flex-col items-center justify-center">
-                          <span className="text-xs text-gray-500">Luftdruck kPa</span>
+                          <span className="text-xs text-gray-500">Pressure kPa</span>
                           <span className="text-sm font-bold font-sans">{Math.round(item.surface_pressure ?? 0)}</span>
                         </div>
                         {/* Evapotrans */}
@@ -792,13 +792,13 @@ export default function WeatherClient({
         </div>
 
         <div className="bg-gray-300 border m-1 rounded-lg">
-          <h3 className="text-lg font-bold my-3 text-center">Wetterprognosen Charts</h3>
+          <h3 className="text-lg font-bold my-3 text-center">Charts - weather forecast</h3>
         </div>
 
         {/* Temperature Chart */}
         <div className="p-4 space-y-3">
           <p>
-            Dieser Chart vergleicht die objektiv messbare Lufttemperatur mit der gefühlten Temperatur. Letztere integriert Faktoren wie Windchill und Luftfeuchtigkeit, um die tatsächliche thermische Belastung auf den Organismus abzubilden. Die Gegenüberstellung verdeutlicht die energetische Differenz zwischen Messwert und subjektivem Wärmeempfinden.
+            This chart compares the objectively measurable air temperature with the perceived temperature. The latter incorporates factors such as wind chill and humidity to reflect the actual thermal stress on the organism. The comparison illustrates the energetic difference between the measured value and the subjective perception of heat.
           </p>
         </div>
         <ChartTemperature data={filteredHourlyData} />
@@ -806,7 +806,7 @@ export default function WeatherClient({
         {/* Wind Chart */}
         <div className="p-4 space-y-3">
           <p>
-            Dieser Chart visualisiert die kinetische Energie der Atmosphäre. Während die Windgeschwindigkeit die stetige Luftmassenbewegung darstellt, erfassen die Böengeschwindigkeiten kurzzeitige Turbulenzen und Druckunterschiede. Zusammen mit der Windrichtung ermöglicht dies eine präzise Bewertung der aerodynamischen Lasten und Strömungsdynamik.
+            This chart visualizes the kinetic energy of the atmosphere. While wind speed represents the steady movement of air masses, gust speeds capture short-term turbulence and pressure differentials. Together with wind direction, this allows for a precise assessment of aerodynamic loads and flow dynamics.
           </p>
         </div>
         <ChartWind data={filteredHourlyData} />
@@ -814,7 +814,7 @@ export default function WeatherClient({
         {/* Precipitation Chart */}
         <div className="p-4 space-y-3">
           <p>
-            Dieser Chart visualisiert die hydrologische Dynamik der Atmosphäre. Die Balken geben die absolute Niederschlagsmenge in Millimetern an, während die Niederschlagswahrscheinlichkeit die statistische Sicherheit des Ereignisses basierend auf vergleichbaren Wetterlagen beschreibt. Ergänzt wird dies durch die relative Luftfeuchtigkeit, welche den aktuellen Wasserdampfgehalt im Verhältnis zur maximalen Sättigungskapazität der Luft bei gegebener Temperatur darstellt. Das Zusammenspiel dieser Parameter ermöglicht eine präzise Beurteilung von Kondensationsprozessen und der allgemeinen Feuchtebilanz.
+            This chart visualizes the hydrological dynamics of the atmosphere. The bars indicate the absolute amount of precipitation in millimeters, while the probability of precipitation describes the statistical confidence of the event based on comparable weather patterns. This is supplemented by the relative humidity, which represents the current water vapor content in relation to the maximum saturation capacity of the air at a given temperature. The interplay of these parameters allows for a precise assessment of condensation processes and the overall moisture balance
           </p>
         </div>
         <ChartPrecipitation data={filteredHourlyData} />
@@ -822,7 +822,7 @@ export default function WeatherClient({
         {/* Transpiration Chart */}
         <div className="p-4 space-y-3">
           <p>
-            Dieser Chart visualisiert das Zusammenspiel von Wasserbedarf und Pflanzenstress. Während die <strong>ET0 (FAO-Methode)</strong> den maximalen theoretischen Wasserbedarf unter aktuellen Wetterbedingungen angibt, zeigt die <strong>Evapotranspiration</strong> die real modellierte Verdunstung von Boden und Pflanzen. Die Differenz dieser Werte verdeutlicht das aktuelle Defizit. Ergänzend misst der <strong>VPD (Vapour Pressure Deficit)</strong> die Saugkraft der Luft: Je höher dieser Wert in kPa, desto trockener ist die Luft und desto größer der Stress für die Pflanze. Die farbige <strong>Heatmap</strong> im Hintergrund dient dabei als direktes Signal - von optimalen Bedingungen (grün) bis hin zu hoher Stressbelastung (rot). Steigt der VPD stark an und bleibt die reale Verdunstung hinter der ET0 zurück, ist dies ein deutliches Zeichen für Trockenstress und notwendige Bewässerungsmaßnahmen.
+            This chart visualizes the interplay between water requirements and plant stress. While the <strong>ET0 (FAO method)</strong> indicates the maximum theoretical water demand under current weather conditions, the <strong>evapotranspiration</strong> shows the actual modeled evaporation from soil and plants. The difference between these values illustrates the current deficit. Additionally, the <strong>VPD (Vapour Pressure Deficit)</strong> measures the atmospheric demand: the higher this value in kPa, the drier the air and the greater the stress on the plant. The colored <strong>heatmap</strong> in the background serves as a direct signal – ranging from optimal conditions (green) to high stress (red). If the VPD rises sharply and actual evapotranspiration falls behind the ET0, it is a clear sign of drought stress and the need for irrigation.
           </p>
         </div>
         <ChartTranspiration data={filteredHourlyData} />
@@ -830,7 +830,7 @@ export default function WeatherClient({
         {/* Athmosphere Chart */}
         <div className="p-4 space-y-3">
           <p>
-            Dieser Chart stellt die optische Durchlässigkeit der Atmosphäre der großräumigen Druckverteilung gegenüber. Die Sichtweite gibt die maximale Distanz an, bei der dunkle Objekte vor hellem Hintergrund erkennbar sind - sie ist ein direktes Maß für die Partikelkonzentration und Luftreinheit. Der Luftdruck hingegen visualisiert das Gewicht der Luftsäule über dem Standort. Signifikante Druckänderungen dienen als Indikator für herannahende Frontensysteme, während die Sichtweite Aufschluss über die aktuelle Schichtung und Stabilität der unteren Luftmassen gibt.
+            This chart contrasts the optical clarity of the atmosphere with the large-scale pressure distribution. Visibility indicates the maximum distance at which dark objects can be identified against a bright background – it is a direct measure of particle concentration and air purity. Barometric pressure, on the other hand, visualizes the weight of the air column above the location. Significant pressure changes serve as an indicator of approaching frontal systems, while visibility provides insight into the current stratification and stability of the lower air masses.
           </p>
         </div>
         <ChartAtmosphere data={filteredHourlyData} dailyData={weatherDataDaily} />

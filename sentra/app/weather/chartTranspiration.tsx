@@ -228,7 +228,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
   return (
     <div style={styles.grid}>
       <section style={styles.card}>
-        <h2 style={styles.cardTitle}>Evapotranspiration, ET0 FAO und VPD</h2>
+        <h2 style={styles.cardTitle}>Evapotranspiration, ET0 FAO and VPD</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <ComposedChart data={chartData} margin={CHART_MARGIN}>
@@ -356,7 +356,7 @@ export default function ChartTranspiration({ data }: ChartTranspirationProps) {
                     ? ` | VPD: ${point.vpd_stress_label}`
                     : "";
 
-                  return `Datum: ${datum} | Uhrzeit: ${uhrzeit}${stressText}`;
+                  return `Date: ${datum} | Time: ${uhrzeit}${stressText}`;
                 }}
                 formatter={(value, name) => {
                   const num = typeof value === "number" ? value : Number(value);

@@ -8,6 +8,8 @@ import type {
   LiveTalkClientProps,
   LiveTalkProducerSummary,
   LiveTalkRole,
+  LiveTalkRoomResponse,
+  LiveTalkRoomsResponse,
   LiveTalkRoomSummary,
   LiveTalkTokenResponse,
   RemoteFeed,
@@ -196,8 +198,11 @@ export default function LiveTalkClient({
 
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [sessionKeyInfo, setSessionKeyInfo] = useState<LiveTalkRoomSummary | null>(null);
+  const [availableSessionKeys, setAvailableSessionKeys] = useState<LiveTalkRoomSummary[]>([]);
   const [socketId, setSocketId] = useState("");
   const [statusText, setStatusText] = useState("Not yet connected.");
+  const [isLoadingSessionKeys, setIsLoadingSessionKeys] = useState(false);
+  const [deletingSessionKeyId, setDeletingSessionKeyId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
@@ -237,7 +242,8 @@ export default function LiveTalkClient({
       return left.kind === "video" ? -1 : 1;
     });
 
-  const canConnect = Boolean(userNameInput.trim() && sessionCodeInput.trim());
+  const normalizedSessionCode = sessionCodeInput.trim().toUpperCase();
+  const canConnect = Boolean(userNameInput.trim() && normalizedSessionCode);
 
   const syncRemoteFeeds = () => {
     setRemoteFeeds(
@@ -344,6 +350,43 @@ export default function LiveTalkClient({
   useEffect(() => {
     return () => {
       cleanupSession();
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadOwnSessionKeys = async () => {
+      setIsLoadingSessionKeys(true);
+
+      try {
+        const response = await fetch("/api/livetalk/rooms", { cache: "no-store" });
+        const data = (await response.json()) as LiveTalkRoomsResponse | { error: string };
+
+        if (!response.ok || "error" in data) {
+          throw new Error(
+            "error" in data ? data.error : "Session-Keys konnten nicht geladen werden."
+          );
+        }
+
+        if (!ignore) {
+          setAvailableSessionKeys(data.rooms);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setErrorMessage(error instanceof Error ? error.message : "Session-Keys konnten nicht geladen werden.");
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingSessionKeys(false);
+        }
+      }
+    };
+
+    void loadOwnSessionKeys();
+
+    return () => {
+      ignore = true;
     };
   }, []);
 
@@ -766,6 +809,13 @@ export default function LiveTalkClient({
     }
   };
 
+  const selectSessionKey = (room: LiveTalkRoomSummary) => {
+    setSessionKeyInfo(room);
+    setSessionCodeInput(room.code);
+    setErrorMessage("");
+    setStatusText(`Session-Key ${room.code} was selected.`);
+  };
+
   const generateSessionKey = async () => {
     setErrorMessage("");
     setIsGeneratingCode(true);
@@ -778,7 +828,7 @@ export default function LiveTalkClient({
       });
 
       const data = (await response.json()) as
-        | { room: LiveTalkRoomSummary }
+        | LiveTalkRoomResponse
         | { error: string };
 
       if (!response.ok || "error" in data) {
@@ -786,6 +836,10 @@ export default function LiveTalkClient({
           "error" in data ? data.error : "Session-Key konnte nicht erstellt werden."
         );
       }
+
+      setAvailableSessionKeys((current) =>
+        [data.room, ...current.filter((room) => room.id !== data.room.id)].slice(0, 3)
+      );
 
       setSessionKeyInfo(data.room);
       setSessionCodeInput(data.room.code);
@@ -796,6 +850,43 @@ export default function LiveTalkClient({
       );
     } finally {
       setIsGeneratingCode(false);
+    }
+  };
+
+  const deleteSessionKey = async (room: LiveTalkRoomSummary) => {
+    setErrorMessage("");
+    setDeletingSessionKeyId(room.id);
+
+    try {
+      const response = await fetch(
+        `/api/livetalk/rooms?id=${encodeURIComponent(room.id)}`,
+        { method: "DELETE" }
+      );
+
+      const data = (await response.json()) as LiveTalkRoomResponse | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error(
+          "error" in data ? data.error : "Session-Key konnte nicht gelöscht werden."
+        );
+      }
+
+      setAvailableSessionKeys((current) =>
+        current.filter((entry) => entry.id !== room.id)
+      );
+
+      if (sessionKeyInfo?.id === room.id || normalizedSessionCode === room.code) {
+        setSessionKeyInfo(null);
+        setSessionCodeInput("");
+      }
+
+      setStatusText(`Session-Key ${room.code} wurde gelöscht.`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Session-Key konnte nicht gelöscht werden."
+      );
+    } finally {
+      setDeletingSessionKeyId(null);
     }
   };
 
@@ -815,7 +906,7 @@ export default function LiveTalkClient({
     }
 
     if (!sessionCodeInput.trim()) {
-      setErrorMessage("Bitte einen Session-Key eingeben oder erzeugen.");
+      setErrorMessage("Bitte einen Session-Key eingeben oder auswählen.");
       return;
     }
 
@@ -828,7 +919,7 @@ export default function LiveTalkClient({
       const response = await fetch(url, { cache: "no-store" });
       console.log("[LiveTalk] rooms response status", response.status);
 
-      const data = await response.json();
+      const data = (await response.json()) as LiveTalkRoomResponse | { error: string };
       console.log("[LiveTalk] rooms response body", data);
 
       if (!response.ok || "error" in data) {
@@ -952,34 +1043,42 @@ export default function LiveTalkClient({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="p-1 bg-gray-200 flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden text-gray-800 lg:p-0 no-scrollbar shadow-md cursor-grab select-none">
+    <div className="bg-blue-300 p-1 flex min-w-0 flex-col gap-1 mx-auto h-full w-full overflow-hidden lg:flex-row">
+      <MoveableScrollAreaVertical className="box-border flex-1 min-w-0 w-full h-full min-h-0 overflow-x-hidden text-gray-800 no-scrollbar shadow-md cursor-grab select-none lg:h-[calc(100dvh-100px)] lg:p-0">
 
         {/* Header */}
-        <section className="mb-1 bg-gray-300 rounded-lg shadow-sm">
+        <section
+          className="mb-1 bg-gray-300 rounded-lg shadow-sm bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/background-header-02.png')" }}
+        >
           <h1 className="p-3 text-3xl font-bold text-slate-900">LiveTalk</h1>
           <p className="ml-3 w-100 text-slate-600">
-            Enter a username, generate a session key if needed, and then connect to the session.
+            Enter a username, select or create a session key, and then connect to the session.
           </p>
-          <p className="ml-3 mt-3 pb-3 text-slate-600">{statusText}</p>
-          {errorMessage && (
-            <p className="mt-3 font-medium text-red-700">{errorMessage}</p>
+          {errorMessage ? (
+            <p className="ml-3 mt-3 pb-3 font-medium text-red-700">{errorMessage}</p>
+          ) : (
+            <p className="ml-3 mt-3 pb-3 font-medium text-slate-700">{statusText}</p>
           )}
         </section>
 
+
+        <div className="h-screen rounded-lg bg-cover bg-top bg-no-repeat"
+          style={{ backgroundImage: "url('/background-01.png')" }}
+        >
         {!activeSession && (
-          <section className="mt-1 p-1 flex flex-row gap-2 flex-wrap rounded-lg shadow-sm">
+          <section className="mt-1 flex flex-wrap items-start gap-2 rounded-lg p-1">
             {/* left Box */}
-            <div className="p-2 w-screen max-w-102 h-60 bg-blue-200 rounded-lg flex flex-col justify-between">
-              <div className="p-2 bg-gray-200 rounded-lg ">
+            <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
+              <div className="p-2 bg-gray-100/50 rounded-lg flex h-full flex-col">
                 {/* Username Input */}
                 <label className="flex flex-col">
                   <span className="font-semibold text-slate-900">Username</span>
                   <input
                     value={userNameInput}
                     onChange={(event) => setUserNameInput(event.target.value)}
-                    placeholder="z.B. Anna"
-                    className="p-2 rounded-lg border border-gray-300"
+                    placeholder="e.g. Anna"
+                    className="p-2 bg-gray-200 rounded-lg text-sm border border-gray-300"
                   />
                 </label>
 
@@ -990,26 +1089,38 @@ export default function LiveTalkClient({
                     value={sessionCodeInput}
                     onChange={(event) => setSessionCodeInput(event.target.value.toUpperCase())}
                     placeholder="z.B. A1B2C3D4E5"
-                    className="p-2 rounded-lg border border-gray-300 uppercase tracking-[0.08em]"
+                    className="p-2 rounded-lg text-sm bg-gray-200 border border-gray-400 uppercase tracking-[0.08em]"
                   />
                 </label>
 
-                {sessionKeyInfo && sessionKeyInfo.code === sessionCodeInput.trim().toUpperCase() && (
-                  <div className="my-2 p-2 rounded-lg border border-gray-200 bg-green-100 text-slate-600 text-sm">
+                {sessionKeyInfo && sessionKeyInfo.code === normalizedSessionCode && (
+                  <div className="my-2 p-2 rounded-lg border border-gray-400 text-slate-600 text-sm">
                     <div className="font-semibold text-slate-800">Session-Key {sessionKeyInfo.code}</div>
                     {sessionKeyInfo.expiresAt && (
                       <div className="mt-1">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</div>
                     )}
                   </div>
                 )}
+
+                <div className="mt-auto pt-3">
+                  <button
+                    type="button"
+                    onClick={() => void connectWithSessionKey()}
+                    disabled={!canConnect || isJoining}
+                    className="h-12 w-full py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition disabled:cursor-not-allowed disabled:bg-gray-200"
+                  >
+                    {isJoining ? "Connecting..." : "Connect"}
+                  </button>
+                </div>
+
               </div>
             </div>
 
             {/* Right Box */}
-            <div className="p-2 w-screen max-w-102 h-60 bg-blue-200 rounded-lg ">
-              <div className="h-full p-5 bg-gray-200 rounded-lg flex flex-col items-center justify-between">
+            <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
+              <div className="flex h-full flex-col items-center gap-3 rounded-lg bg-gray-100/50 p-4">
                 {/* Checkbox */}
-                <label className="w-100 ml-16 flex gap-3 text-slate-700">
+                <label className="flex gap-3 text-slate-700">
                   <input
                     type="checkbox"
                     checked={receiveOnly}
@@ -1018,24 +1129,61 @@ export default function LiveTalkClient({
                   Session w/o microphone and camera
                 </label>
 
-                {/* Buttons */}
                 <button
                   type="button"
                   onClick={() => void generateSessionKey()}
                   disabled={isGeneratingCode}
-                  className="h-12 w-70 py-3 rounded-lg bg-gray-500  hover:bg-gray-400 text-black font-semibold transition"
+                  className="h-12 w-full py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
                 >
                   {isGeneratingCode ? "Creating Session-Key..." : "Create Session-Key"}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => void connectWithSessionKey()}
-                  disabled={!canConnect || isJoining}
-                  className="h-12 w-70 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
-                >
-                  {isJoining ? "Connecting..." : "Connect with Session-Key"}
-                </button>
+                <div className="w-full border flex-1 rounded-lg bg-gray-100 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold text-slate-900">Your Session-Keys:</span>
+                  </div>
+
+
+                  <div className="mt-3 flex flex-col gap-2">
+                    {isLoadingSessionKeys ? (
+                      <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
+                        Loading Session-Keys...
+                      </div>
+                    ) : availableSessionKeys.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
+                        No saved Session-Keys available yet.
+                      </div>
+                    ) : (
+                      availableSessionKeys.map((room) => {
+                        const isSelected = room.code === normalizedSessionCode;
+                        const isDeleting = deletingSessionKeyId === room.id;
+
+                        return (
+                          <button
+                            key={room.id}
+                            type="button"
+                            onClick={() => selectSessionKey(room)}
+                            onDoubleClick={() => void deleteSessionKey(room)}
+                            disabled={isDeleting}
+                            className={`w-full flex flex-row gap-4 rounded-lg border p-1 text-left transition ${isSelected
+                              ? "border-gray-500 bg-gray-100"
+                              : "border-slate-300 bg-white hover:bg-slate-50"
+                              } ${isDeleting ? "cursor-wait opacity-60" : ""}`}
+                          >
+                            <div className="font-semibold text-sm uppercase tracking-[0.08em] text-slate-900">
+                              {room.code}
+                            </div>
+                            {room.expiresAt && (
+                              <div className="mt-1 text-xs text-slate-600">
+                                Valid until: {formatDateTime(room.expiresAt)}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1046,16 +1194,16 @@ export default function LiveTalkClient({
             <div className="flex flex-col flex-wrap gap-1">
               <div className="flex flex-row flex-wrap gap-1">
 
-                {/* Active - Left Box */}
-                <section className="p-2 w-screen max-w-106 h-60 bg-red-200 rounded-lg shadow-sm">
-                  <div className="h-full bg-gray-200 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between gap-4">
+                 {/* Active - Left Box */}
+                <section className="p-2 w-screen max-w-106 h-50 bg-blue-300/10 rounded-lg shadow-sm backdrop-blur-sm">
+                  <div className="h-full bg-gray-100/50 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between gap-4">
                     <div>
                       <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
-                      <p className="mt-2 text-slate-600">
+                      <p className="mt-2 text-sm text-slate-600">
                         Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
                       </p>
-                      <p className="mt-2 text-slate-500">
-                        Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "Teilnehmer mit Feed"}
+                      <p className="mt-2 text-sm text-slate-500">
+                        Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "User with Feed"}
                       </p>
                     </div>
 
@@ -1096,14 +1244,14 @@ export default function LiveTalkClient({
 
                 {/* Active - Right Box */}
                 {sessionKeyInfo && (
-                  <section className="p-2 w-screen max-w-106 h-60 bg-red-200 rounded-lg shadow-sm">
-                    <div className="h-full p-2 bg-gray-200 rounded-lg flex flex-col justify-between">
+                  <section className="p-2 w-screen max-w-106 h-50 bg-blue-200/10 rounded-lg shadow-sm backdrop-blur-sm">
+                    <div className="h-full p-2 bg-gray-100/50 rounded-lg flex flex-col justify-between">
                       <div className="flex flex-col ">
 
                         <h3 className="text-xl font-semibold text-slate-900">Session-Key</h3>
-                        <div className="mt-3 text-2xl font-extrabold tracking-[0.12em] text-slate-900">{sessionKeyInfo.code}</div>
+                        <div className="mt-3 text-sm font-extrabold tracking-[0.12em] text-slate-900">{sessionKeyInfo.code}</div>
                         {sessionKeyInfo.expiresAt && (
-                          <p className="mt-3 text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
+                          <p className="mt-3 text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
                         )}
                       </div>
 
@@ -1111,7 +1259,7 @@ export default function LiveTalkClient({
                         <button
                           type="button"
                           onClick={() => void copySessionKey()}
-                          className="h-12 w-70 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
+                          className="h-12 w-full py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
                         >
                           Copy Session-Key
                         </button>
@@ -1121,15 +1269,15 @@ export default function LiveTalkClient({
                 )}
               </div>
 
-              <div className="flex flex-row flex-wrap gap-1">
+              <div className="flex min-w-0 flex-wrap items-start gap-1">
                 {/* Active Video Area */}
-                <section className="max-w-106 rounded-lg flex flex-row flex-wrap">
+                <section className="flex w-full min-w-0 max-w-106 flex-wrap rounded-lg">
                   {!activeSession.receiveOnly && (
-                    <div className="h-82 p-1 w-screen max-w-120 bg-red-200 rounded-lg shadow-sm flex justify-center items-center">
+                    <div className="flex h-82 w-full min-w-0 max-w-120 items-center justify-center rounded-lg bg-blue-200/10 p-1 shadow-sm">
                       {hasLocalVideo ? (
                         <VideoTile title={`Ich (${activeSession.userName})`} stream={localStream} muted />
                       ) : (
-                        <div className="h-full w-full p-4 rounded-lg bg-gray-200 flex flex-col shadow-sm justify-center items-center">
+                        <div className="h-full w-full p-4 rounded-lg bg-gray-100/50 flex flex-col shadow-sm justify-center items-center">
                           <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
                           <p className="mt-2 text-slate-700">
                             Once your camera and microphone are enabled, your image will be displayed here.
@@ -1141,9 +1289,9 @@ export default function LiveTalkClient({
                 </section>
 
                 {/* Remote Video Area */}
-                <section>
+                <section className="w-full min-w-0 max-w-106">
                   {remoteVideoFeeds.length > 0 ? (
-                    <div className="h-82 p-2 w-screen max-w-120 bg-red-200 rounded-lg">
+                    <div className="h-82 w-full min-w-0 rounded-lg bg-blue-200/10 p-2 backdrop-blur-sm">
                       <div className="grid gap-4">
                         {remoteVideoFeeds.map((feed) => (
                           <VideoTile
@@ -1155,10 +1303,10 @@ export default function LiveTalkClient({
                       </div>
                     </div>
                   ) : (
-                    <div className="h-82 p-2 w-screen max-w-120 bg-red-200 rounded-lg">
-                      <div className="h-full p-4 rounded-lg bg-gray-200 flex flex-col shadow-sm justify-center items-center">
-                        <h3 className="text-lg font-semibold text-slate-900">Warte auf weitere Teilnehmende</h3>
-                        <p className="mt-2">
+                    <div className="h-82 w-full min-w-0 rounded-lg bg-blue-200/10 p-2 backdrop-blur-sm">
+                      <div className="h-full p-4 rounded-lg bg-gray-100/50 flex flex-col shadow-sm justify-center items-center">
+                        <h3 className="text-lg font-semibold text-slate-900">Waiting for more participants</h3>
+                        <p className="text-sm mt-2">
                           As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
                         </p>
                       </div>
@@ -1169,13 +1317,13 @@ export default function LiveTalkClient({
             </div>
 
             {/* ChatBox */}
-            <section className="max-w-120 mt-1 mb-6 p-2 bg-red-200 rounded-lg shadow-sm">
-              <div className="p-2 bg-gray-200 rounded-lg">
+            <section className="mt-1 mb-6 w-full min-w-0 max-w-213 rounded-lg bg-blue-200/10 p-2 shadow-sm backdrop-blur-sm">
+              <div className="p-2 bg-gray-100/50 rounded-lg">
                 <h3 className="text-xl font-semibold text-slate-900">Chat</h3>
 
                 <div className="mt-4 p-4 grid max-h-80 bg-gray-300 gap-3 overflow-y-auto rounded-lg border border-slate-200">
                   {messages.length === 0 ? (
-                    <p className="text-slate-500">No news yet in this session.</p>
+                    <p className="text-sm text-slate-500">No news yet in this session.</p>
                   ) : (
                     messages.map((message) => (
                       <div key={message.id}>
@@ -1197,7 +1345,7 @@ export default function LiveTalkClient({
                       }
                     }}
                     placeholder="Write Comment"
-                    className="p-2 bg-white flex-1 rounded-lg"
+                    className="p-2 text-sm bg-white flex-1 rounded-lg"
                   />
                   <button
                     type="button"
@@ -1210,9 +1358,9 @@ export default function LiveTalkClient({
                 </div>
               </div>
             </section>
-
           </>
         )}
+        </div>
       </MoveableScrollAreaVertical>
     </div>
   );

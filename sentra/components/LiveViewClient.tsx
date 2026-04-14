@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { WebcamClientProps } from "@/types/typesLiveView"
 import WebcamItem from "./LiveViewItem";
 import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
+import Image from "next/image";
 
 // Layout Grid Configuration
 const LAYOUT_CONFIGS = {
@@ -516,6 +517,7 @@ export default function LiveViewClient({
     await swapSlots(dragFrom, toSlotId);
   };
 
+const isDesktop = viewportWidth >= 768;
 
   return (
 
@@ -681,8 +683,21 @@ export default function LiveViewClient({
       )}
 
       {/* Grid Layout Button */}
-      <div className="w-full md:w-23 flex flex-col border-b md:border-b-0 md:border-r border-orange-300 bg-gray-600 ">
-        <div className="relative">
+<div className="relative w-full md:w-23 flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-blue-300 bg-gray-600">
+  <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+  <div className="relative w-full h-full">
+    <Image
+      src={isDesktop ? "/background-header-03.png" : "/background-header-02.png"}
+      alt=""
+      priority
+      fill
+      sizes="(min-width: 768px) 25vw, 100vw"
+      className="object-cover object-right opacity-60"
+    />
+  </div>
+  </div>
+
+  <div className="relative z-10">
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="md:w-23 md:m-0 p-2 m-2 bg-gray-800 rounded border border-gray-300 text-xs text-gray-100 transition flex items-center gap-3"

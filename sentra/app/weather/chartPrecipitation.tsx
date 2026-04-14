@@ -97,9 +97,9 @@ const LEGEND_COLORS: Record<string, string> = {
 };
 
 const LEGEND_LABELS: Record<string, string> = {
-  precipitation: "Niederschlag",
-  precipitation_probability: "Niederschlagswahrscheinlichkeit",
-  humidity: "Luftfeuchtigkeit",
+  precipitation: "Precipitation",
+  precipitation_probability: "Probability of precipitation",
+  humidity: "Humidity",
 };
 
 const legendFormatter: LegendFormatter = (value, entry) => {
@@ -154,7 +154,7 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
   return (
     <div style={styles.grid}>
       <section style={styles.card}>
-        <h2 style={styles.cardTitle}>Niederschlag und Luftfeuchtigkeit</h2>
+        <h2 style={styles.cardTitle}>Precipitation and Humidity</h2>
         <div style={styles.chartWrap}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <ComposedChart data={chartData} margin={CHART_MARGIN} barCategoryGap="24%">
@@ -262,15 +262,15 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                     minute: "2-digit",
                     hour12: false,
                   });
-                  return `Datum: ${datum} | Uhrzeit: ${uhrzeit}`;
+                  return `Date: ${datum} | Time: ${uhrzeit}`;
                 }}
                 formatter={(value, name) => {
                   const num = typeof value === "number" ? value : Number(value);
                   if (!Number.isFinite(num)) return ["-", String(name)];
-                  if (name === "Niederschlagswahrscheinlichkeit" || name === "Luftfeuchtigkeit") {
+                  if (name === "Probability of precipitation" || name === "Humidity") {
                     return [`${num.toFixed(0)} %`, String(name)];
                   }
-                  if (name === "Niederschlag") {
+                  if (name === "Precipitation") {
                     return [`${num.toFixed(1)} mm`, String(name)];
                   }
                   return [num.toFixed(1), String(name)];
@@ -280,7 +280,7 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
               <Bar
                 yAxisId="left"
                 dataKey="precipitation"
-                name="Niederschlag"
+                name="Precipitation"
                 fill="url(#precipBarGradient)"
                 barSize={10}
                 radius={[6, 6, 0, 0]}
@@ -291,7 +291,7 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="precipitation_probability"
-                name="Niederschlagswahrscheinlichkeit"
+                name="Probability of precipitation"
                 stroke="url(#probLineGradient)"
                 strokeWidth={2.4}
                 dot={false}
@@ -305,7 +305,7 @@ export default function ChartPrecipitation({ data }: ChartPrecipitationProps) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="humidity"
-                name="Luftfeuchtigkeit"
+                name="Humidity"
                 stroke="url(#humidityLineGradient)"
                 strokeWidth={2.3}
                 dot={false}

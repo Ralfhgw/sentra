@@ -15,7 +15,6 @@ import type {
   RemoteFeed,
 } from "@/types/typesLiveTalk";
 import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVertical"
-//TODO Call Aufbau ohne Mikrofon/Kamera darf nicht zum Abbruch führen
 
 type ActiveSession = {
   userName: string;
@@ -174,7 +173,7 @@ function VideoTile({
   }, [stream, muted]);
 
   return (
-    <div className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-300 bg-blue-200/5 p-4 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-slate-700">{title}</h3>
       <video
         ref={videoRef}
@@ -1066,300 +1065,291 @@ export default function LiveTalkClient({
         <div className="h-screen rounded-lg bg-cover bg-top bg-no-repeat"
           style={{ backgroundImage: "url('/background-01.png')" }}
         >
-        {!activeSession && (
-          <section className="mt-1 flex flex-wrap items-start gap-2 rounded-lg p-1">
-            {/* left Box */}
-            <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
-              <div className="p-2 bg-gray-100/50 rounded-lg flex h-full flex-col">
-                {/* Username Input */}
-                <label className="flex flex-col">
-                  <span className="font-semibold text-slate-900">Username</span>
-                  <input
-                    value={userNameInput}
-                    onChange={(event) => setUserNameInput(event.target.value)}
-                    placeholder="e.g. Anna"
-                    className="p-2 bg-gray-200 rounded-lg text-sm border border-gray-300"
-                  />
-                </label>
+          {!activeSession && (
+            <section className="mt-1 flex flex-wrap items-start gap-2 rounded-lg p-1">
+              {/* left Box */}
+              <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
+                <div className="p-2 bg-gray-100/50 rounded-lg flex h-full flex-col">
+                  {/* Username Input */}
+                  <label className="flex flex-col">
+                    <span className="font-semibold text-slate-900">Username</span>
+                    <input
+                      value={userNameInput}
+                      onChange={(event) => setUserNameInput(event.target.value)}
+                      placeholder="e.g. Anna"
+                      className="p-2 bg-gray-200 rounded-lg text-sm border border-gray-300"
+                    />
+                  </label>
 
-                {/* Session-Key */}
-                <label className="flex flex-col">
-                  <span className="font-semibold text-slate-900">Session-Key</span>
-                  <input
-                    value={sessionCodeInput}
-                    onChange={(event) => setSessionCodeInput(event.target.value.toUpperCase())}
-                    placeholder="z.B. A1B2C3D4E5"
-                    className="p-2 rounded-lg text-sm bg-gray-200 border border-gray-400 uppercase tracking-[0.08em]"
-                  />
-                </label>
+                  {/* Session-Key */}
+                  <label className="flex flex-col">
+                    <span className="font-semibold text-slate-900">Session-Key</span>
+                    <input
+                      value={sessionCodeInput}
+                      onChange={(event) => setSessionCodeInput(event.target.value.toUpperCase())}
+                      placeholder="z.B. A1B2C3D4E5"
+                      className="p-2 rounded-lg text-sm bg-gray-200 border border-gray-400 uppercase tracking-[0.08em]"
+                    />
+                  </label>
 
-                {sessionKeyInfo && sessionKeyInfo.code === normalizedSessionCode && (
-                  <div className="my-2 p-2 rounded-lg border border-gray-400 text-slate-600 text-sm">
-                    <div className="font-semibold text-slate-800">Session-Key {sessionKeyInfo.code}</div>
-                    {sessionKeyInfo.expiresAt && (
-                      <div className="mt-1">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</div>
-                    )}
-                  </div>
-                )}
-
-                <div className="mt-auto pt-3">
-                  <button
-                    type="button"
-                    onClick={() => void connectWithSessionKey()}
-                    disabled={!canConnect || isJoining}
-                    className="h-12 w-full py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition disabled:cursor-not-allowed disabled:bg-gray-200"
-                  >
-                    {isJoining ? "Connecting..." : "Connect"}
-                  </button>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Right Box */}
-            <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
-              <div className="flex h-full flex-col items-center gap-3 rounded-lg bg-gray-100/50 p-4">
-                {/* Checkbox */}
-                <label className="flex gap-3 text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={receiveOnly}
-                    onChange={(event) => setReceiveOnly(event.target.checked)}
-                  />
-                  Session w/o microphone and camera
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => void generateSessionKey()}
-                  disabled={isGeneratingCode}
-                  className="h-12 w-full py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
-                >
-                  {isGeneratingCode ? "Creating Session-Key..." : "Create Session-Key"}
-                </button>
-
-                <div className="w-full border flex-1 rounded-lg bg-gray-100 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-slate-900">Your Session-Keys:</span>
-                  </div>
-
-
-                  <div className="mt-3 flex flex-col gap-2">
-                    {isLoadingSessionKeys ? (
-                      <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
-                        Loading Session-Keys...
-                      </div>
-                    ) : availableSessionKeys.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
-                        No saved Session-Keys available yet.
-                      </div>
-                    ) : (
-                      availableSessionKeys.map((room) => {
-                        const isSelected = room.code === normalizedSessionCode;
-                        const isDeleting = deletingSessionKeyId === room.id;
-
-                        return (
-                          <button
-                            key={room.id}
-                            type="button"
-                            onClick={() => selectSessionKey(room)}
-                            onDoubleClick={() => void deleteSessionKey(room)}
-                            disabled={isDeleting}
-                            className={`w-full flex flex-row gap-4 rounded-lg border p-1 text-left transition ${isSelected
-                              ? "border-gray-500 bg-gray-100"
-                              : "border-slate-300 bg-white hover:bg-slate-50"
-                              } ${isDeleting ? "cursor-wait opacity-60" : ""}`}
-                          >
-                            <div className="font-semibold text-sm uppercase tracking-[0.08em] text-slate-900">
-                              {room.code}
-                            </div>
-                            {room.expiresAt && (
-                              <div className="mt-1 text-xs text-slate-600">
-                                Valid until: {formatDateTime(room.expiresAt)}
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {activeSession && (
-          <>
-            <div className="flex flex-col flex-wrap gap-1">
-              <div className="flex flex-row flex-wrap gap-1">
-
-                 {/* Active - Left Box */}
-                <section className="p-2 w-screen max-w-106 h-50 bg-blue-300/10 rounded-lg shadow-sm backdrop-blur-sm">
-                  <div className="h-full bg-gray-100/50 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
-                      <p className="mt-2 text-sm text-slate-600">
-                        Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
-                      </p>
-                      <p className="mt-2 text-sm text-slate-500">
-                        Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "User with Feed"}
-                      </p>
-                    </div>
-
-                    <div className="p-2 rounded-lg bg-gray-300 w-full flex flex-row justify-between">
-                      <button
-                        type="button"
-                        onClick={leaveSession}
-                        className="h-12 w-60 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
-                      >
-                        Leave Session
-                      </button>
-
-                      {/* Active Session Field */}
-                      {!activeSession.receiveOnly && (
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={() => void toggleAudio()}
-                            disabled={!localStream}
-                            className="px-4 py-3 rounded-lg border border-slate-300 bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          >
-                            {audioEnabled ? "🎤" : "🎤"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => void toggleVideo()}
-                            disabled={!localStream}
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          >
-                            {videoEnabled ? "📷" : "📷"}
-                          </button>
-                        </div>
+                  {sessionKeyInfo && sessionKeyInfo.code === normalizedSessionCode && (
+                    <div className="my-2 p-2 rounded-lg border border-gray-400 text-slate-600 text-sm">
+                      <div className="font-semibold text-slate-800">Session-Key {sessionKeyInfo.code}</div>
+                      {sessionKeyInfo.expiresAt && (
+                        <div className="mt-1">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</div>
                       )}
                     </div>
+                  )}
+
+                  <div className="mt-auto pt-3">
+                    <button
+                      type="button"
+                      onClick={() => void connectWithSessionKey()}
+                      disabled={!canConnect || isJoining}
+                      className="h-12 w-full py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition disabled:cursor-not-allowed disabled:bg-gray-200"
+                    >
+                      {isJoining ? "Connecting..." : "Connect"}
+                    </button>
                   </div>
-                </section>
 
-                {/* Active - Right Box */}
-                {sessionKeyInfo && (
-                  <section className="p-2 w-screen max-w-106 h-50 bg-blue-200/10 rounded-lg shadow-sm backdrop-blur-sm">
-                    <div className="h-full p-2 bg-gray-100/50 rounded-lg flex flex-col justify-between">
-                      <div className="flex flex-col ">
-
-                        <h3 className="text-xl font-semibold text-slate-900">Session-Key</h3>
-                        <div className="mt-3 text-sm font-extrabold tracking-[0.12em] text-slate-900">{sessionKeyInfo.code}</div>
-                        {sessionKeyInfo.expiresAt && (
-                          <p className="mt-3 text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
-                        )}
-                      </div>
-
-                      <div className="p-2 flex justify-center rounded-lg bg-gray-300">
-                        <button
-                          type="button"
-                          onClick={() => void copySessionKey()}
-                          className="h-12 w-full py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
-                        >
-                          Copy Session-Key
-                        </button>
-                      </div>
-                    </div>
-                  </section>
-                )}
+                </div>
               </div>
 
-              <div className="flex min-w-0 flex-wrap items-start gap-1">
-                {/* Active Video Area */}
-                <section className="flex w-full min-w-0 max-w-106 flex-wrap rounded-lg">
-                  {!activeSession.receiveOnly && (
-                    <div className="flex h-82 w-full min-w-0 max-w-120 items-center justify-center rounded-lg bg-blue-200/10 p-1 shadow-sm">
-                      {hasLocalVideo ? (
-                        <VideoTile title={`Ich (${activeSession.userName})`} stream={localStream} muted />
+              {/* Right Box */}
+              <div className="w-full min-w-0 max-w-102 h-75 rounded-lg bg-blue-300/10 p-2 backdrop-blur-sm">
+                <div className="flex h-full flex-col items-center gap-3 rounded-lg bg-gray-100/50 p-4">
+                  {/* Checkbox */}
+                  <label className="flex gap-3 text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={receiveOnly}
+                      onChange={(event) => setReceiveOnly(event.target.checked)}
+                    />
+                    Session w/o microphone and camera
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => void generateSessionKey()}
+                    disabled={isGeneratingCode}
+                    className="h-12 w-full py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                  >
+                    {isGeneratingCode ? "Creating Session-Key..." : "Create Session-Key"}
+                  </button>
+
+                  <div className="w-full border flex-1 rounded-lg bg-gray-100 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-slate-900">Your Session-Keys:</span>
+                    </div>
+
+
+                    <div className="mt-3 flex flex-col gap-2">
+                      {isLoadingSessionKeys ? (
+                        <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
+                          Loading Session-Keys...
+                        </div>
+                      ) : availableSessionKeys.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-slate-400 bg-white p-1 text-sm text-slate-500">
+                          No saved Session-Keys available yet.
+                        </div>
                       ) : (
-                        <div className="h-full w-full p-4 rounded-lg bg-gray-100/50 flex flex-col shadow-sm justify-center items-center">
-                          <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
-                          <p className="mt-2 text-slate-700">
-                            Once your camera and microphone are enabled, your image will be displayed here.
-                          </p>
-                        </div>
+                        availableSessionKeys.map((room) => {
+                          const isSelected = room.code === normalizedSessionCode;
+                          const isDeleting = deletingSessionKeyId === room.id;
+
+                          return (
+                            <button
+                              key={room.id}
+                              type="button"
+                              onClick={() => selectSessionKey(room)}
+                              onDoubleClick={() => void deleteSessionKey(room)}
+                              disabled={isDeleting}
+                              className={`w-full flex flex-row gap-4 rounded-lg border p-1 text-left transition ${isSelected
+                                ? "border-gray-500 bg-gray-100"
+                                : "border-slate-300 bg-white hover:bg-slate-50"
+                                } ${isDeleting ? "cursor-wait opacity-60" : ""}`}
+                            >
+                              <div className="font-semibold text-sm uppercase tracking-[0.08em] text-slate-900">
+                                {room.code}
+                              </div>
+                              {room.expiresAt && (
+                                <div className="mt-1 text-xs text-slate-600">
+                                  Valid until: {formatDateTime(room.expiresAt)}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })
                       )}
                     </div>
-                  )}
-                </section>
-
-                {/* Remote Video Area */}
-                <section className="w-full min-w-0 max-w-106">
-                  {remoteVideoFeeds.length > 0 ? (
-                    <div className="h-82 w-full min-w-0 rounded-lg bg-blue-200/10 p-2 backdrop-blur-sm">
-                      <div className="grid gap-4">
-                        {remoteVideoFeeds.map((feed) => (
-                          <VideoTile
-                            key={feed.peerId}
-                            title={feed.displayName}
-                            stream={feed.stream}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-82 w-full min-w-0 rounded-lg bg-blue-200/10 p-2 backdrop-blur-sm">
-                      <div className="h-full p-4 rounded-lg bg-gray-100/50 flex flex-col shadow-sm justify-center items-center">
-                        <h3 className="text-lg font-semibold text-slate-900">Waiting for more participants</h3>
-                        <p className="text-sm mt-2">
-                          As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              </div>
-            </div>
-
-            {/* ChatBox */}
-            <section className="mt-1 mb-6 w-full min-w-0 max-w-213 rounded-lg bg-blue-200/10 p-2 shadow-sm backdrop-blur-sm">
-              <div className="p-2 bg-gray-100/50 rounded-lg">
-                <h3 className="text-xl font-semibold text-slate-900">Chat</h3>
-
-                <div className="mt-4 p-4 grid max-h-80 bg-gray-300 gap-3 overflow-y-auto rounded-lg border border-slate-200">
-                  {messages.length === 0 ? (
-                    <p className="text-sm text-slate-500">No news yet in this session.</p>
-                  ) : (
-                    messages.map((message) => (
-                      <div key={message.id}>
-                        <p className="text-sm font-semibold text-slate-800">{message.displayName}</p>
-                        <p className="text-sm text-slate-700">{message.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <input
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        void sendChatMessage();
-                      }
-                    }}
-                    placeholder="Write Comment"
-                    className="p-2 text-sm bg-white flex-1 rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void sendChatMessage()}
-                    disabled={!chatInput.trim()}
-                    className="h-12 px-4 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
-                  >
-                    Send
-                  </button>
+                  </div>
                 </div>
               </div>
             </section>
-          </>
-        )}
+          )}
+
+          {activeSession && (
+            <>
+              <div className="flex flex-row flex-wrap gap-1">
+
+                  {/* Active - SessionInfo */}
+                  <section className="p-2 w-screen max-w-106 h-75 flex flex-col bg-blue-300/5 rounded-lg shadow-sm backdrop-blur-sm">
+                    <div className="h-full bg-green-900/10 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between">
+                      <div>
+                        <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
+                        <p className="mt-2 text-sm text-slate-600">
+                          Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "User with Feed"}
+                        </p>
+                      </div>
+
+                        <div>
+                          {sessionKeyInfo && (
+                            <div className="h-full mt-2 rounded-lg flex flex-col justify-between">
+                              {sessionKeyInfo.expiresAt && (
+                               <p className="text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => void copySessionKey()}
+                                className="h-12 w-full mt-2 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                              >
+                                Copy Session-Key
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-4 flex flex-row gap-7">
+                        {/* Button - Leave Session */}
+                          <button
+                          type="button"
+                          onClick={leaveSession}
+                          className="h-12 w-60 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
+                        >
+                          Leave Session
+                          </button>
+
+                        {/* Active Session Field */}
+                        {!activeSession.receiveOnly && (
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => void toggleAudio()}
+                              disabled={!localStream}
+                              className="px-4 py-3 rounded-lg border border-slate-300 bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {audioEnabled ? "🎤" : "🎤"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => void toggleVideo()}
+                              disabled={!localStream}
+                              className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {videoEnabled ? "📷" : "📷"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+
+                  </section>
+
+                  {/* Active Video Area */}
+                  <section className="flex w-full min-w-0 max-w-106 h-75 flex-wrap rounded-lg">
+                    {!activeSession.receiveOnly && (
+                      <div className="flex h-75 w-full min-w-0 max-w-120 items-center justify-center rounded-lg bg-blue-200/5 p-1 shadow-sm">
+                        {hasLocalVideo ? (
+                          <VideoTile title={`Local (${activeSession.userName})`} stream={localStream} muted />
+                        ) : (
+                          <div className="h-full w-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
+                            <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
+                            <p className="mt-2 text-slate-700">
+                              Once your camera and microphone are enabled, your image will be displayed here.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Remote Video Area */}
+                  <section className="w-full min-w-0 max-w-106 h-75">
+                    {remoteVideoFeeds.length > 0 ? (
+                      <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
+                        <div className="grid gap-4">
+                          {remoteVideoFeeds.map((feed) => (
+                            <VideoTile
+                              key={feed.peerId}
+                              title={feed.displayName}
+                              stream={feed.stream}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
+                        <div className="h-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
+                          <h3 className="text-lg font-semibold text-slate-900">Waiting for more participants</h3>
+                          <p className="text-sm mt-2">
+                            As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+              </div>
+
+              {/* ChatBox */}
+              <section className="mt-1 mb-6 w-full rounded-lg bg-blue-200/5 p-2 shadow-sm backdrop-blur-sm">
+                <div className="p-2 bg-gray-100/10 rounded-lg">
+                  <h3 className="text-xl font-semibold text-slate-900">Chat</h3>
+
+                  <div className="mt-4 p-4 grid max-h-80 bg-gray-300 gap-3 overflow-y-auto rounded-lg border border-slate-200">
+                    {messages.length === 0 ? (
+                      <p className="text-sm text-slate-500">No news yet in this session.</p>
+                    ) : (
+                      messages.map((message) => (
+                        <div key={message.id}>
+                          <p className="text-sm font-semibold text-slate-800">{message.displayName}</p>
+                          <p className="text-sm text-slate-700">{message.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <input
+                      value={chatInput}
+                      onChange={(event) => setChatInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void sendChatMessage();
+                        }
+                      }}
+                      placeholder="Write Comment"
+                      className="p-2 text-sm bg-white flex-1 rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void sendChatMessage()}
+                      disabled={!chatInput.trim()}
+                      className="h-12 px-4 py-3 rounded-lg bg-orange-500 hover:bg-orange-400 text-black font-semibold transition"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </MoveableScrollAreaVertical>
     </div>

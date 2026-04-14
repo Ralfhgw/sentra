@@ -398,33 +398,36 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
       <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-blue-400 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
-        <header
-          className="rounded-lg p-6 shadow-lg backdrop-blur-sm bg-no-repeat bg-right bg-contain"
-          style={{
-            backgroundColor: "#e3ebf4",
-            backgroundImage: "url('/background-header-02.png')",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right center",
-            backgroundSize: "contain",
-          }}
-        >
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Settings</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Manage location, event sources, and sensor calibration in one overview.
-          </p>
-        </header>
+        <div className="mx-auto w-full max-w-640">
 
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            handleSave();
-          }}
-        >
+          <header
+            className="rounded-lg p-6 shadow-lg backdrop-blur-sm bg-no-repeat bg-right bg-contain"
+            style={{
+              backgroundColor: "#e3ebf4",
+              backgroundImage: "url('/background-header-02.png')",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right center",
+              backgroundSize: "contain",
+            }}
+          >
+            <h1 className="text-3xl font-bold tracking-tight text-slate-800">Settings</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Manage location, event sources, and sensor calibration in one overview.
+            </p>
+          </header>
 
-          <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
-            {/* MapSelector */}
-            <div className="w-100 h-100 rounded-lg overflow-hidden border border-slate-200 bg-blue-200/50 shadow-sm">
-              <MapSelector
+          <form
+            className="w-full"
+            onSubmit={e => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
+
+            <div className="my-2 flex flex-wrap gap-2 items-stretch">
+              {/* MapSelector */}
+              <div className="flex-1 basis-105 min-w-100 max-w-175 h-100 rounded-lg overflow-hidden border border-slate-200 bg-blue-200/50 shadow-sm">
+               <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -451,414 +454,412 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   }
                 }}
               />
-            </div>
-            {/* Location Details */}
-            <article className="w-100 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50  shadow-md">
-              <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
-              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Lat</dt>
-                  <dd className="font-medium text-slate-500">{typeof settings.lat === "number" ? settings.lat.toFixed(6) : "0.000000"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Lon</dt>
-                  <dd className="font-medium text-slate-500">{typeof settings.lon === "number" ? settings.lon.toFixed(6) : "0.000000"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Town</dt>
-                  <dd className="font-medium text-slate-500">{settings.town || "Unbekannt"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">County</dt>
-                  <dd className="font-medium text-slate-500">{settings.county || "Unbekannt"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">State</dt>
-                  <dd className="font-medium text-slate-500">{settings.state || "Unbekannt"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Country</dt>
-                  <dd className="font-medium text-slate-500">{settings.country || "Unbekannt"}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Country Code</dt>
-                  <dd className="font-medium text-slate-500">{settings.country_code || "Unbekannt"}</dd>
-                </div>
-              </dl>
-            </article>
-
-            {/* Settings */}
-            <article className="w-100 h-100 flex flex-col gap-2 rounded-lg border border-slate-200 bg-blue-200/50 p-4 shadow-md">
-              <div className="bg-gray-200 rounded-lg">
-                <h2 className=" text-center text-lg font-semibold  text-slate-800">Settings</h2>
               </div>
-
-              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-4">
-                <div className="bg-gray-200 rounded-lg p-3">
-                  <dt className="text-slate-800">EVT</dt>
-                  <dd className="font-medium text-slate-500">{String(userSettings.evt) || "Unbekannt"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">WEA</dt>
-                  <dd className="font-medium text-slate-500">{String(userSettings.wea) || "Unbekannt"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">MTX</dt>
-                  <dd className="font-medium text-slate-500">{String(userSettings.mtx) || "Unbekannt"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">RTC</dt>
-                  <dd className="font-medium text-slate-500">{String(userSettings.rtc) || "Unbekannt"}</dd>
-                </div>
-              </dl>
-              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Sensor Indoor</dt>
-                  <dd className="font-medium text-slate-500">{String(settings.s_indoor) || "Unbekannt"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Sensor Outdoor</dt>
-                  <dd className="font-medium text-slate-500">{String(settings.s_outdoor) || "Unbekannt"}</dd>
-                </div>
-              </dl>
-              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Temperatur Offset</dt>
-                  <dd className="font-medium text-slate-500">{typeof settings.s_cal_temp === "number" ? settings.s_cal_temp.toFixed(2) : "-"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Feuchte Offset</dt>
-                  <dd className="font-medium text-slate-500">{typeof settings.s_cal_humidity === "number" ? settings.s_cal_humidity.toFixed(2) : "-"}</dd>
-                </div>
-
-                <div className="rounded-lg bg-gray-200 p-3">
-                  <dt className="text-slate-800">Druck Offset</dt>
-                  <dd className="font-medium text-slate-500">{typeof settings.s_cal_pressure === "number" ? settings.s_cal_pressure.toFixed(2) : "-"}</dd>
-                </div>
-              </dl>
-            </article>
-
-            {/* Event-URLs */}
-            <article className="w-100 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
-              <h2 className="bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Event-URLs</h2>
-
-              <div className="my-2 p-2 w-full bg-gray-200 rounded-lg flex flex-row items-center justify-between ">
-                <button
-                  type="button"
-                  className="px-2 py-1 w-full rounded-lg border border-gray-300 bg-gray-100 text-center text-sm transition hover:bg-gray-50"
-                  onClick={() =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      event_refresh_interval: getNextEventRefreshInterval(
-                        prev.event_refresh_interval
-                      ),
-                    }))
-                  }
-                  title="Klicken, um zwischen Taeglich, Woechentlich und Monatlich zu wechseln"
-                >
-                  <span>
-                    Refresh für die Standard-Events: {getEventRefreshIntervalLabel(settings.event_refresh_interval)}
-                  </span>
-                </button>
-              </div>
-
-              <div className="w-full p-2  bg-gray-200 rounded-lg">
-                <div className="bg-gray-300 p-2 rounded-lg flex flex-col gap-2 ">
-                  <div>
-                    <input
-                      type="url"
-                      className="px-2 py-1 w-full bg-gray-100 rounded-lg border text-sm border-gray-300"
-                      placeholder="https://website-of-events.com/"
-                      value={urlInput}
-                      onChange={e => setUrlInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") handleAddUrl(); }}
-                    />
+              {/* Location Details */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
+                <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
+                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Lat</dt>
+                    <dd className="font-medium text-slate-500">{typeof settings.lat === "number" ? settings.lat.toFixed(6) : "0.000000"}</dd>
                   </div>
-                  <div className="flex justify-end">
-
-                    <div className="flex justify-center">
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center px-3 py-1 bg-amber-600 text-white rounded-lg shadow-sm font-medium hover:bg-amber-700 active:scale-95 transition transform focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        onClick={handleAddUrl}
-                        disabled={!urlInput.trim()}
-                      >
-                        Add
-                      </button>
-                    </div>
-
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Lon</dt>
+                    <dd className="font-medium text-slate-500">{typeof settings.lon === "number" ? settings.lon.toFixed(6) : "0.000000"}</dd>
                   </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Town</dt>
+                    <dd className="font-medium text-slate-500">{settings.town || "Unbekannt"}</dd>
+                  </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">County</dt>
+                    <dd className="font-medium text-slate-500">{settings.county || "Unbekannt"}</dd>
+                  </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">State</dt>
+                    <dd className="font-medium text-slate-500">{settings.state || "Unbekannt"}</dd>
+                  </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Country</dt>
+                    <dd className="font-medium text-slate-500">{settings.country || "Unbekannt"}</dd>
+                  </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Country Code</dt>
+                    <dd className="font-medium text-slate-500">{settings.country_code || "Unbekannt"}</dd>
+                  </div>
+                </dl>
+              </article>
+
+              {/* Settings */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 flex flex-col gap-2 rounded-lg border border-slate-200 bg-blue-200/50 p-4 shadow-md">
+                <div className="bg-gray-200 rounded-lg">
+                  <h2 className=" text-center text-lg font-semibold  text-slate-800">Settings</h2>
                 </div>
-              </div>
-              <label className="text.sm">Event URLs:</label>
-              <ul>
-                {Array.isArray(settings.event_urls) && settings.event_urls.length > 0
-                  ? settings.event_urls.map((entry, idx) => (
-                    <li
-                      key={idx}
-                      className={`${getEventRefreshIntervalClasses(entry.refreshInterval)} mb-2 rounded-lg px-3 py-1 text-sm transition cursor-pointer`}
-                      title={`${getEventRefreshIntervalLabel(entry.refreshInterval)} - Klick zum Wechseln, Doppelklick zum Loeschen`}
-                      onClick={() =>
-                        handleUrlRefreshChange(
-                          entry.url,
-                          getNextEventRefreshInterval(entry.refreshInterval)
-                        )
-                      }
-                      onDoubleClick={() => handleRemoveUrl(entry.url)}
-                    >
-                      <div className="break-all">
-                        {entry.url}
-                      </div>
-                    </li>
-                  ))
-                  : <li className="text-sm">Keine Event-URLs</li>
-                }
-              </ul>
-            </article>
 
-            {/* Sensors */}
-            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50 p-4 shadow-md">
-              <div className="flex flex-row justify-between gap-2">
-                <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={settings.s_indoor}
-                    onChange={e =>
-                      setSettings(prev => ({
-                        ...prev,
-                        s_indoor: e.target.checked
-                      }))
-                    }
-                  />
-                  Sensor Indoor active
-                </label>
-
-                <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={settings.s_outdoor}
-                    onChange={e =>
-                      setSettings(prev => ({
-                        ...prev,
-                        s_outdoor: e.target.checked
-                      }))
-                    }
-                  />
-                  Sensor Outdoor active
-                </label>
-              </div>
-
-              {/* Anzeige Indoor */}
-              {settings.s_indoor && (
-                <div
-                  className={`w-full rounded-lg shadow-sm transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-gray-200 border-transparent"
-                    }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-sm">Sensor Indoor</p>
-                    {sensorValues.indoorStatus === "offline" && (
-                      <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
-                    )}
+                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-4">
+                  <div className="bg-gray-200 rounded-lg p-3">
+                    <dt className="text-slate-800">EVT</dt>
+                    <dd className="font-medium text-slate-500">{String(userSettings.evt) || "Unbekannt"}</dd>
                   </div>
 
-                  {sensorValues.indoor ? (
-                    <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
-                      <p className="text-sm">Temperature: {sensorValues.indoor.temp?.toFixed(1)} °C</p>
-                      {sensorValues.indoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
-                      <p className="text-sm">Humidity: {sensorValues.indoor.hum?.toFixed(1)} %</p>
-                      <p className="text-sm">Air Pressure: {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm">Waiting for Indoor Sensor...</p>
-                  )}
-                </div>
-              )}
-
-              {/* Anzeige Outdoor */}
-              {settings.s_outdoor && (
-                <div
-                  className={` w-full rounded-lg shadow-sm transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-gray-200 border-transparent"
-                    }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-sm">Sensor Outdoor</h4>
-                    {sensorValues.outdoorStatus === "offline" && (
-                      <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
-                    )}
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">WEA</dt>
+                    <dd className="font-medium text-slate-500">{String(userSettings.wea) || "Unbekannt"}</dd>
                   </div>
 
-                  {sensorValues.outdoor ? (
-                    <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
-                      <p className="text-sm">Temperature: {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
-                      {sensorValues.outdoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
-                      <p className="text-sm">Humidity: {sensorValues.outdoor.hum?.toFixed(1)} %</p>
-                      <p className="text-sm">Air Pressure: {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm">Waiting for Outdoor Sensor...</p>
-                  )}
-                </div>
-              )}
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">MTX</dt>
+                    <dd className="font-medium text-slate-500">{String(userSettings.mtx) || "Unbekannt"}</dd>
+                  </div>
 
-              <div className="p-1 bg-gray-200 rounded-lg">
-                <p className="text-sm">Note that for offset calculation, both sensors must be online and in the same environment.</p>
-              </div>
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">RTC</dt>
+                    <dd className="font-medium text-slate-500">{String(userSettings.rtc) || "Unbekannt"}</dd>
+                  </div>
+                </dl>
+                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Sensor Indoor</dt>
+                    <dd className="font-medium text-slate-500">{String(settings.s_indoor) || "Unbekannt"}</dd>
+                  </div>
 
-              {/* Button Calculate Offset */}
-              {settings.s_outdoor && settings.s_indoor && (
-                <div className="flex flex-col items-center">
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Sensor Outdoor</dt>
+                    <dd className="font-medium text-slate-500">{String(settings.s_outdoor) || "Unbekannt"}</dd>
+                  </div>
+                </dl>
+                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Temperatur Offset</dt>
+                    <dd className="font-medium text-slate-500">{typeof settings.s_cal_temp === "number" ? settings.s_cal_temp.toFixed(2) : "-"}</dd>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Feuchte Offset</dt>
+                    <dd className="font-medium text-slate-500">{typeof settings.s_cal_humidity === "number" ? settings.s_cal_humidity.toFixed(2) : "-"}</dd>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-200 p-3">
+                    <dt className="text-slate-800">Druck Offset</dt>
+                    <dd className="font-medium text-slate-500">{typeof settings.s_cal_pressure === "number" ? settings.s_cal_pressure.toFixed(2) : "-"}</dd>
+                  </div>
+                </dl>
+              </article>
+
+              {/* Event-URLs */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
+                <h2 className="bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Event-URLs</h2>
+                <div className="my-2 p-2 w-full bg-gray-200 rounded-lg flex flex-row items-center justify-between ">
                   <button
                     type="button"
-                    className="mt-2 px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
-                    onClick={handleCalculateOffset}
-                    disabled={
-                      !(
-                        sensorValues.indoor &&
-                        sensorValues.outdoor &&
-                        sensorValues.indoorStatus === "online" &&
-                        sensorValues.outdoorStatus === "online"
-                      )
+                    className="px-2 py-1 w-full rounded-lg border border-gray-300 bg-gray-100 text-center text-sm transition hover:bg-gray-50"
+                    onClick={() =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        event_refresh_interval: getNextEventRefreshInterval(
+                          prev.event_refresh_interval
+                        ),
+                      }))
                     }
+                    title="Klicken, um zwischen Taeglich, Woechentlich und Monatlich zu wechseln"
                   >
-                    Calculate Offset
+                    <span>
+                      Refresh für die Standard-Events: {getEventRefreshIntervalLabel(settings.event_refresh_interval)}
+                    </span>
                   </button>
                 </div>
-              )}
-            </article>
+                <div className="w-full p-2  bg-gray-200 rounded-lg">
+                  <div className="bg-gray-300 p-2 rounded-lg flex flex-col gap-2 ">
+                    <div>
+                      <input
+                        type="url"
+                        className="px-2 py-1 w-full bg-gray-100 rounded-lg border text-sm border-gray-300"
+                        placeholder="https://website-of-events.com/"
+                        value={urlInput}
+                        onChange={e => setUrlInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") handleAddUrl(); }}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center px-3 py-1 bg-amber-600 text-white rounded-lg shadow-sm font-medium hover:bg-amber-700 active:scale-95 transition transform focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          onClick={handleAddUrl}
+                          disabled={!urlInput.trim()}
+                        >
+                          Add
+                        </button>
+                      </div>
 
-            {/* Sensor channel data */}
-            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50  shadow-md">
-              <div className="h-full rounded-lg text-sm bg-gray-200 p-3">
-                <dt>Please use the following channels when sending your sensor data from the BM280.</dt>
-                <dt className="mt-1">Indoor Sensor</dt>
-                <dd className="opacity-70 text-slate-800 select-text">
-                  {settings.user_id + "/in/climate" || "Unbekannt"}
-                </dd>
-                <dd className="opacity-70 text-slate-800 select-text">
-                  {settings.user_id + "/in/stat" || "Unbekannt"}
-                </dd>
-                <dt className="mt-1">Outdoor Sensor</dt>
-                <dd className="opacity-70 text-slate-800 select-text">
-                  {settings.user_id + "/out/climate" || "Unbekannt"}
-                </dd>
-                <dd className="opacity-70 text-slate-800 select-text">
-                  {settings.user_id + "/out/stat" || "Unbekannt"}
-                </dd>
-                <p className="mt-5">Here you can find the BME280 code for download.</p>
-                <a
-                  href="/bme280_code.ino"
-                  download
-                  className="mt-2 inline-block px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
-                >
-                  Sensor BM280
-                </a>
-                <p className="mt-5">Using the sensors with Sentra requires an MQTT proxy. Instructions can be found in the README.</p>
-              </div>
-            </article>
+                    </div>
+                  </div>
+                </div>
+                <label className="text.sm">Event URLs:</label>
+                <ul>
+                  {Array.isArray(settings.event_urls) && settings.event_urls.length > 0
+                    ? settings.event_urls.map((entry, idx) => (
+                      <li
+                        key={idx}
+                        className={`${getEventRefreshIntervalClasses(entry.refreshInterval)} mb-2 rounded-lg px-3 py-1 text-sm transition cursor-pointer`}
+                        title={`${getEventRefreshIntervalLabel(entry.refreshInterval)} - Klick zum Wechseln, Doppelklick zum Loeschen`}
+                        onClick={() =>
+                          handleUrlRefreshChange(
+                            entry.url,
+                            getNextEventRefreshInterval(entry.refreshInterval)
+                          )
+                        }
+                        onDoubleClick={() => handleRemoveUrl(entry.url)}
+                      >
+                        <div className="break-all">
+                          {entry.url}
+                        </div>
+                      </li>
+                    ))
+                    : <li className="text-sm">Keine Event-URLs</li>
+                  }
+                </ul>
+              </article>
 
-            {/* Key Input */}
-            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 bg-blue-200/50 border border-slate-200 shadow-md">
-              <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
-                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                  <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
-                  <input
-                    id="input1"
-                    type="text"
-                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                    value={keyInputs.key1 ?? ""}
-                    onChange={(e) => handleKeyChange("key1", e.target.value)}
-                    placeholder={getKeyPlaceholder(settings.key1)}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                  <label htmlFor="input2" className="text-sm text-slate-700">OPENAI_API_KEY</label>
-                  <input
-                    id="input2"
-                    type="text"
-                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                    value={keyInputs.key2 ?? ""}
-                    onChange={(e) => handleKeyChange("key2", e.target.value)}
-                    placeholder={getKeyPlaceholder(settings.key2)}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                  <label htmlFor="input3" className="text-sm text-slate-700">CLOUDINARY_API_SECRET</label>
-                  <input
-                    id="input3"
-                    type="text"
-                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                    value={keyInputs.key3 ?? ""}
-                    onChange={(e) => handleKeyChange("key3", e.target.value)}
-                    placeholder={getKeyPlaceholder(settings.key3)}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                  <label htmlFor="input4" className="text-sm text-slate-700">CLOUDINARY_API_KEY</label>
-                  <input
-                    id="input4"
-                    type="text"
-                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                    value={keyInputs.key4 ?? ""}
-                    onChange={(e) => handleKeyChange("key4", e.target.value)}
-                    placeholder={getKeyPlaceholder(settings.key4)}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                  <label htmlFor="input5" className="text-sm text-slate-700">CLOUDINARY_CLOUD_NAME</label>
-                  <input
-                    id="input5"
-                    type="text"
-                    className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                    value={keyInputs.key5 ?? ""}
-                    onChange={(e) => handleKeyChange("key5", e.target.value)}
-                    placeholder={getKeyPlaceholder(settings.key5)}
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-            </article>
+              {/* Sensors */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50 p-4 shadow-md">
+                <div className="flex flex-row justify-between gap-2">
+                  <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={settings.s_indoor}
+                      onChange={e =>
+                        setSettings(prev => ({
+                          ...prev,
+                          s_indoor: e.target.checked
+                        }))
+                      }
+                    />
+                    Sensor Indoor active
+                  </label>
 
-            {/* Global Data und Save Button */}
-            <article
-              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-blue-200/50 p-4 shadow-md
+                  <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={settings.s_outdoor}
+                      onChange={e =>
+                        setSettings(prev => ({
+                          ...prev,
+                          s_outdoor: e.target.checked
+                        }))
+                      }
+                    />
+                    Sensor Outdoor active
+                  </label>
+                </div>
+
+                {/* Anzeige Indoor */}
+                {settings.s_indoor && (
+                  <div
+                    className={`w-full rounded-lg shadow-sm transition-all duration-500 border-4 ${sensorValues.indoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-gray-200 border-transparent"
+                      }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-sm">Sensor Indoor</p>
+                      {sensorValues.indoorStatus === "offline" && (
+                        <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
+                      )}
+                    </div>
+
+                    {sensorValues.indoor ? (
+                      <div className={sensorValues.indoorStatus === "offline" ? "opacity-40" : ""}>
+                        <p className="text-sm">Temperature: {sensorValues.indoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.indoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.indoor.dew?.toFixed(1)} °C</p>}
+                        <p className="text-sm">Humidity: {sensorValues.indoor.hum?.toFixed(1)} %</p>
+                        <p className="text-sm">Air Pressure: {sensorValues.indoor.pres?.toFixed(1)} hPa</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">Waiting for Indoor Sensor...</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Anzeige Outdoor */}
+                {settings.s_outdoor && (
+                  <div
+                    className={` w-full rounded-lg shadow-sm transition-all duration-500 border-4 ${sensorValues.outdoorStatus === "offline" ? "border-red-600 bg-red-100" : "bg-gray-200 border-transparent"
+                      }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-sm">Sensor Outdoor</h4>
+                      {sensorValues.outdoorStatus === "offline" && (
+                        <span className="mr-1 text-red-600 font-black text-sm">OFFLINE</span>
+                      )}
+                    </div>
+
+                    {sensorValues.outdoor ? (
+                      <div className={sensorValues.outdoorStatus === "offline" ? "opacity-40" : ""}>
+                        <p className="text-sm">Temperature: {sensorValues.outdoor.temp?.toFixed(1)} °C</p>
+                        {sensorValues.outdoor.dew !== undefined && <p className="text-sm">Dew Point: {sensorValues.outdoor.dew?.toFixed(1)} °C</p>}
+                        <p className="text-sm">Humidity: {sensorValues.outdoor.hum?.toFixed(1)} %</p>
+                        <p className="text-sm">Air Pressure: {sensorValues.outdoor.pres?.toFixed(1)} hPa</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">Waiting for Outdoor Sensor...</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="p-1 bg-gray-200 rounded-lg">
+                  <p className="text-sm">Note that for offset calculation, both sensors must be online and in the same environment.</p>
+                </div>
+
+                {/* Button Calculate Offset */}
+                {settings.s_outdoor && settings.s_indoor && (
+                  <div className="flex flex-col items-center">
+                    <button
+                      type="button"
+                      className="mt-2 px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                      onClick={handleCalculateOffset}
+                      disabled={
+                        !(
+                          sensorValues.indoor &&
+                          sensorValues.outdoor &&
+                          sensorValues.indoorStatus === "online" &&
+                          sensorValues.outdoorStatus === "online"
+                        )
+                      }
+                    >
+                      Calculate Offset
+                    </button>
+                  </div>
+                )}
+              </article>
+
+              {/* Sensor channel data */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50 shadow-md">
+                <div className="h-full rounded-lg text-sm bg-gray-200 p-3">
+                  <dt>Please use the following channels when sending your sensor data from the BM280.</dt>
+                  <dt className="mt-1">Indoor Sensor</dt>
+                  <dd className="opacity-70 text-slate-800 select-text">
+                    {settings.user_id + "/in/climate" || "Unbekannt"}
+                  </dd>
+                  <dd className="opacity-70 text-slate-800 select-text">
+                    {settings.user_id + "/in/stat" || "Unbekannt"}
+                  </dd>
+                  <dt className="mt-1">Outdoor Sensor</dt>
+                  <dd className="opacity-70 text-slate-800 select-text">
+                    {settings.user_id + "/out/climate" || "Unbekannt"}
+                  </dd>
+                  <dd className="opacity-70 text-slate-800 select-text">
+                    {settings.user_id + "/out/stat" || "Unbekannt"}
+                  </dd>
+                  <p className="mt-5">Here you can find the BME280 code for download.</p>
+                  <a
+                    href="/bme280_code.ino"
+                    download
+                    className="mt-2 inline-block px-4 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
+                  >
+                    Sensor BM280
+                  </a>
+                  <p className="mt-5">Using the sensors with Sentra requires an MQTT proxy. Instructions can be found in the README.</p>
+                </div>
+              </article>
+
+              {/* Key Input */}
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-4 rounded-lg flex flex-col gap-2 bg-blue-200/50 border border-slate-200 shadow-md">
+                <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
+                    <input
+                      id="input1"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key1 ?? ""}
+                      onChange={(e) => handleKeyChange("key1", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key1)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input2" className="text-sm text-slate-700">OPENAI_API_KEY</label>
+                    <input
+                      id="input2"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key2 ?? ""}
+                      onChange={(e) => handleKeyChange("key2", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key2)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input3" className="text-sm text-slate-700">CLOUDINARY_API_SECRET</label>
+                    <input
+                      id="input3"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key3 ?? ""}
+                      onChange={(e) => handleKeyChange("key3", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key3)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input4" className="text-sm text-slate-700">CLOUDINARY_API_KEY</label>
+                    <input
+                      id="input4"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key4 ?? ""}
+                      onChange={(e) => handleKeyChange("key4", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key4)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input5" className="text-sm text-slate-700">CLOUDINARY_CLOUD_NAME</label>
+                    <input
+                      id="input5"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key5 ?? ""}
+                      onChange={(e) => handleKeyChange("key5", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key5)}
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+              </article>
+
+              {/* Global Data und Save Button */}
+              <article
+                className={`flex-1 basis-105 min-w-100 max-w-175 h-100 rounded-lg flex flex-col gap-2 border bg-blue-200/50 p-4 shadow-md
     ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
     transition-colors duration-300`}
-            >
-              <div className="rounded-lg text-sm bg-gray-200 p-3">
-                <p>Press the button to save all user-specific data.</p>
-              </div>
+              >
+                <div className="rounded-lg text-sm bg-gray-200 p-3">
+                  <p>Press the button to save all user-specific data.</p>
+                </div>
 
 
-              <button
-                type="submit"
-                className={`mt-1 px-6 py-1 rounded-lg bg-amber-600 text-white shadow hover:bg-amber-700 transition
+                <button
+                  type="submit"
+                  className={`mt-1 px-6 py-1 rounded-lg bg-amber-600 text-white shadow hover:bg-amber-700 transition
                   ${saving ? "opacity-50 pointer-events-none" : ""}
                   ${borderColor === "green"
-                    ? "border-3 border-green-600"
-                    : borderColor === "red"
-                      ? "border-3 border-red-600"
-                      : hasUnsavedChanges()
-                        ? "border-3 border-blue-500"
-                        : "border-3 border-white"
-                  }
+                      ? "border-3 border-green-600"
+                      : borderColor === "red"
+                        ? "border-3 border-red-600"
+                        : hasUnsavedChanges()
+                          ? "border-3 border-blue-500"
+                          : "border-3 border-white"
+                    }
                      transition-colors duration-300
                 `}
-                disabled={saving}
-              >
-                {saving ? "Save..." : "Save"}
-              </button>
-            </article>
-          </div>
-        </form>
+                  disabled={saving}
+                >
+                  {saving ? "Save..." : "Save"}
+                </button>
+              </article>
+            </div>
+          </form>
+        </div>
       </MoveableScrollAreaVertical >
     </div >
   );

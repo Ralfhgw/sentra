@@ -77,14 +77,14 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
 
   if (!username || !email || !password) {
     return NextResponse.json(
-      { error: "username, email und password sind Pflicht." },
+      { error: "Username, email, and password are required." },
       { status: 400 }
     );
   }
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return NextResponse.json(
-      { error: "lat/lon sind ungueltig." },
+      { error: "lat/lon are not valid." },
       { status: 400 }
     );
   }
@@ -109,7 +109,7 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
   } catch (err) {
     console.error("Auth register network error:", err);
     return NextResponse.json(
-      { error: "Auth-Service nicht erreichbar." },
+      { error: "Auth service unavailable." },
       { status: 502 }
     );
   }
@@ -118,7 +118,7 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
   const authData = parseJsonSafe(raw);
 
   if (!authRes.ok) {
-    const message = getAuthErrorMessage(authData) ?? "Auth-Registrierung fehlgeschlagen.";
+    const message = getAuthErrorMessage(authData) ?? "Auth registration failed.";
     return NextResponse.json({ error: message }, { status: authRes.status });
   }
 
@@ -127,7 +127,7 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
 
   if (!userIdRaw) {
     return NextResponse.json(
-      { error: "Auth-Antwort enthaelt keine user id.", authData },
+      { error: "Auth response does not contain a user ID.", authData },
       { status: 502 }
     );
   }
@@ -193,7 +193,7 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
         userId,
         pendingActivation,
         warning:
-          "User im Auth-Service angelegt, aber lokale Initialisierung von user_settings fehlgeschlagen.",
+          "User created in the Auth service, but local initialization of user_settings failed.",
       },
       { status: 200 }
     );

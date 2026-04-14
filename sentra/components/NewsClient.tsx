@@ -229,7 +229,7 @@ export default function NewsClient({
   }
 
 
- const loadDayMeanings = useCallback(async (dateKey: string) => {
+  const loadDayMeanings = useCallback(async (dateKey: string) => {
     if (!dateKey) {
       return;
     }
@@ -268,7 +268,7 @@ export default function NewsClient({
     } finally {
       setMeaningLoading(false);
     }
- }, [dayMeanings, todayKey]);
+  }, [dayMeanings, todayKey]);
 
   function handleMeaningButtonClick() {
     if (!canOpenMeaning || !meaningTargetDate) {
@@ -372,6 +372,12 @@ export default function NewsClient({
       return;
     }
 
+    if (isRefreshing) {
+      return;
+    }
+
+    setForceRefresh(false);
+
     void (async () => {
       try {
         setIsRefreshing(true);
@@ -448,7 +454,7 @@ export default function NewsClient({
     }
 
     const classes = [
-       "flex h-10 items-center justify-center rounded-xl border text-sm font-semibold transition outline-none focus:outline-none focus:ring-0",
+      "flex h-10 items-center justify-center rounded-xl border text-sm font-semibold transition outline-none focus:outline-none focus:ring-0",
       stateClasses,
       !outsideMonth && !isPast ? "hover:bg-blue-300" : "",
       isPast ? "cursor-not-allowed" : "",
@@ -458,7 +464,7 @@ export default function NewsClient({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-1 w-full mx-auto overflow-hidden">
+    <div className="bg-gray-300 flex flex-col lg:flex-row gap-1 w-full mx-auto overflow-hidden">
       {/* left Box */}
       <div className="lg:w-[24%] w-full pb-4 bg-gray-800/80 rounded-r-lg flex flex-col shrink-0">
         <div className="mx-4 mt-4 rounded-lg border border-gray-300 bg-linear-to-b from-gray-100 to-gray-200 p-4 shadow-[4px_4px_0_0_rgba(156,163,175,1),4px_4px_10px_rgba(0,0,0,0.12)]">
@@ -591,40 +597,36 @@ export default function NewsClient({
           <div className="mt-2 text-xs font-semibold text-gray-500">
             {filteredEvents.length} Event{filteredEvents.length === 1 ? "" : "s"}
           </div>
-                  <div className="mt-8 px-4">
-          <button
-            type="button"
-            onClick={handleMeaningButtonClick}
-            disabled={!canOpenMeaning}
-            className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-              canOpenMeaning
-                ? "border-gray-500 bg-gray-100 text-gray-700 shadow-[3px_3px_0_0_rgba(156,163,175,1)] hover:bg-white"
-                : "border-gray-300 bg-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
-            }`}
-            title={
-              canOpenMeaning
-                ? "Show daily meanings"
-                : "Available only for all days or a single selected day."
-            }
-          >
-            {meaningButtonLabel}
-          </button>
+          <div className="mt-8 px-4">
+            <button
+              type="button"
+              onClick={handleMeaningButtonClick}
+              disabled={!canOpenMeaning}
+              className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition ${canOpenMeaning
+                  ? "border-gray-500 bg-gray-100 text-gray-700 shadow-[3px_3px_0_0_rgba(156,163,175,1)] hover:bg-white"
+                  : "border-gray-300 bg-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
+                }`}
+              title={
+                canOpenMeaning
+                  ? "Show daily meanings"
+                  : "Available only for all days or a single selected day."
+              }
+            >
+              {meaningButtonLabel}
+            </button>
+          </div>
         </div>
-        </div> 
       </div>
 
       {/* Right Box */}
-      <MoveableScrollAreaVertical className="flex-1 bg-gray-800/80 rounded-l-lg text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
-        <h1 className="text-xl lg:text-2xl my-6 text-center font-extrabold text-gray-300 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
+      <MoveableScrollAreaVertical className="flex-1 bg-gray-600/80 rounded-l-lg text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
+        <h1 className="text-xl lg:text-2xl mt-4 mb-2 text-center font-extrabold text-gray-200 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">
           Events in {currentHeadlineTown}
         </h1>
 
-        {error && <div className="text-red-600 text-center mb-4">{error}</div>}
-        {isRefreshing && (
-          <div className="text-blue-700 text-center mb-4">
-            Event-Query running...
-          </div>
-        )}
+        <div className={`text-center mb-4 ${error ? "text-red-600" : "text-gray-200"}`}>
+          {error ? error : isRefreshing ? "Event-Query running..." : "Event-Query successful."}
+        </div>
 
         {filteredEvents.length > 0 ? (
           <ul className="m-4 flex flex-col border-t ">
@@ -634,7 +636,7 @@ export default function NewsClient({
               return (
                 <li
                   key={idx}
-                  className={`p-2 border-b flex flex-row transition-all duration-200 cursor-pointer ${isOpened ? "" : "hover:bg-gray-100"
+                  className={`p-2 border-b flex flex-row transition-all duration-200 cursor-pointer ${isOpened ? "" : "hover:bg-gray-400"
                     }`}
                 >
                   <div
@@ -702,7 +704,7 @@ export default function NewsClient({
 
                   {openedDetailIdx === idx && (
                     <div
-                      className="p-4 rounded-r-lg flex items-center justify-center bg-blue-600 shadow-lg cursor-pointer"
+                      className="p-4 rounded-r-lg flex items-center justify-center text-white-100 shadow-lg cursor-pointer"
                       onClick={async () => {
                         if (!event.id) {
                           alert("Event has no ID!");
@@ -751,7 +753,7 @@ export default function NewsClient({
                 </p>
               </div>
               <button
-               type="button"
+                type="button"
                 onClick={() => setInfoVisible(false)}
                 className="rounded-xl border border-gray-400 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-white"
               >
@@ -765,7 +767,7 @@ export default function NewsClient({
               </div>
             )}
 
-           {!meaningLoading && meaningError && (
+            {!meaningLoading && meaningError && (
               <div className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
                 {meaningError}
               </div>
@@ -783,12 +785,11 @@ export default function NewsClient({
                   const hasUrl = Boolean(meaning.url);
                   const isOpened = openedMeaningIdx === idx;
 
-                 return (
+                  return (
                     <div
                       key={idx}
-                      className={`mb-3 rounded-xl border p-3 text-sm shadow-[4px_4px_0_0_rgba(156,163,175,1),4px_4px_10px_rgba(0,0,0,0.12)] transition ${
-                        hasUrl ? "cursor-pointer hover:border-gray-500" : "cursor-pointer"
-                      }`}
+                      className={`mb-3 rounded-xl border p-3 text-sm shadow-[4px_4px_0_0_rgba(156,163,175,1),4px_4px_10px_rgba(0,0,0,0.12)] transition ${hasUrl ? "cursor-pointer hover:border-gray-500" : "cursor-pointer"
+                        }`}
                       onClick={() => setOpenedMeaningIdx(isOpened ? null : idx)}
                       role={hasUrl ? "button" : undefined}
                       tabIndex={0}

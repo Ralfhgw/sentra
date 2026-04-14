@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
 
     if (refreshCustomEventUrls) {
       try {
-        await refreshCustomEventSourcesForUser(userId, { force: true });
+        await refreshCustomEventSourcesForUser(userId, {
+          force: true,
+          targetDay: dayString,
+        });
       } catch (customRefreshError) {
         console.error("Custom event URL refresh failed:", customRefreshError);
       }

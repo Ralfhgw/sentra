@@ -26,6 +26,11 @@ type CustomEventRow = {
     image: string | null;
 };
 
+type RefreshCustomEventSourceOptions = {
+    force?: boolean;
+    targetDay?: string;
+};
+
 function buildSourceKey(url: string) {
     return `url:${url.trim()}`;
 }
@@ -66,7 +71,22 @@ function addInterval(date: Date, interval: EventRefreshInterval) {
     return next;
 }
 
-function getDateRange(interval: EventRefreshInterval) {
+function normalizeRequestedDay(targetDay?: string) {
+    if (!targetDay) return null;
+
+    const trimmed = targetDay.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : null;
+}
+
+function getDateRange(interval: EventRefreshInterval, targetDay?: string) {
+    const normalizedTargetDay = normalizeRequestedDay(targetDay);
+
+    if (normalizedTargetDay) {
+        return {
+            todayStr: normalizedTargetDay,
+            endStr: normalizedTargetDay,
+        };
+    }
     const today = new Date();
     const endDate = new Date();
     endDate.setDate(today.getDate() + getLookaheadDays(interval) - 1);
@@ -207,13 +227,16 @@ function dedupeEvents(events: CustomEventRow[]) {
 async function fetchOpenAiEventsForSource(
     sourceUrl: string,
     interval: EventRefreshInterval,
-    openAiKey: string
+    openAiKey: string,
+    targetDay?: string
 ) {
-    const { todayStr, endStr } = getDateRange(interval);
+    const { todayStr, endStr } = getDateRange(interval, targetDay);
+    const isSingleDayRange = todayStr === endStr;
 
     console.log("[event-url] OpenAI fetch start:", {
         sourceUrl,
         interval,
+        targetDay: targetDay ?? null,
         todayStr,
         endStr,
     });
@@ -237,7 +260,7 @@ Du bist ein Assistent zum Extrahieren von Eventdaten aus Webseiten.
 Regeln:
 - Stelle keine Rueckfragen.
 - Beginne sofort mit der Extraktion.
-- Extrahiere nur Events im Zeitraum ${todayStr} bis ${endStr}.
+- Extrahiere nur Events ${isSingleDayRange ? `am ${todayStr}` : `im Zeitraum ${todayStr} bis ${endStr}`}.
 - Wenn mehr Monate auf der Seite existieren, ignoriere sie.
 - Navigiere nicht unnoetig zu sehr alten oder weit zukuenftigen Terminen.
 - Arbeite effizient und vermeide unnoetige Seitenabfragen.
@@ -249,7 +272,7 @@ Regeln:
 Besuche die Webseite ${sourceUrl} und extrahiere Events.
 
 Filter:
-- Nur Events zwischen ${todayStr} und ${endStr}
+- ${isSingleDayRange ? `Nur Events am ${todayStr}` : `Nur Events zwischen ${todayStr} und ${endStr}`}
 
 Gib die Daten als CSV ohne Header aus mit exakt diesen Spalten:
 title;date;address;link;description
@@ -265,8 +288,8 @@ Vorgaben:
 - keine Rueckfragen
 - nur reine CSV
 
-Wenn keine Events im Zeitraum vorhanden sind, erstelle genau diese Zeile:
-Kein Event gefunden;-;-;${sourceUrl};Keine Termine zwischen ${todayStr} und ${endStr}
+Wenn keine Events im gewuenschten Zeitraum vorhanden sind, erstelle genau diese Zeile:
+Kein Event gefunden;-;-;${sourceUrl};${isSingleDayRange ? `Keine Termine am ${todayStr}` : `Keine Termine zwischen ${todayStr} und ${endStr}`}
         `.trim(),
             },
         ],
@@ -277,6 +300,7 @@ Kein Event gefunden;-;-;${sourceUrl};Keine Termine zwischen ${todayStr} und ${en
     console.log("[event-url] OpenAI raw response:", {
         sourceUrl,
         interval,
+        targetDay: targetDay ?? null,
         todayStr,
         endStr,
         csvLength: csv.length,
@@ -529,7 +553,8 @@ async function refreshSingleCustomEventSource(
     source: EventUrlSetting,
     sourceTown: string | null,
     openAiKey: string,
-    force = false
+    force = false,
+    targetDay?: string
 ) {
     const sourceUrl = source.url.trim();
 
@@ -569,7 +594,8 @@ async function refreshSingleCustomEventSource(
         const events = await fetchOpenAiEventsForSource(
             sourceUrl,
             source.refreshInterval,
-            openAiKey
+            openAiKey,
+            targetDay
         );
 
         await insertCustomEventsForUser(userId, sourceUrl, sourceTown, events);
@@ -594,7 +620,7 @@ async function refreshSingleCustomEventSource(
 
 export async function refreshCustomEventSourcesForUser(
     userId: string,
-    options?: { force?: boolean }
+    options?: RefreshCustomEventSourceOptions
 ) {
     const settings = await getUserSettings(userId);
     const openAiKey = settings.key2?.trim();
@@ -605,6 +631,7 @@ export async function refreshCustomEventSourcesForUser(
         sources: settings.event_urls,
         hasOpenAiKey: Boolean(openAiKey),
         force: options?.force ?? false,
+        targetDay: options?.targetDay ?? null,
     });
 
     if (!openAiKey) {
@@ -625,12 +652,16 @@ export async function refreshCustomEventSourcesForUser(
     }
 
     for (const source of sources) {
-        const { todayStr, endStr } = getDateRange(source.refreshInterval);
+        const { todayStr, endStr } = getDateRange(
+            source.refreshInterval,
+            options?.targetDay
+        );
 
         console.log("[event-url] starting source refresh:", {
             userId,
             sourceUrl: source.url,
             refreshInterval: source.refreshInterval,
+            targetDay: options?.targetDay ?? null,
             todayStr,
             endStr,
         });
@@ -641,7 +672,8 @@ export async function refreshCustomEventSourcesForUser(
                 source,
                 settings.town ?? null,
                 openAiKey,
-                options?.force ?? false
+                options?.force ?? false,
+                options?.targetDay
             )
         );
     }

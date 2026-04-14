@@ -396,15 +396,23 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
   return (
     <div className="flex flex-col lg:flex-row gap-1 w-full h-full mx-auto overflow-x-hidden min-w-0">
-      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-gray-200 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
+      <MoveableScrollAreaVertical className="flex-1 min-w-0 box-border w-screen lg:w-[calc(100vw-100px)] h-dvh lg:h-[calc(100dvh-100px)] overflow-x-hidden bg-blue-400 text-gray-800 lg:p-1 no-scrollbar shadow-md cursor-grab select-none">
 
-        <header className="rounded-lg p-6 bg-gray-300 shadow-lg backdrop-blur-sm">
+        <header
+          className="rounded-lg p-6 shadow-lg backdrop-blur-sm bg-no-repeat bg-right bg-contain"
+          style={{
+            backgroundColor: "#e3ebf4",
+            backgroundImage: "url('/background-header-02.png')",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right center",
+            backgroundSize: "contain",
+          }}
+        >
           <h1 className="text-3xl font-bold tracking-tight text-slate-800">Settings</h1>
           <p className="mt-2 text-sm text-slate-600">
             Manage location, event sources, and sensor calibration in one overview.
           </p>
         </header>
-
 
         <form
           onSubmit={e => {
@@ -415,8 +423,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
           <div className="my-2 flex flex-row flex-wrap gap-2 items-center">
             {/* MapSelector */}
-            <div className="w-100 h-100 rounded-lg overflow-hidden bg-gray-300 shadow-sm">
-                <MapSelector
+            <div className="w-100 h-100 rounded-lg overflow-hidden border border-slate-200 bg-blue-200/50 shadow-sm">
+              <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -442,10 +450,10 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     setError("Standortdaten konnten nicht geladen werden.");
                   }
                 }}
-              /> 
+              />
             </div>
             {/* Location Details */}
-            <article className="w-100 h-100 p-4 rounded-lg bg-gray-300  shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50  shadow-md">
               <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
               <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div className="rounded-lg bg-gray-200 p-3">
@@ -480,7 +488,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Settings */}
-            <article className="w-100 h-100 flex flex-col gap-2 rounded-lg bg-gray-300 p-4 shadow-md">
+            <article className="w-100 h-100 flex flex-col gap-2 rounded-lg border border-slate-200 bg-blue-200/50 p-4 shadow-md">
               <div className="bg-gray-200 rounded-lg">
                 <h2 className=" text-center text-lg font-semibold  text-slate-800">Settings</h2>
               </div>
@@ -536,7 +544,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Event-URLs */}
-            <article className="w-100 h-100 p-4 rounded-lg bg-gray-300 shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
               <h2 className="bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Event-URLs</h2>
 
               <div className="my-2 p-2 w-full bg-gray-200 rounded-lg flex flex-row items-center justify-between ">
@@ -614,7 +622,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Sensors */}
-            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 bg-gray-300 p-4 shadow-md">
+            <article className="w-100 h-100 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50 p-4 shadow-md">
               <div className="flex flex-row justify-between gap-2">
                 <label className="bg-gray-200 p-1 text-sm rounded-lg flex items-center gap-2">
                   <input
@@ -724,7 +732,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Sensor channel data */}
-            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-gray-300  shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 border border-slate-200 bg-blue-200/50  shadow-md">
               <div className="h-full rounded-lg text-sm bg-gray-200 p-3">
                 <dt>Please use the following channels when sending your sensor data from the BM280.</dt>
                 <dt className="mt-1">Indoor Sensor</dt>
@@ -754,7 +762,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             </article>
 
             {/* Key Input */}
-            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 bg-gray-300 shadow-md">
+            <article className="w-100 h-100 p-4 rounded-lg flex flex-col gap-2 bg-blue-200/50 border border-slate-200 shadow-md">
               <div className="p-3 h-full grid grid-cols-1 gap-2 rounded-lg text-sm bg-gray-200">
                 <div className="p-1 rounded-lg flex flex-col bg-gray-300">
                   <label htmlFor="input1" className="text-sm text-slate-700">SERPAPI_KEY</label>
@@ -821,7 +829,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
 
             {/* Global Data und Save Button */}
             <article
-              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-gray-300 p-4 shadow-md
+              className={`w-100 h-100 rounded-lg flex flex-col gap-2 border bg-blue-200/50 p-4 shadow-md
     ${borderColor === "green" ? "border-green-600" : borderColor === "red" ? "border-red-600" : "border-slate-200"}
     transition-colors duration-300`}
             >

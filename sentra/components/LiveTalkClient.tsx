@@ -1265,7 +1265,6 @@ export default function LiveTalkClient({
                         </button>
                       </div>
 
-
                     </div>
                   </div>
                 </section>

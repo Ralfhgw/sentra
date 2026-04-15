@@ -1206,26 +1206,54 @@ export default function LiveTalkClient({
                       </p>
                     </div>
 
-                    {/* Button - Button - Copy Session Key */}
-                    <div className="mt-7">
-                      {sessionKeyInfo && (
-                        <div className="h-full rounded-lg flex flex-col justify-between">
-                          {sessionKeyInfo.expiresAt && (
-                            <p className="text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
-                          )}
+                    <div className="mt-7 flex flex-row gap-8">
+                      {/* Button - Button - Copy Session Key */}
+                      <div>
+                        {sessionKeyInfo && (
+                          <div className="h-full rounded-lg flex flex-col justify-between">
+                            {sessionKeyInfo.expiresAt && (
+                              <p className="text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
+                            )}
 
-                          <button
-                            type="button"
-                            onClick={() => void copySessionKey()}
-                            className="h-12 w-full mt-2 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
-                          >
-                            Copy Session-Key
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              type="button"
+                              onClick={() => void copySessionKey()}
+                              className="h-12 w-full mt-2 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                            >
+                              Copy Session-Key
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Active Session Field */}
+                      <div className="mt-7">
+                        {!activeSession.receiveOnly && (
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => void toggleAudio()}
+                              disabled={!localStream}
+                              className="px-4 py-3 rounded-lg border bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {audioEnabled ? "🎤" : "🎤"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => void toggleVideo()}
+                              disabled={!localStream}
+                              className="rounded-lg border bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {videoEnabled ? "📷" : "📷"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
 
-                    <div className="mt-7 flex flex-row gap-6">
+                    <div className="mt-7 flex items-center justify-center">
                       {/* Button - Leave Session */}
                       <div>
                         <button
@@ -1237,30 +1265,7 @@ export default function LiveTalkClient({
                         </button>
                       </div>
 
-                      {/* Active Session Field */}
-                      <div>
-                        {!activeSession.receiveOnly && (
-                          <div className="flex flex-wrap gap-3">
-                            <button
-                              type="button"
-                              onClick={() => void toggleAudio()}
-                              disabled={!localStream}
-                              className="px-4 py-3 rounded-lg border border-slate-300 bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                            >
-                              {audioEnabled ? "🎤" : "🎤"}
-                            </button>
 
-                            <button
-                              type="button"
-                              onClick={() => void toggleVideo()}
-                              disabled={!localStream}
-                              className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-                            >
-                              {videoEnabled ? "📷" : "📷"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </section>

@@ -1192,47 +1192,53 @@ export default function LiveTalkClient({
             <>
               <div className="flex flex-row flex-wrap gap-1">
 
-                  {/* Active - SessionInfo */}
-                  <section className="p-2 w-screen max-w-106 h-75 flex flex-col bg-blue-300/5 rounded-lg shadow-sm backdrop-blur-sm">
-                    <div className="h-full bg-green-900/10 p-2 rounded-lg flex flex-col flex-wrap items-start justify-between">
-                      <div>
-                        <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
-                        <p className="mt-2 text-sm text-slate-600">
-                          Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
-                        </p>
-                        <p className="mt-2 text-sm text-slate-500">
-                          Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "User with Feed"}
-                        </p>
-                      </div>
+                {/* Active - SessionInfo */}
+                <section className="p-2 w-screen max-w-106 h-75 flex flex-col bg-blue-300/5 rounded-lg shadow-sm backdrop-blur-sm">
+                  <div className="h-full bg-green-900/10 p-2 rounded-lg flex flex-col flex-wrap items-start">
+                    {/* Session Info */}
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900">Active Session</h2>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Session-Key <strong>{activeSession.sessionCode}</strong> with User <strong>{activeSession.userName}</strong>
+                      </p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        Socket: {socketId || "verbinde..."} | {activeSession.receiveOnly ? "Viewer" : "User with Feed"}
+                      </p>
+                    </div>
 
-                        <div>
-                          {sessionKeyInfo && (
-                            <div className="h-full mt-2 rounded-lg flex flex-col justify-between">
-                              {sessionKeyInfo.expiresAt && (
-                               <p className="text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => void copySessionKey()}
-                                className="h-12 w-full mt-2 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
-                              >
-                                Copy Session-Key
-                              </button>
-                            </div>
+                    {/* Button - Button - Copy Session Key */}
+                    <div className="mt-7">
+                      {sessionKeyInfo && (
+                        <div className="h-full rounded-lg flex flex-col justify-between">
+                          {sessionKeyInfo.expiresAt && (
+                            <p className="text-sm text-slate-600">Valid until: {formatDateTime(sessionKeyInfo.expiresAt)}</p>
                           )}
-                        </div>
-                        <div className="mt-4 flex flex-row gap-7">
-                        {/* Button - Leave Session */}
+
                           <button
+                            type="button"
+                            onClick={() => void copySessionKey()}
+                            className="h-12 w-full mt-2 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                          >
+                            Copy Session-Key
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-7 flex flex-row gap-6">
+                      {/* Button - Leave Session */}
+                      <div>
+                        <button
                           type="button"
                           onClick={leaveSession}
                           className="h-12 w-60 py-3 rounded-lg bg-orange-500  hover:bg-orange-400 text-black font-semibold transition"
                         >
                           Leave Session
-                          </button>
+                        </button>
+                      </div>
 
-                        {/* Active Session Field */}
+                      {/* Active Session Field */}
+                      <div>
                         {!activeSession.receiveOnly && (
                           <div className="flex flex-wrap gap-3">
                             <button
@@ -1256,53 +1262,52 @@ export default function LiveTalkClient({
                         )}
                       </div>
                     </div>
+                  </div>
+                </section>
 
-
-                  </section>
-
-                  {/* Active Video Area */}
-                  <section className="flex w-full min-w-0 max-w-106 h-75 flex-wrap rounded-lg">
-                    {!activeSession.receiveOnly && (
-                      <div className="flex h-75 w-full min-w-0 max-w-120 items-center justify-center rounded-lg bg-blue-200/5 p-1 shadow-sm">
-                        {hasLocalVideo ? (
-                          <VideoTile title={`Local (${activeSession.userName})`} stream={localStream} muted />
-                        ) : (
-                          <div className="h-full w-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
-                            <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
-                            <p className="mt-2 text-slate-700">
-                              Once your camera and microphone are enabled, your image will be displayed here.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </section>
-
-                  {/* Remote Video Area */}
-                  <section className="w-full min-w-0 max-w-106 h-75">
-                    {remoteVideoFeeds.length > 0 ? (
-                      <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
-                        <div className="grid gap-4">
-                          {remoteVideoFeeds.map((feed) => (
-                            <VideoTile
-                              key={feed.peerId}
-                              title={feed.displayName}
-                              stream={feed.stream}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
-                        <div className="h-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
-                          <h3 className="text-lg font-semibold text-slate-900">Waiting for more participants</h3>
-                          <p className="text-sm mt-2">
-                            As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
+                {/* Active Video Area */}
+                <section className="flex w-full min-w-0 max-w-106 h-75 flex-wrap rounded-lg">
+                  {!activeSession.receiveOnly && (
+                    <div className="flex h-75 w-full min-w-0 max-w-120 items-center justify-center rounded-lg bg-blue-200/5 p-1 shadow-sm">
+                      {hasLocalVideo ? (
+                        <VideoTile title={`Local (${activeSession.userName})`} stream={localStream} muted />
+                      ) : (
+                        <div className="h-full w-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
+                          <h3 className="text-lg font-semibold text-slate-900">Camera is starting</h3>
+                          <p className="mt-2 text-slate-700">
+                            Once your camera and microphone are enabled, your image will be displayed here.
                           </p>
                         </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* Remote Video Area */}
+                <section className="w-full min-w-0 max-w-106 h-75">
+                  {remoteVideoFeeds.length > 0 ? (
+                    <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
+                      <div className="grid gap-4">
+                        {remoteVideoFeeds.map((feed) => (
+                          <VideoTile
+                            key={feed.peerId}
+                            title={feed.displayName}
+                            stream={feed.stream}
+                          />
+                        ))}
                       </div>
-                    )}
-                  </section>
+                    </div>
+                  ) : (
+                    <div className="h-75 w-full min-w-0 rounded-lg bg-blue-200/5 p-2 backdrop-blur-sm">
+                      <div className="h-full p-4 rounded-lg bg-gray-100/10 flex flex-col shadow-sm justify-center items-center">
+                        <h3 className="text-lg font-semibold text-slate-900">Waiting for more participants</h3>
+                        <p className="text-sm mt-2">
+                          As soon as other clients with an active camera feed use the same session key, their streams will be displayed here.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </section>
 
               </div>
 

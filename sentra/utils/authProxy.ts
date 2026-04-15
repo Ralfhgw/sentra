@@ -183,6 +183,7 @@ export async function forwardAuthRequestWithBody<T = unknown>(
   });
 
   const bodyText = await upstream.text();
+console.log("Body authProxy: ", bodyText)
 
   if (!upstream.ok && path === "/api/auth/refresh") {
     console.error("[auth/refresh proxy] upstream failed", {

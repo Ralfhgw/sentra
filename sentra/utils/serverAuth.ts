@@ -457,7 +457,8 @@ async function authenticateWithCookies(
 ): Promise<ServerAuthResult> {
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
-
+  
+  console.log("###### serverAuth authenticateWithCookies ######")
   if (accessToken) {
     try {
       const userId = await getUserIdFromToken(accessToken);

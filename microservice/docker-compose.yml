@@ -113,6 +113,9 @@ volumes:
 # Aktualisieren der day_meanings Tabelle auf dem Webserver
 # ssh deploy@webschere.de
 # cd /home/deploy/sentra/microservice
+# cat day_meanings_export.csv | grep "Welttag der Kunst"
+# docker compose exec -T db sh -lc 'grep -n "Welttag der Kunst" /docker-entrypoint-initdb.d/day_meanings_export.csv'
+# docker compose up -d --force-recreate db
 # docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE day_meanings;"'
 # docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '\''/docker-entrypoint-initdb.d/day_meanings_export.csv'\'' WITH (FORMAT CSV, HEADER, ENCODING '\''UTF8'\'');"'
-# docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM day_meanings;"'
+# docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT name, description FROM day_meanings WHERE name = '\''Welttag der Kunst'\'';"'

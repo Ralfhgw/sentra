@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("AuthProvider useEffect")
     async function checkAuth() {
       setIsLoading(true);
       setError(null);

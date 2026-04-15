@@ -61,7 +61,7 @@ function getEventRefreshIntervalClasses(interval: EventRefreshInterval) {
     case "monthly":
       return "bg-red-200 hover:bg-red-300";
     default:
-      return "bg-green-200 hover:bg-green-300";
+      return "bg-gray-200 hover:bg-gray-300";
   }
 }
 
@@ -401,13 +401,13 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         <div className="mx-auto w-full max-w-640">
 
           <header
-            className="rounded-lg p-6 shadow-lg backdrop-blur-sm bg-no-repeat bg-right bg-contain"
+            className="rounded-b-lg p-6 shadow-lg backdrop-blur-sm bg-no-repeat bg-right"
             style={{
               backgroundColor: "#e3ebf4",
               backgroundImage: "url('/background-header-02.png')",
               backgroundRepeat: "no-repeat",
               backgroundPosition: "right center",
-              backgroundSize: "contain",
+              backgroundSize: "auto 100%",
             }}
           >
             <h1 className="text-3xl font-bold tracking-tight text-slate-800">Settings</h1>
@@ -427,7 +427,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
             <div className="my-2 flex flex-wrap gap-2 items-stretch">
               {/* MapSelector */}
               <div className="flex-1 basis-105 min-w-100 max-w-175 h-100 rounded-lg overflow-hidden border border-slate-200 bg-blue-200/50 shadow-sm">
-               <MapSelector
+                 <MapSelector
                 lat={settings.lat ?? 52.520008}
                 lon={settings.lon ?? 13.404954}
                 onChange={async (lat, lon) => {
@@ -453,12 +453,12 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     setError("Standortdaten konnten nicht geladen werden.");
                   }
                 }}
-              />
+              /> 
               </div>
               {/* Location Details */}
-              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-4 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
-                <h2 className="mb-3 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
-                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+              <article className="flex-1 basis-105 min-w-100 max-w-175 h-100 p-3 rounded-lg border border-slate-200 bg-blue-200/50 shadow-md">
+                <h2 className="mb-2 bg-gray-200 rounded-lg text-center text-lg font-semibold text-slate-800">Location</h2>
+                <dl className="grid gap-2 text-sm grid-cols-2">
                   <div className="rounded-lg bg-gray-200 p-3">
                     <dt className="text-slate-800">Lat</dt>
                     <dd className="font-medium text-slate-500">{typeof settings.lat === "number" ? settings.lat.toFixed(6) : "0.000000"}</dd>
@@ -467,6 +467,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     <dt className="text-slate-800">Lon</dt>
                     <dd className="font-medium text-slate-500">{typeof settings.lon === "number" ? settings.lon.toFixed(6) : "0.000000"}</dd>
                   </div>
+
                   <div className="rounded-lg bg-gray-200 p-3">
                     <dt className="text-slate-800">Town</dt>
                     <dd className="font-medium text-slate-500">{settings.town || "Unbekannt"}</dd>
@@ -496,7 +497,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                   <h2 className=" text-center text-lg font-semibold  text-slate-800">Settings</h2>
                 </div>
 
-                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-4">
+                <dl className="grid gap-2 text-sm grid-cols-4">
                   <div className="bg-gray-200 rounded-lg p-3">
                     <dt className="text-slate-800">EVT</dt>
                     <dd className="font-medium text-slate-500">{String(userSettings.evt) || "Unbekannt"}</dd>
@@ -517,7 +518,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     <dd className="font-medium text-slate-500">{String(userSettings.rtc) || "Unbekannt"}</dd>
                   </div>
                 </dl>
-                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                <dl className="grid gap-2 text-sm grid-cols-2">
                   <div className="rounded-lg bg-gray-200 p-3">
                     <dt className="text-slate-800">Sensor Indoor</dt>
                     <dd className="font-medium text-slate-500">{String(settings.s_indoor) || "Unbekannt"}</dd>
@@ -528,7 +529,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     <dd className="font-medium text-slate-500">{String(settings.s_outdoor) || "Unbekannt"}</dd>
                   </div>
                 </dl>
-                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                <dl className="grid gap-2 text-sm grid-cols-2">
                   <div className="rounded-lg bg-gray-200 p-3">
                     <dt className="text-slate-800">Temperatur Offset</dt>
                     <dd className="font-medium text-slate-500">{typeof settings.s_cal_temp === "number" ? settings.s_cal_temp.toFixed(2) : "-"}</dd>
@@ -568,7 +569,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     </span>
                   </button>
                 </div>
-                <div className="w-full p-2  bg-gray-200 rounded-lg">
+                <div className="w-full mb-2 p-2 bg-gray-200 rounded-lg">
                   <div className="bg-gray-300 p-2 rounded-lg flex flex-col gap-2 ">
                     <div>
                       <input
@@ -595,7 +596,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     </div>
                   </div>
                 </div>
-                <label className="text.sm">Event URLs:</label>
+                <label className="text-sm">Event URLs:</label>
                 <ul>
                   {Array.isArray(settings.event_urls) && settings.event_urls.length > 0
                     ? settings.event_urls.map((entry, idx) => (

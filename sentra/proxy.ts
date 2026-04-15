@@ -16,6 +16,7 @@ function getInternalAppUrl() {
   return (process.env.SENTRA_INTERNAL_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
 }
 
+
 function getCookieBase() {
   return {
     httpOnly: true,

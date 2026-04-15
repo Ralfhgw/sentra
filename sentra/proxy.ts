@@ -12,6 +12,10 @@ const refreshTokenMaxAge =
 const refreshMarginMs =
   Number(process.env.AUTH_ACCESS_TOKEN_REFRESH_MARGIN_SECONDS ?? 60) * 1000;
 
+function getInternalAppUrl() {
+  return (process.env.SENTRA_INTERNAL_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+}
+
 function getCookieBase() {
   return {
     httpOnly: true,
@@ -97,29 +101,35 @@ async function refreshSession(request: NextRequest, refreshToken: string) {
     Cookie: `refreshToken=${encodeURIComponent(refreshToken)}`,
   });
 
-  const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ refreshToken }),
-    cache: "no-store",
-  });
+  try {
+    const refreshRes = await fetch(`${getInternalAppUrl()}/api/auth/refresh`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ refreshToken }),
+      cache: "no-store",
+    });
 
-  if (!refreshRes.ok) {
+    if (!refreshRes.ok) {
+      console.warn("[middleware] refreshSession upstream failed:", refreshRes.status);
+      return null;
+    }
+
+    const refreshData = (await refreshRes.json()) as AuthResponseEnvelope;
+    const accessToken = getAccessToken(refreshData);
+
+    if (!accessToken) {
+      return null;
+    }
+
+    return {
+      accessToken,
+      refreshToken: getRefreshToken(refreshData) ?? refreshToken,
+      expiresAt: getExpiresAt(refreshData),
+    };
+  } catch (error) {
+    console.error("[middleware] refreshSession fetch failed:", error);
     return null;
   }
-
-  const refreshData = (await refreshRes.json()) as AuthResponseEnvelope;
-  const accessToken = getAccessToken(refreshData);
-
-  if (!accessToken) {
-    return null;
-  }
-
-  return {
-    accessToken,
-    refreshToken: getRefreshToken(refreshData) ?? refreshToken,
-    expiresAt: getExpiresAt(refreshData),
-  };
 }
 
 export async function proxy(request: NextRequest) {

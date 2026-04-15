@@ -341,6 +341,8 @@ systemctl status mediamtx
                 |                                 |
            lokal RTSP                      öffentlicher Zugriff
 ```
+Stream in LiveView: rtsp://10.10.0.2:8554/cam
+
 
 ##### Raspi
 Install ffmpeg

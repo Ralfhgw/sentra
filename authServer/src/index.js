@@ -30,6 +30,11 @@ const sql = postgres(process.env.DATABASE_URL);
 const PORT = Number(process.env.PORT || 3000);
 const isProd = process.env.NODE_ENV === "production";
 
+const defaultRegistrationStatus =
+  String(process.env.AUTH_DEFAULT_USER_STATUS ?? "active").trim().toLowerCase() === "pending"
+    ? "pending"
+    : "active";
+
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -299,7 +304,7 @@ app.post("/api/auth/register", async (req, res) => {
     const user = await sql.begin(async (tx) => {
       const [createdUser] = await tx`
         INSERT INTO users (username, email, status, updated_at)
-        VALUES (${username}, ${email}, 'pending', now())
+        VALUES (${username}, ${email}, ${defaultRegistrationStatus}, now())
         RETURNING id, public_id, username, email, email_verified_at, last_sign_in_at, status, created_at, updated_at
       `;
 
@@ -311,7 +316,11 @@ app.post("/api/auth/register", async (req, res) => {
       return createdUser;
     });
 
-    console.log(`[AUTH] User registriert und wartet auf Freischaltung: ID ${user.id}, Name: ${user.username}`);
+    console.log(
+      user.status === "active"
+        ? `[AUTH] User registriert und aktiviert: ID ${user.id}, Name: ${user.username}`
+        : `[AUTH] User registriert und wartet auf Freischaltung: ID ${user.id}, Name: ${user.username}`
+    );
     return res.status(201).json(
       buildRegisterSuccessResponse(
         "User registered successfully.",

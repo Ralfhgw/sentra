@@ -134,6 +134,14 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
 
   const userId = String(userIdRaw);
   const pendingActivation = authUser?.status !== "active";
+  const successMessage =
+    pendingActivation
+      ? lang === "de"
+        ? "Konto angelegt. Ein Administrator muss den Zugang im Auth-Server zuerst freischalten."
+        : "Account created. An administrator must activate access in the auth server first."
+      : lang === "de"
+        ? "Konto angelegt. Du kannst dich jetzt anmelden."
+        : "Account created. You can sign in now.";
 
   try {
     const loc = await getLocationFromCoords(lat, lon);
@@ -180,10 +188,7 @@ export async function handleAuthRegister(req: NextRequest): Promise<NextResponse
       success: true,
       userId,
       pendingActivation,
-      message:
-        lang === "de"
-          ? "Konto angelegt. Ein Administrator muss den Zugang im Auth-Server zuerst freischalten."
-          : "Account created. An administrator must activate access in the auth server first.",
+      message: successMessage,
     });
   } catch (err) {
     console.error("Register bootstrap error:", err);

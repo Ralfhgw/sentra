@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
-import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";
+import { getAuthenticatedUserFromCookies, getUserSettings } from "@/utils/serverAuth";
 import { getEvents } from "@/app/api/events/getEvents";
 import { refreshCustomEventSourcesForUser } from "@/utils/eventUrlService";
 import type { Event } from "@/types/typesNews";
-
-function getCustomRefreshErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) {
-    return `User-specific event URL could not be updated: ${error.message.trim()}`;
-  }
-
-  return "The user-specific event URL could not be updated.";
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,20 +18,6 @@ export async function POST(req: NextRequest) {
     }
 
     await getEvents(userId, town, dayString);
-
-    let customRefreshError: string | null = null;
-
-    if (refreshCustomEventUrls) {
-      try {
-        await refreshCustomEventSourcesForUser(userId, {
-          force: true,
-          targetDay: dayString,
-        });
-      } catch (error) {
-        customRefreshError = getCustomRefreshErrorMessage(error);
-        console.error("Custom event URL refresh failed:", error);
-      }
-    }
 
     const events = await sql<Event[]>`
       SELECT
@@ -57,7 +35,34 @@ export async function POST(req: NextRequest) {
       ORDER BY source_town ASC, date ASC
     `;
 
-    return NextResponse.json({ success: true, events, customRefreshError });
+    let refreshStarted = false;
+    let refreshRequestedAt: string | null = null;
+
+    if (refreshCustomEventUrls) {
+      const settings = await getUserSettings(userId);
+      const hasCustomRefreshSources =
+        Boolean(settings.key2?.trim()) &&
+        settings.event_urls.some((source) => source.url.trim().length > 0);
+
+      if (hasCustomRefreshSources) {
+        refreshStarted = true;
+        refreshRequestedAt = new Date().toISOString();
+
+        void refreshCustomEventSourcesForUser(userId, {
+          force: true,
+          targetDay: dayString,
+        }).catch((error) => {
+          console.error("Custom event URL refresh failed:", error);
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      events,
+      refreshStarted,
+      refreshRequestedAt,
+    });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },

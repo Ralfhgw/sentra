@@ -17,6 +17,14 @@ type RefreshStateRow = {
     next_refresh_at: string | null;
 };
 
+type RefreshStatusRow = {
+    source_key: string;
+    last_status: string | null;
+    last_error: string | null;
+    refresh_started_at: string | null;
+    last_refreshed_at: string | null;
+};
+
 type CustomEventRow = {
     title: string;
     date: string;
@@ -29,6 +37,11 @@ type CustomEventRow = {
 type RefreshCustomEventSourceOptions = {
     force?: boolean;
     targetDay?: string;
+};
+
+export type CustomEventRefreshStatus = {
+    status: "idle" | "running" | "success" | "error";
+    error: string | null;
 };
 
 function buildSourceKey(url: string) {
@@ -520,6 +533,7 @@ async function markUrlRefreshError(
       ${sourceKey},
       ${CUSTOM_SOURCE_KIND},
       ${cacheKey},
+      NOW(),
       NULL,
       'error',
       ${message}
@@ -528,10 +542,102 @@ async function markUrlRefreshError(
     DO UPDATE SET
       source_kind = EXCLUDED.source_kind,
       cache_key = EXCLUDED.cache_key,
+      last_refreshed_at = EXCLUDED.last_refreshed_at,
       refresh_started_at = NULL,
       last_status = EXCLUDED.last_status,
       last_error = EXCLUDED.last_error
   `;
+}
+
+function hasRefreshStateChangedAfter(
+    row: RefreshStatusRow,
+    startedAfter?: string | null
+) {
+    if (!startedAfter) {
+        return true;
+    }
+
+    const threshold = Date.parse(startedAfter);
+    if (Number.isNaN(threshold)) {
+        return true;
+    }
+
+    const startedAt = row.refresh_started_at
+        ? Date.parse(row.refresh_started_at)
+        : Number.NEGATIVE_INFINITY;
+    const refreshedAt = row.last_refreshed_at
+        ? Date.parse(row.last_refreshed_at)
+        : Number.NEGATIVE_INFINITY;
+
+    return startedAt >= threshold || refreshedAt >= threshold;
+}
+
+export async function getCustomEventRefreshStatusForUser(
+    userId: string,
+    options?: { startedAfter?: string | null }
+): Promise<CustomEventRefreshStatus> {
+    const settings = await getUserSettings(userId);
+    const openAiKey = settings.key2?.trim();
+    const sources = settings.event_urls.filter((source) => source.url.trim().length > 0);
+
+    if (!openAiKey || sources.length === 0) {
+        return {
+            status: "idle",
+            error: null,
+        };
+    }
+
+    const sourceKeys = new Set(sources.map((source) => buildSourceKey(source.url)));
+    const rows = await sql<RefreshStatusRow[]>`
+      SELECT
+        source_key,
+        last_status,
+        last_error,
+        refresh_started_at,
+        last_refreshed_at
+      FROM user_event_refresh_state
+      WHERE user_id = ${userId}::uuid
+        AND source_kind = ${CUSTOM_SOURCE_KIND}
+    `;
+
+    const relevantRows = rows.filter((row) => sourceKeys.has(row.source_key));
+    const currentRows = relevantRows.filter((row) =>
+        hasRefreshStateChangedAfter(row, options?.startedAfter)
+    );
+
+    const failedRow = currentRows.find((row) => row.last_status === "error");
+    if (failedRow) {
+        return {
+            status: "error",
+            error: failedRow.last_error ?? "Unbekannter URL-Refresh-Fehler",
+        };
+    }
+
+    if (currentRows.some((row) => row.last_status === "running")) {
+        return {
+            status: "running",
+            error: null,
+        };
+    }
+
+    if (currentRows.length < sourceKeys.size) {
+        return {
+            status: "running",
+            error: null,
+        };
+    }
+
+    if (currentRows.every((row) => row.last_status === "success")) {
+        return {
+            status: "success",
+            error: null,
+        };
+    }
+
+    return {
+        status: "idle",
+        error: null,
+    };
 }
 
 function runSingleFlight(key: string, work: () => Promise<void>) {

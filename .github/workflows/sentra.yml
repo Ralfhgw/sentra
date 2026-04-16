@@ -119,7 +119,11 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          for i in 1 2 3; do
+            ssh-keyscan -T 10 -4 -H "$SERVER_HOST" >> ~/.ssh/known_hosts && break
+            sleep 5
+          done
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -i ~/.ssh/id_rsa "$SERVER_USER@$SERVER_HOST" true
 
       - name: Prepare remote directories and clean sentra target
         run: |

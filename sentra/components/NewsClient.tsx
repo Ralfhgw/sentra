@@ -160,6 +160,7 @@ export default function NewsClient({
   const [meaningList, setMeaningList] = useState(dayMeanings);
   const [meaningLoading, setMeaningLoading] = useState(false);
   const [meaningError, setMeaningError] = useState("");
+  const [pendingRefreshStartedAt, setPendingRefreshStartedAt] = useState("");
 
   const [refreshStatus, setRefreshStatus] = useState<{
     message: string;
@@ -320,6 +321,91 @@ export default function NewsClient({
     void loadDayMeanings(meaningTargetDate);
   }, [infoVisible, canOpenMeaning, meaningTargetDate, loadDayMeanings]);
 
+  useEffect(() => {
+    if (!pendingRefreshStartedAt) {
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const pollRefreshStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/events/refresh-status?startedAt=${encodeURIComponent(pendingRefreshStartedAt)}`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(payload?.error || "Refresh-Status konnte nicht geladen werden.");
+        }
+
+        const payload = (await response.json()) as {
+          status?: "idle" | "running" | "success" | "error";
+          error?: string | null;
+          events?: NewsEvent[];
+        };
+
+        if (cancelled) {
+          return;
+        }
+
+        if (payload.status === "running") {
+          timeoutId = setTimeout(() => {
+            void pollRefreshStatus();
+          }, 2500);
+          return;
+        }
+
+        if (payload.events) {
+          setEventList(payload.events);
+        }
+
+        setPendingRefreshStartedAt("");
+        setIsRefreshing(false);
+
+       if (payload.status === "error") {
+          setRefreshStatus({
+            message: payload.error || "Fehler bei der Event-Abfrage.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setRefreshStatus({
+          message: "Event-Query successful.",
+          tone: "neutral",
+        });
+     } catch (statusError) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(statusError);
+        setPendingRefreshStartedAt("");
+        setIsRefreshing(false);
+        setRefreshStatus({
+          message: getRefreshErrorMessage(statusError),
+          tone: "error",
+        });
+      }
+    };
+
+    timeoutId = setTimeout(() => {
+      void pollRefreshStatus();
+    }, 1500);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [pendingRefreshStartedAt]);
+
   if (!evtEnabled) {
     return <ModuleDisabledNotice title="News" settingCode="EVT" />;
   }
@@ -409,6 +495,7 @@ export default function NewsClient({
     setForceRefresh(false);
 
     void (async () => {
+      let keepRefreshing = false;
       try {
         setIsRefreshing(true);
         setRefreshStatus({
@@ -435,7 +522,8 @@ export default function NewsClient({
 
         const payload = (await response.json()) as {
           events?: NewsEvent[];
-          customRefreshError?: string | null;
+          refreshStarted?: boolean;
+          refreshRequestedAt?: string | null;
         };
 
         setEventList(payload.events ?? []);
@@ -443,11 +531,9 @@ export default function NewsClient({
         setSelectedStart(dateKey);
         setSelectedEnd("");
 
-        if (payload.customRefreshError) {
-          setRefreshStatus({
-            message: payload.customRefreshError,
-            tone: "error",
-          });
+        if (payload.refreshStarted && payload.refreshRequestedAt) {
+          keepRefreshing = true;
+          setPendingRefreshStartedAt(payload.refreshRequestedAt);
           return;
         }
 
@@ -462,7 +548,9 @@ export default function NewsClient({
           tone: "error",
         });
       } finally {
-        setIsRefreshing(false);
+          if (!keepRefreshing) {
+          setIsRefreshing(false);
+        }
       }
     })();
   }

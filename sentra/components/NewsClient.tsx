@@ -7,6 +7,7 @@ import { MoveableScrollAreaVertical } from "@/components/CompMovableScrollAreaVe
 import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
 
 type FilterMode = "all" | "day";
+type RefreshStatusTone = "neutral" | "error";
 type NewsEvent = NewsClientProps["events"][number] & {
   sourceTown?: string | null;
 };
@@ -80,6 +81,24 @@ function formatCalendarLabel(dateKey: string): string {
   });
 }
 
+function getRefreshErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+
+    if (!message || message === "Failed to fetch") {
+      return "Event-Query konnte nicht abgeschlossen werden.";
+    }
+
+    if (message.includes("abgebrochen") || message.includes("aborted")) {
+      return "Event-Query wurde vorzeitig beendet.";
+    }
+
+    return message;
+  }
+
+  return "Fehler bei der Event-Abfrage.";
+}
+
 function formatEventDate(rawDate: string): string {
   const parsedDate = parseEventDate(rawDate);
   if (!parsedDate) {
@@ -141,6 +160,14 @@ export default function NewsClient({
   const [meaningList, setMeaningList] = useState(dayMeanings);
   const [meaningLoading, setMeaningLoading] = useState(false);
   const [meaningError, setMeaningError] = useState("");
+
+  const [refreshStatus, setRefreshStatus] = useState<{
+    message: string;
+    tone: RefreshStatusTone;
+  }>({
+    message: "",
+    tone: "neutral",
+  });
 
   const rangeStart =
     selectedStart && selectedEnd
@@ -368,7 +395,10 @@ export default function NewsClient({
 
     const requestTown = locationFilter === "all" ? town : locationFilter;
     if (!requestTown) {
-      alert("Bitte zuerst einen Standort auswaehlen.");
+      setRefreshStatus({
+        message: "Please choose location first.",
+        tone: "error",
+      });
       return;
     }
 
@@ -381,6 +411,10 @@ export default function NewsClient({
     void (async () => {
       try {
         setIsRefreshing(true);
+        setRefreshStatus({
+          message: "Event-Query running...",
+          tone: "neutral",
+        });
 
         const response = await fetch("/api/events/refresh", {
           method: "POST",
@@ -393,20 +427,40 @@ export default function NewsClient({
         });
 
         if (!response.ok) {
-          throw new Error("Force-Refresh fehlgeschlagen.");
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(payload?.error || "Force-Refresh failed.");
         }
 
         const payload = (await response.json()) as {
           events?: NewsEvent[];
+          customRefreshError?: string | null;
         };
 
         setEventList(payload.events ?? []);
         setFilterMode("day");
         setSelectedStart(dateKey);
         setSelectedEnd("");
+
+        if (payload.customRefreshError) {
+          setRefreshStatus({
+            message: payload.customRefreshError,
+            tone: "error",
+          });
+          return;
+        }
+
+        setRefreshStatus({
+          message: "Event-Query successful.",
+          tone: "neutral",
+        });
       } catch (refreshError) {
         console.error(refreshError);
-        alert("Fehler bei der Event-Abfrage.");
+        setRefreshStatus({
+          message: getRefreshErrorMessage(refreshError),
+          tone: "error",
+        });
       } finally {
         setIsRefreshing(false);
       }
@@ -462,6 +516,15 @@ export default function NewsClient({
 
     return classes.filter(Boolean).join(" ");
   }
+
+
+  const statusMessage = error
+    ? error
+    : isRefreshing
+      ? "Event-Query running..."
+      : refreshStatus.message || "Event-Query successful.";
+  const statusClassName =
+    error || refreshStatus.tone === "error" ? "text-red-600" : "text-gray-200";
 
   return (
     <div className="bg-gray-300 flex flex-col lg:flex-row gap-1 w-full mx-auto overflow-hidden">
@@ -603,8 +666,8 @@ export default function NewsClient({
               onClick={handleMeaningButtonClick}
               disabled={!canOpenMeaning}
               className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition ${canOpenMeaning
-                  ? "border-gray-500 bg-gray-100 text-gray-700 shadow-[3px_3px_0_0_rgba(156,163,175,1)] hover:bg-white"
-                  : "border-gray-300 bg-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
+                ? "border-gray-500 bg-gray-100 text-gray-700 shadow-[3px_3px_0_0_rgba(156,163,175,1)] hover:bg-white"
+                : "border-gray-300 bg-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
                 }`}
               title={
                 canOpenMeaning
@@ -624,8 +687,8 @@ export default function NewsClient({
           Events in {currentHeadlineTown}
         </h1>
 
-        <div className={`text-center mb-4 ${error ? "text-red-600" : "text-gray-200"}`}>
-          {error ? error : isRefreshing ? "Event-Query running..." : "Event-Query successful."}
+        <div className={`text-center mb-4 ${statusClassName}`}>
+          {statusMessage}
         </div>
 
         {filteredEvents.length > 0 ? (

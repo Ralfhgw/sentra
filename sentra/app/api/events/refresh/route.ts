@@ -5,6 +5,14 @@ import { getEvents } from "@/app/api/events/getEvents";
 import { refreshCustomEventSourcesForUser } from "@/utils/eventUrlService";
 import type { Event } from "@/types/typesNews";
 
+function getCustomRefreshErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return `User-specific event URL could not be updated: ${error.message.trim()}`;
+  }
+
+  return "The user-specific event URL could not be updated.";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await getAuthenticatedUserFromCookies();
@@ -12,12 +20,14 @@ export async function POST(req: NextRequest) {
 
     if (!dayString || !town) {
       return NextResponse.json(
-        { success: false, error: "dayString und town fehlen." },
+        { success: false, error: "dayString and town missing." },
         { status: 400 }
       );
     }
 
     await getEvents(userId, town, dayString);
+
+    let customRefreshError: string | null = null;
 
     if (refreshCustomEventUrls) {
       try {
@@ -25,8 +35,9 @@ export async function POST(req: NextRequest) {
           force: true,
           targetDay: dayString,
         });
-      } catch (customRefreshError) {
-        console.error("Custom event URL refresh failed:", customRefreshError);
+      } catch (error) {
+        customRefreshError = getCustomRefreshErrorMessage(error);
+        console.error("Custom event URL refresh failed:", error);
       }
     }
 
@@ -46,7 +57,7 @@ export async function POST(req: NextRequest) {
       ORDER BY source_town ASC, date ASC
     `;
 
-    return NextResponse.json({ success: true, events });
+    return NextResponse.json({ success: true, events, customRefreshError });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },

@@ -681,6 +681,7 @@ export default function NewsClient({
         </div>
       </div>
 
+
       {/* Right Box */}
       <MoveableScrollAreaVertical className="flex-1 bg-gray-600/80 rounded-l-lg text-gray-800 hide-scrollbar overflow-y-hidden shadow-md cursor-grab select-none">
         <h1 className="text-xl lg:text-2xl mt-4 mb-2 text-center font-extrabold text-gray-200 drop-shadow-[0_4px_8px_rgba(30,41,59,0.35)] tracking-wide select-none">

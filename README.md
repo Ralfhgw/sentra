@@ -6,6 +6,7 @@ This README serves as a concise, basic project information for users. It explain
 
 ## What Sentra is intended for
 
+
 Sentra brings together several everyday information sources in one dashboard:
 
 - Regional events and dates

@@ -19,6 +19,9 @@ export default function RootLayout({
 
   return (
     <html lang="de">
+      <head>
+        <meta name="robots" content="noindex, nofollow"></meta>
+      </head>
       <body className="m-0">
         <AuthProvider>
           <SettingsProvider>

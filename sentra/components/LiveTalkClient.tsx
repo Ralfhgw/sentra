@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
+import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
 import type {
   FeedEntry,
   LiveTalkChatMessage,
@@ -187,7 +188,6 @@ function VideoTile({
   );
 }
 
-
 export default function LiveTalkClient({
   rtcEnabled,
 }: LiveTalkClientProps) {
@@ -237,7 +237,6 @@ export default function LiveTalkClient({
       if (left.kind === right.kind) {
         return 0;
       }
-
       return left.kind === "video" ? -1 : 1;
     });
 
@@ -258,7 +257,6 @@ export default function LiveTalkClient({
     const meta = producerMetaRef.current.get(producerId);
     if (meta) {
       const feed = feedByPeerRef.current.get(meta.peerId);
-      const existingTrack = feed?.trackByKind.get(meta.kind);
 
       if (feed) {
         feed.trackByKind.delete(meta.kind);
@@ -288,7 +286,6 @@ export default function LiveTalkClient({
     producerMetaRef.current.delete(producerId);
     syncRemoteFeeds();
   };
-
 
   const cleanupSession = () => {
     socketRef.current?.disconnect();
@@ -1236,7 +1233,7 @@ export default function LiveTalkClient({
                               disabled={!localStream}
                               className="px-4 py-3 rounded-lg border bg-white  font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
                             >
-                              {audioEnabled ? "🎤" : "🎤"}
+                              {audioEnabled ? <FaMicrophone /> : <FaMicrophoneSlash />}
                             </button>
 
                             <button
@@ -1245,7 +1242,7 @@ export default function LiveTalkClient({
                               disabled={!localStream}
                               className="rounded-lg border bg-white px-4 py-3 font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
                             >
-                              {videoEnabled ? "📷" : "📷"}
+                              {videoEnabled ? <FaVideo /> : <FaVideoSlash />}
                             </button>
                           </div>
                         )}

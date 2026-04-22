@@ -1,4 +1,6 @@
 import { useRef, useEffect, useState } from "react";
+import { FaPlayCircle, FaPause } from "react-icons/fa";
+import { PiSpeakerSimpleHighFill, PiSpeakerSimpleSlashFill } from "react-icons/pi";
 import Hls from "hls.js";
 
 type WebcamItemProps = {
@@ -263,7 +265,7 @@ export default function WebcamItem({
                             className="bg-gray-700 text-white px-2 py-1 rounded"
                             title={playing ? "Stop" : "Play"}
                         >
-                            {playing ? "▶️" : "⏹️"}
+                            {playing ? <FaPlayCircle /> : <FaPause />}
                         </button>
 
                         <button
@@ -271,7 +273,7 @@ export default function WebcamItem({
                             className="bg-gray-700 text-white px-2 py-1 rounded"
                             title={muted ? "Unmute" : "Mute"}
                         >
-                            {muted ? "🔇" : "🔈"}
+                            {muted ? <PiSpeakerSimpleSlashFill /> : <PiSpeakerSimpleHighFill />}
                         </button>
 
                         <input

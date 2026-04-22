@@ -267,12 +267,12 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 ### Wichtigste Typen und Definitionen
 
 - `ActiveSession`
-  - haelt den aktuellen Zustand der laufenden Session im UI.
+  - hält den aktuellen Zustand der laufenden Session im UI.
   - speichert `userName`, `sessionCode` und `receiveOnly`.
 
 - `JoinRoomAck`
   - typisiert die Antwort auf `room:join`.
-  - enthaelt `routerRtpCapabilities`, vorhandene Producer und Chat-Nachrichten.
+  - enthält `routerRtpCapabilities`, vorhandene Producer und Chat-Nachrichten.
 
 - `TransportCreateAck`
   - typisiert die Antwort auf `transport:create`.
@@ -280,7 +280,7 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 
 - `ConsumerCreateAck`
   - typisiert die Antwort auf `consumer:create`.
-  - enthaelt die Infos zum Erzeugen eines lokalen Consumers.
+  - enthält die Infos zum Erzeugen eines lokalen Consumers.
 
 - `ProducerStartAck`
   - typisiert die Antwort auf `producer:start`.
@@ -301,8 +301,8 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 - `VideoTile(...)`
   - rendert eine einzelne Video-Kachel.
   - benutzt ein `video`-Element fuer das Bild und ein verstecktes `audio`-Element fuer den Ton.
-  - sorgt dafuer, dass Audio und Video getrennt behandelt werden, damit Browser-Autoplay nicht das Bild blockiert.
-  - reagiert auf `addtrack`, falls ein Feed erst Audio und spaeter Video erhaelt.
+  - sorgt dafür, dass Audio und Video getrennt behandelt werden, damit Browser-Autoplay nicht das Bild blockiert.
+  - reagiert auf `addtrack`, falls ein Feed erst Audio und später Video erhält.
 
 ### State und Refs
 
@@ -316,19 +316,19 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
   - speichert Metadaten des erzeugten oder geladenen Session-Keys.
 
 - `statusText`, `errorMessage`
-  - informieren den Benutzer ueber den aktuellen Schritt oder Fehler.
+  - informieren den Benutzer über den aktuellen Schritt oder Fehler.
 
 - `localStream`
-  - enthaelt den lokalen Kamera-/Mikrofon-Stream.
+  - enthält den lokalen Kamera-/Mikrofon-Stream.
 
 - `remoteFeeds`
-  - enthaelt die darzustellenden Remote-Streams fuer das UI.
+  - enthält die darzustellenden Remote-Streams fuer das UI.
 
 - `socketRef`
-  - haelt die laufende Socket.IO-Verbindung.
+  - hält die laufende Socket.IO-Verbindung.
 
 - `deviceRef`
-  - enthaelt das `mediasoup-client`-Device.
+  - enthält das `mediasoup-client`-Device.
 
 - `sendTransportRef`
   - ist der Send-Transport fuer lokale Tracks.
@@ -346,7 +346,7 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
   - baut die sichtbaren Remote-Feeds pro Peer zusammen.
 
 - `audioProducerRef`, `videoProducerRef`
-  - trennen die lokalen Audio- und Video-Producer fuer spaetere Toggles.
+  - trennen die lokalen Audio- und Video-Producer für spätere Toggles.
 
 ### Wichtigste abgeleitete Werte
 
@@ -369,37 +369,37 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 ### Wichtigste Funktionen im Client
 
 - `syncRemoteFeeds()`
-  - ueberfuehrt die interne `feedByPeerRef`-Map in React-State fuer das UI.
+  - überführt die interne `feedByPeerRef`-Map in React-State fuer das UI.
 
 - `removeProducerTrack(producerId)`
-  - entfernt einen einzelnen Remote-Track aus dem zugehoerigen Peer-Feed.
-  - schliesst den dazugehoerigen Consumer und Receive-Transport.
+  - entfernt einen einzelnen Remote-Track aus dem zugehörigen Peer-Feed.
+  - schliesst den dazugehörigen Consumer und Receive-Transport.
   - aktualisiert danach die sichtbaren Remote-Feeds.
 
 - `cleanupSession()`
-  - fuehrt einen kompletten Reset einer Session aus.
+  - führt einen kompletten Reset einer Session aus.
   - trennt Socket-Verbindung, schliesst Producer/Consumer/Transporte und stoppt lokale Tracks.
-  - setzt anschliessend alle relevanten UI-State-Werte zurueck.
+  - setzt anschliessend alle relevanten UI-State-Werte zurück.
 
 - `waitForSocketConnection(socket)`
   - wartet explizit auf eine erfolgreiche Socket-Verbindung.
   - besitzt einen Timeout von 8 Sekunden und liefert bei Nichterfolg einen klaren Fehler.
 
 - `addTrackToFeed(summary, track)`
-  - fuegt Audio- oder Videotracks einem Peer-Feed hinzu.
+  - fügt Audio- oder Videotracks einem Peer-Feed hinzu.
   - baut den `MediaStream` fuer den Peer aus allen vorhandenen Tracks neu auf.
 
 - `consumeProducer(summary)`
   - erstellt fuer einen fremden Producer einen Receive-Transport.
   - verbindet diesen Transport, erzeugt einen Consumer und setzt ihn mit `consumer:resume` fort.
-  - haengt den Remote-Track erst dann ins UI, wenn er tatsaechlich bereit ist.
+  - hängt den Remote-Track erst dann ins UI, wenn er tatsächlich bereit ist.
   - schreibt wichtige Diagnose-Logs fuer `recv transport state`, `consumer created`, `consumer resumed` und `remote track unmuted`.
 
 - `startLocalMedia()`
   - holt Kamera und Mikrofon per `getUserMedia`.
   - erstellt den Send-Transport.
   - produziert Audio und Video als eigene Producer.
-  - speichert die Producer getrennt, damit spaeter Audio und Video unabhaengig geschaltet werden koennen.
+  - speichert die Producer getrennt, damit später Audio und Video unabhängig geschaltet werden können.
 
 - `openRoom(selectedRoom)`
   - ist der zentrale Join-Flow.
@@ -411,30 +411,30 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
   - startet bei Nicht-Viewern die lokale Medienproduktion.
 
 - `generateSessionKey()`
-  - erstellt ueber `POST /api/livetalk/rooms` eine neue Session.
+  - erstellt über `POST /api/livetalk/rooms` eine neue Session.
   - schreibt den neuen Session-Key direkt in das Formular.
 
 - `connectWithSessionKey()`
   - validiert Username und Session-Key.
-  - laedt die Session ueber `GET /api/livetalk/rooms`.
+  - lädt die Session über `GET /api/livetalk/rooms`.
   - ruft danach `openRoom(...)` auf.
 
 - `leaveSession()`
-  - verlaesst die Session ueber `cleanupSession()`.
+  - verlässt die Session über `cleanupSession()`.
 
 - `copySessionKey()`
   - kopiert den Session-Key in die Zwischenablage.
 
 - `toggleAudio()`
-  - pausiert oder resuemiert den lokalen Audio-Producer.
-  - schaltet zusaetzlich das lokale Track-Flag.
+  - pausiert oder resümiert den lokalen Audio-Producer.
+  - schaltet zusätzlich das lokale Track-Flag.
 
 - `toggleVideo()`
-  - pausiert oder resuemiert den lokalen Video-Producer.
-  - schaltet zusaetzlich das lokale Track-Flag.
+  - pausiert oder resümiert den lokalen Video-Producer.
+  - schaltet zusätzlich das lokale Track-Flag.
 
 - `sendChatMessage()`
-  - sendet die aktuelle Chat-Nachricht ueber `chat:send`.
+  - sendet die aktuelle Chat-Nachricht über `chat:send`.
 
 ### Wichtige UI-Bereiche
 
@@ -445,11 +445,11 @@ Diese Datei ist der gesamte Browser-Client fuer LiveTalk. Sie kapselt UI, Socket
 
 - Aktive Session
   - zeigt Session-Key, Usernamen und Socket-ID
-  - bietet Buttons fuer Verlassen, Kamera und Mikrofon
+  - bietet Buttons für Verlassen, Kamera und Mikrofon
 
 - Video Area
   - lokales Tile bei Teilnehmern mit Kamera
-  - Remote-Tiles fuer fremde Video-Feeds
+  - Remote-Tiles für fremde Video-Feeds
   - Platzhalter, solange keine Remote-Kamera vorhanden ist
 
 - Chat
@@ -468,19 +468,19 @@ Diese Route verwaltet Session-Raume auf App-Seite.
   - trimmt und normalisiert Session-Codes auf Grossbuchstaben.
 
 - `mapRoom(row)`
-  - uebersetzt DB-Spalten in das API-Antwortformat fuer den Client.
+  - übersetzt DB-Spalten in das API-Antwortformat fuer den Client.
 
 - `generateUniqueRoomCode()`
-  - erzeugt zufaellige Session-Codes.
-  - prueft direkt gegen die Datenbank, damit keine Duplikate entstehen.
+  - erzeugt zufällige Session-Codes.
+  - prüft direkt gegen die Datenbank, damit keine Duplikate entstehen.
 
 ### HTTP-Handler
 
 - `GET(req)`
-  - laedt einen vorhandenen Raum ueber `?code=...`.
-  - prueft, ob der Benutzer eingeloggt ist.
-  - prueft, ob der Raum aktiv und nicht abgelaufen ist.
-  - gibt `{ room }` zurueck.
+  - lädt einen vorhandenen Raum über `?code=...`.
+  - prüft, ob der Benutzer eingeloggt ist.
+  - prüft, ob der Raum aktiv und nicht abgelaufen ist.
+  - gibt `{ room }` zurück.
 
 - `POST(req)`
   - erzeugt einen neuen Raum.
@@ -504,8 +504,8 @@ Diese Route erzeugt das signierte LiveTalk-Zugriffstoken fuer den Browser.
 
 - `POST(req)`
   - validiert Login, `roomId` und `userName`.
-  - laedt den Raum aus der Datenbank.
-  - entscheidet ueber die Rolle:
+  - lädt den Raum aus der Datenbank.
+  - entscheidet über die Rolle:
     - `viewer`, wenn `receiveOnly` gesetzt ist
     - `host`, wenn der aktuelle Benutzer Besitzer des Raums ist
     - sonst `member`
@@ -515,7 +515,7 @@ Diese Route erzeugt das signierte LiveTalk-Zugriffstoken fuer den Browser.
     - `roomCode`
     - `displayName`
     - `role`
-  - gibt zurueck:
+  - gibt zurück:
     - `token`
     - `socketUrl`
     - `room`
@@ -524,11 +524,11 @@ Diese Route erzeugt das signierte LiveTalk-Zugriffstoken fuer den Browser.
 
 ### Wichtiger Punkt
 
-Die Rollenlogik ist hier entscheidend fuer den Session-Modus. Ein Benutzer kann denselben Raum in einem zweiten Tab bewusst als `viewer` oeffnen, wenn `receiveOnly` gesetzt ist.
+Die Rollenlogik ist hier entscheidend fuer den Session-Modus. Ein Benutzer kann denselben Raum in einem zweiten Tab bewusst als `viewer` öffnen, wenn `receiveOnly` gesetzt ist.
 
 ## LiveTalk-Microservice
 
-Der Microservice ist der eigentliche Echtzeitkern. Er laeuft separat von Next.js und verwaltet Socket.IO, MediaSoup und die persistente Ablage fuer Room- und Chat-Daten.
+Der Microservice ist der eigentliche Echtzeitkern. Er läuft separat von Next.js und verwaltet Socket.IO, MediaSoup und die persistente Ablage fuer Room- und Chat-Daten.
 
 ## Datei: `src/index.ts`
 
@@ -536,15 +536,15 @@ Diese Datei bootstrapped den gesamten Dienst.
 
 ### Aufgaben
 
-- laedt `.env`
+- lädt `.env`
 - startet `express`
 - aktiviert `cors`
 - stellt `/health` bereit
 - erzeugt den HTTP-Server fuer Socket.IO
 - startet den Worker-Pool fuer MediaSoup
 - initialisiert `RoomsStore`
-- registriert alle Socket-Handler ueber `registerHandlers(...)`
-- behandelt geordnetes Shutdown fuer:
+- registriert alle Socket-Handler über `registerHandlers(...)`
+- behandelt geordnetes Shutdown für:
   - Socket.IO
   - HTTP-Server
   - MediaSoup-Worker
@@ -640,13 +640,13 @@ Diese Datei ist das Herz des Echtzeitprotokolls.
 
 - `io.use(...)`
   - verifiziert das Token bei Verbindungsaufbau.
-  - prueft, ob der Raum existiert, aktiv und nicht abgelaufen ist.
+  - prüft, ob der Raum existiert, aktiv und nicht abgelaufen ist.
   - schreibt das Payload in `socket.data`.
 
 ### Socket-Events und Aufgaben
 
 - `room:join`
-  - laedt oder erzeugt den Room zur Laufzeit.
+  - lädt oder erzeugt den Room zur Laufzeit.
   - legt den Peer in `RoomsStore` an.
   - markiert den Teilnehmer in der Datenbank als beigetreten.
   - liefert `routerRtpCapabilities`, vorhandene Producer und Chat-Historie.
@@ -664,26 +664,26 @@ Diese Datei ist das Herz des Echtzeitprotokolls.
   - informiert alle anderen Teilnehmer per `producers:new`.
 
 - `consumer:create`
-  - erstellt fuer einen vorhandenen fremden Producer einen neuen Consumer.
-  - prueft zuerst mit `router.canConsume(...)`, ob die RTP-Capabilities passen.
+  - erstellt für einen vorhandenen fremden Producer einen neuen Consumer.
+  - prüft zuerst mit `router.canConsume(...)`, ob die RTP-Capabilities passen.
 
 - `consumer:resume`
-  - resuemiert einen zuvor pausiert angelegten Consumer.
+  - resümiert einen zuvor pausiert angelegten Consumer.
 
 - `chat:send`
   - speichert eine Nachricht und verteilt sie an alle Teilnehmer.
 
 - `peer:audio`
-  - pausiert oder resuemiert lokale Audio-Producer serverseitig.
+  - pausiert oder resümiert lokale Audio-Producer serverseitig.
 
 - `disconnect`
-  - raeumt Peer-State auf.
+  - räumt Peer-State auf.
   - markiert den Teilnehmer als verlassen.
   - informiert andere Teilnehmer ueber geschlossene Producer.
 
 ## Datei: `src/domain/roomsStore.ts`
 
-Diese Datei haelt den fluechtigen Room-State im Speicher.
+Diese Datei hält den flüchtigen Room-State im Speicher.
 
 ### Aufgaben und wichtigste Methoden
 
@@ -691,7 +691,7 @@ Diese Datei haelt den fluechtigen Room-State im Speicher.
   - verwaltet alle aktiven Rooms im Prozess.
 
 - `getOrCreateRoom(roomId, roomCode)`
-  - laedt einen vorhandenen Laufzeit-Room oder erzeugt einen neuen Router auf einem Worker.
+  - lädt einen vorhandenen Laufzeit-Room oder erzeugt einen neuen Router auf einem Worker.
 
 - `getRoom(roomId)`
   - liest einen Room aus dem Speicher.
@@ -752,7 +752,7 @@ Diese Datei beschreibt den fluechtigen Zustand eines einzelnen Peers.
 ### Aufgaben
 
 - `PeerRuntime`
-  - enthaelt Identitaet, Rolle, Transporte, Producer und Consumer eines Peers.
+  - enthält Identität, Rolle, Transporte, Producer und Consumer eines Peers.
 
 - `closePeer(peer)`
   - schliesst alle Consumer, Producer und Transporte eines Peers.
@@ -893,10 +893,9 @@ Wenn `socketUrl` oder `MEDIASOUP_ANNOUNCED_IP` nicht zur realen Testumgebung pas
 
 - TURN-Server (`coturn`) fuer robustere externe Erreichbarkeit
 - saubere Trennung von Audio-only-Teilnehmern und Video-Teilnehmern im UI
-- Moderationsfunktionen fuer Host
+- Moderationsfunktionen für Host
 - sichtbare Teilnehmerliste
 - Session-Ende / Raum schliessen durch Host
 - automatisches Reconnect-Verhalten bei Netzwechsel
-.
 
 ##### English language

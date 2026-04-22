@@ -10,6 +10,16 @@ type WebcamItemProps = {
     location?: string;
 };
 
+const shouldBypassProxy = (sourceUrl: string) => {
+    try {
+        const resolvedUrl = /^\/\//.test(sourceUrl) ? `https:${sourceUrl}` : sourceUrl;
+        const { hostname } = new URL(resolvedUrl);
+        return hostname === "streaming.panomax.com" || hostname.endsWith(".panomax.com");
+    } catch {
+        return false;
+    }
+};
+
 const getPlaybackUrl = (sourceUrl: string) => {
     const normalizedUrl = sourceUrl.trim();
 
@@ -25,10 +35,16 @@ const getPlaybackUrl = (sourceUrl: string) => {
     }
 
     if (/^\/\//.test(normalizedUrl)) {
+        if (shouldBypassProxy(normalizedUrl)) {
+            return `https:${normalizedUrl}`;
+        }
         return `/api/stream-proxy?url=${encodeURIComponent(`https:${normalizedUrl}`)}`;
     }
 
     if (/^https?:\/\//i.test(normalizedUrl)) {
+        if (shouldBypassProxy(normalizedUrl)) {
+            return normalizedUrl;
+        }
         return `/api/stream-proxy?url=${encodeURIComponent(normalizedUrl)}`;
     }
 

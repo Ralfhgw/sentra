@@ -517,7 +517,7 @@ export default function LiveViewClient({
     await swapSlots(dragFrom, toSlotId);
   };
 
-const isDesktop = viewportWidth >= 768;
+  const isDesktop = viewportWidth >= 768;
 
   return (
 
@@ -526,17 +526,17 @@ const isDesktop = viewportWidth >= 768;
       {/* Configuration POPUP Window*/}
       {popupCell !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-gray-300 rounded shadow-lg p-6 w-150">
-            <div className="bg-gray-200 h-27 p-2 mb-2 rounded-lg flex flex-col">
+          <div className="bg-gray-300 mx-2 rounded shadow-lg p-6 w-150">
+            <div className="bg-gray-200 p-2 mb-2 rounded-lg flex flex-col">
 
               <h2 className="text-lg font-bold mb-4 text-center">Channel Assignment</h2>
 
-              <div className="flex flex-row">
+              <div className="bg-gray-200 flex flex-row flex-wrap gap-2">
                 {selectedCatalogChannel && (
                   <>
 
                     <button
-                      className="w-32 ml-2 px-4 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
+                      className="w-32 px-4 py-2 rounded-lg border border-gray-500 bg-gray-100 text-gray-900"
                       onClick={handleCopySelectedStreamUrl}
                     >
                       {copyFeedback === "copied"
@@ -546,27 +546,27 @@ const isDesktop = viewportWidth >= 768;
                           : "Copy URL"}
                     </button>
 
-                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isFavorite
-                        ? "border-blue-400 bg-blue-100 text-gray-900"
-                        : "border-gray-500 bg-gray-100 text-gray-900"
+                    <button className={`w-32 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isFavorite
+                      ? "border-blue-400 bg-blue-100 text-gray-900"
+                      : "border-gray-500 bg-gray-100 text-gray-900"
                       }`}
                       onClick={handleToggleFavorite}
                     >
                       Favorite: {selectedCatalogChannel.isFavorite ? "On" : "Off"}
                     </button>
 
-                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isHidden
-                        ? "border-blue-400 bg-blue-100 text-gray-900"
-                        : "border-gray-500 bg-gray-100 text-gray-900"
+                    <button className={`w-32 px-4 py-2 rounded-lg border ${selectedCatalogChannel.isHidden
+                      ? "border-blue-400 bg-blue-100 text-gray-900"
+                      : "border-gray-500 bg-gray-100 text-gray-900"
                       }`}
                       onClick={handleToggleHidden}
                     >
                       {selectedCatalogChannel.isHidden ? "Unhide" : "Hide"}
                     </button>
 
-                    <button className={`w-32 ml-2 px-4 py-2 rounded-lg ${canDeleteSelectedChannel
-                        ? "bg-red-500 text-white"
-                        : "bg-gray-500 text-gray-300 cursor-not-allowed"
+                    <button className={`w-32 px-4 py-2 rounded-lg ${canDeleteSelectedChannel
+                      ? "bg-red-500 text-white"
+                      : "bg-gray-500 text-gray-300 cursor-not-allowed"
                       }`}
                       disabled={!canDeleteSelectedChannel}
                       onClick={handleDeleteSelectedChannel}
@@ -683,21 +683,21 @@ const isDesktop = viewportWidth >= 768;
       )}
 
       {/* Grid Layout Button */}
-<div className="relative w-full md:w-23 flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-blue-300 bg-gray-600">
-  <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-  <div className="relative w-full h-full">
-    <Image
-      src={isDesktop ? "/background-header-03.png" : "/background-header-02.png"}
-      alt=""
-      priority
-      fill
-      sizes="(min-width: 768px) 25vw, 100vw"
-      className="object-cover object-right opacity-60"
-    />
-  </div>
-  </div>
+      <div className="relative z-40 w-full md:w-23 flex flex-col overflow-visible border-b md:border-b-0 md:border-r border-blue-300 bg-gray-600">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="relative w-full h-full">
+            <Image
+              src={isDesktop ? "/background-header-03.png" : "/background-header-02.png"}
+              alt=""
+              priority
+              fill
+              sizes="(min-width: 768px) 25vw, 100vw"
+              className="object-cover object-right opacity-60"
+            />
+          </div>
+        </div>
 
-  <div className="relative z-10">
+        <div className="relative z-10">
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="md:w-23 md:m-0 p-2 m-2 bg-gray-800 rounded border border-gray-300 text-xs text-gray-100 transition flex items-center gap-3"
@@ -707,7 +707,7 @@ const isDesktop = viewportWidth >= 768;
           </button>
 
           {showMenu && (
-            <div className="absolute bg-gray-800 border border-gray-700 rounded shadow-2xl z-50">
+            <div className="absolute left-2 top-full mt-1 w-24 bg-gray-800 border border-gray-700 rounded shadow-2xl z-70 pointer-events-auto">
               {(Object.keys(LAYOUT_CONFIGS) as unknown as (keyof typeof LAYOUT_CONFIGS)[]).map((id) => (
                 <button
                   key={id}
@@ -724,7 +724,7 @@ const isDesktop = viewportWidth >= 768;
       </div>
 
       {/* Video Grid */}
-      <div className="w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
+      <div className="relative z-0 w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
         style={{
           gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
           gridAutoRows: useCompactSpans ? "minmax(220px, auto)" : "minmax(0, 1fr)",
@@ -763,8 +763,8 @@ const isDesktop = viewportWidth >= 768;
 
               {/* Webcam Item */}
               <WebcamItem url={currentUserChannels[slotId]?.url ?? null}
-                isHuge={cell.span.includes("col-span-4")}
-                isLarge={cell.span.includes("col-span-2")}
+                isHuge={!useCompactSpans && cell.span.includes("col-span-4")}
+                isLarge={!useCompactSpans && cell.span.includes("col-span-2")}
                 channel={slotId + 1}
                 channelName={currentUserChannels[slotId]?.name ?? ""}
                 location={currentUserChannels[slotId]?.location ?? ""}

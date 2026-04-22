@@ -14,6 +14,13 @@ type RefreshStateRow = {
 
 type DbConnection = typeof sql | ReservedSql<Record<string, never>>;
 
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function addInterval(date: Date, interval: EventRefreshInterval) {
   const next = new Date(date);
 
@@ -30,6 +37,19 @@ function addInterval(date: Date, interval: EventRefreshInterval) {
   }
 
   return next;
+}
+
+function isRefreshDueByDate(nextRefreshAt: string | null | undefined) {
+  if (!nextRefreshAt) {
+    return true;
+  }
+
+  const parsed = new Date(nextRefreshAt);
+  if (Number.isNaN(parsed.getTime())) {
+    return true;
+  }
+
+  return formatDateKey(parsed) <= formatDateKey(new Date());
 }
 
 function getLookaheadDays(interval: EventRefreshInterval) {
@@ -215,7 +235,7 @@ async function refreshPrimaryEvents(userId: string, settings?: Awaited<ReturnTyp
     for (let offset = 0; offset < lookaheadDays; offset += 1) {
       const date = new Date();
       date.setDate(date.getDate() + offset);
-      const dayString = date.toISOString().slice(0, 10);
+      const dayString = formatDateKey(date);
       await getEvents(userId, resolvedSettings.town, dayString);
     }
 
@@ -263,8 +283,7 @@ export async function ensureFreshEventsForUser(userId: string) {
   ]);
 
   const cacheKey = buildPrimaryCacheKey(settings);
-  const nextRefreshDue =
-    !state?.next_refresh_at || new Date(state.next_refresh_at).getTime() <= Date.now();
+  const nextRefreshDue = isRefreshDueByDate(state?.next_refresh_at);
   const cacheKeyChanged = state?.cache_key !== cacheKey;
   const shouldRefresh = eventCount === 0 || cacheKeyChanged || nextRefreshDue;
 

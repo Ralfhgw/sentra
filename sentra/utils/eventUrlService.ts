@@ -12,11 +12,6 @@ const inFlightCustomRefreshes = new Map<string, Promise<void>>();
 
 type DbConnection = typeof sql | ReservedSql<Record<string, never>>;
 
-type RefreshStateRow = {
-    cache_key: string | null;
-    next_refresh_at: string | null;
-};
-
 type RefreshStatusRow = {
     source_key: string;
     last_status: string | null;
@@ -35,7 +30,6 @@ type CustomEventRow = {
 };
 
 type RefreshCustomEventSourceOptions = {
-    force?: boolean;
     targetDay?: string;
 };
 
@@ -48,13 +42,6 @@ function buildSourceKey(url: string) {
     return `url:${url.trim()}`;
 }
 
-function buildCacheKey(source: EventUrlSetting) {
-    return JSON.stringify({
-        url: source.url.trim(),
-        refreshInterval: source.refreshInterval,
-    });
-}
-
 function getLookaheadDays(interval: EventRefreshInterval) {
     switch (interval) {
         case "weekly":
@@ -64,24 +51,6 @@ function getLookaheadDays(interval: EventRefreshInterval) {
         default:
             return 2;
     }
-}
-
-function addInterval(date: Date, interval: EventRefreshInterval) {
-    const next = new Date(date);
-
-    switch (interval) {
-        case "weekly":
-            next.setDate(next.getDate() + 7);
-            break;
-        case "monthly":
-            next.setMonth(next.getMonth() + 1);
-            break;
-        default:
-            next.setDate(next.getDate() + 1);
-            break;
-    }
-
-    return next;
 }
 
 function normalizeRequestedDay(targetDay?: string) {
@@ -412,18 +381,6 @@ async function insertCustomEventsForUser(
     return inserted.length;
 }
 
-async function readUrlRefreshState(userId: string, sourceKey: string) {
-    const [row] = await sql<RefreshStateRow[]>`
-    SELECT cache_key, next_refresh_at
-    FROM user_event_refresh_state
-    WHERE user_id = ${userId}::uuid
-      AND source_key = ${sourceKey}
-    LIMIT 1
-  `;
-
-    return row ?? null;
-}
-
 async function tryAcquireLock(db: DbConnection, lockKey: string) {
     const [row] = await db<{ locked: boolean }[]>`
     SELECT pg_try_advisory_lock(hashtext(${lockKey})) AS locked
@@ -438,13 +395,12 @@ async function releaseLock(db: DbConnection, lockKey: string) {
   `;
 }
 
-async function markUrlRefreshRunning(userId: string, sourceKey: string, cacheKey: string) {
+async function markUrlRefreshRunning(userId: string, sourceKey: string) {
     await sql`
     INSERT INTO user_event_refresh_state (
       user_id,
       source_key,
       source_kind,
-      cache_key,
       refresh_started_at,
       last_status,
       last_error
@@ -453,7 +409,6 @@ async function markUrlRefreshRunning(userId: string, sourceKey: string, cacheKey
       ${userId}::uuid,
       ${sourceKey},
       ${CUSTOM_SOURCE_KIND},
-      ${cacheKey},
       NOW(),
       'running',
       NULL
@@ -461,7 +416,6 @@ async function markUrlRefreshRunning(userId: string, sourceKey: string, cacheKey
     ON CONFLICT (user_id, source_key)
     DO UPDATE SET
       source_kind = EXCLUDED.source_kind,
-      cache_key = EXCLUDED.cache_key,
       refresh_started_at = EXCLUDED.refresh_started_at,
       last_status = EXCLUDED.last_status,
       last_error = NULL
@@ -470,18 +424,14 @@ async function markUrlRefreshRunning(userId: string, sourceKey: string, cacheKey
 
 async function markUrlRefreshSuccess(
     userId: string,
-    sourceKey: string,
-    cacheKey: string,
-    nextRefreshAt: Date
+    sourceKey: string
 ) {
     await sql`
     INSERT INTO user_event_refresh_state (
       user_id,
       source_key,
       source_kind,
-      cache_key,
       last_refreshed_at,
-      next_refresh_at,
       refresh_started_at,
       last_status,
       last_error
@@ -490,9 +440,7 @@ async function markUrlRefreshSuccess(
       ${userId}::uuid,
       ${sourceKey},
       ${CUSTOM_SOURCE_KIND},
-      ${cacheKey},
       NOW(),
-      ${nextRefreshAt.toISOString()}::timestamptz,
       NULL,
       'success',
       NULL
@@ -500,9 +448,7 @@ async function markUrlRefreshSuccess(
     ON CONFLICT (user_id, source_key)
     DO UPDATE SET
       source_kind = EXCLUDED.source_kind,
-      cache_key = EXCLUDED.cache_key,
       last_refreshed_at = EXCLUDED.last_refreshed_at,
-      next_refresh_at = EXCLUDED.next_refresh_at,
       refresh_started_at = NULL,
       last_status = EXCLUDED.last_status,
       last_error = NULL
@@ -512,7 +458,6 @@ async function markUrlRefreshSuccess(
 async function markUrlRefreshError(
     userId: string,
     sourceKey: string,
-    cacheKey: string,
     error: unknown
 ) {
     const message =
@@ -523,7 +468,6 @@ async function markUrlRefreshError(
       user_id,
       source_key,
       source_kind,
-      cache_key,
       refresh_started_at,
       last_status,
       last_error
@@ -532,8 +476,6 @@ async function markUrlRefreshError(
       ${userId}::uuid,
       ${sourceKey},
       ${CUSTOM_SOURCE_KIND},
-      ${cacheKey},
-      NOW(),
       NULL,
       'error',
       ${message}
@@ -541,8 +483,6 @@ async function markUrlRefreshError(
     ON CONFLICT (user_id, source_key)
     DO UPDATE SET
       source_kind = EXCLUDED.source_kind,
-      cache_key = EXCLUDED.cache_key,
-      last_refreshed_at = EXCLUDED.last_refreshed_at,
       refresh_started_at = NULL,
       last_status = EXCLUDED.last_status,
       last_error = EXCLUDED.last_error
@@ -659,7 +599,6 @@ async function refreshSingleCustomEventSource(
     source: EventUrlSetting,
     sourceTown: string | null,
     openAiKey: string,
-    force = false,
     targetDay?: string
 ) {
     const sourceUrl = source.url.trim();
@@ -669,20 +608,7 @@ async function refreshSingleCustomEventSource(
     }
 
     const sourceKey = buildSourceKey(sourceUrl);
-    const cacheKey = buildCacheKey(source);
     const lockKey = `events:${userId}:${sourceKey}`;
-
-    if (!force) {
-        const state = await readUrlRefreshState(userId, sourceKey);
-        const nextRefreshDue =
-            !state?.next_refresh_at ||
-            new Date(state.next_refresh_at).getTime() <= Date.now();
-        const cacheKeyChanged = state?.cache_key !== cacheKey;
-
-        if (!nextRefreshDue && !cacheKeyChanged) {
-            return;
-        }
-    }
 
     const lockConnection = await sql.reserve();
     const locked = await tryAcquireLock(lockConnection, lockKey);
@@ -693,7 +619,7 @@ async function refreshSingleCustomEventSource(
     }
 
     try {
-        await markUrlRefreshRunning(userId, sourceKey, cacheKey);
+        await markUrlRefreshRunning(userId, sourceKey);
 
         await deleteOldEventsForSource(userId, sourceUrl);
 
@@ -706,14 +632,9 @@ async function refreshSingleCustomEventSource(
 
         await insertCustomEventsForUser(userId, sourceUrl, sourceTown, events);
 
-        await markUrlRefreshSuccess(
-            userId,
-            sourceKey,
-            cacheKey,
-            addInterval(new Date(), source.refreshInterval)
-        );
+await markUrlRefreshSuccess(userId, sourceKey);
     } catch (error) {
-        await markUrlRefreshError(userId, sourceKey, cacheKey, error);
+        await markUrlRefreshError(userId, sourceKey, error);
         throw error;
     } finally {
         try {
@@ -736,7 +657,6 @@ export async function refreshCustomEventSourcesForUser(
         sourceCount: settings.event_urls.length,
         sources: settings.event_urls,
         hasOpenAiKey: Boolean(openAiKey),
-        force: options?.force ?? false,
         targetDay: options?.targetDay ?? null,
     });
 
@@ -778,7 +698,6 @@ export async function refreshCustomEventSourcesForUser(
                 source,
                 settings.town ?? null,
                 openAiKey,
-                options?.force ?? false,
                 options?.targetDay
             )
         );

@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
         refreshRequestedAt = new Date().toISOString();
 
         void refreshCustomEventSourcesForUser(userId, {
-          force: true,
           targetDay: dayString,
         }).catch((error) => {
           console.error("Custom event URL refresh failed:", error);

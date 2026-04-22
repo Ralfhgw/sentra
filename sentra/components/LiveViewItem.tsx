@@ -276,6 +276,7 @@ export default function WebcamItem({
                             {muted ? <PiSpeakerSimpleSlashFill /> : <PiSpeakerSimpleHighFill />}
                         </button>
 
+
                         <input
                             type="range"
                             min={0}

@@ -425,3 +425,153 @@ Benötigt (abhängig vom Setup):
 - `mediamtx.yml`
 - `init_sentra.sql` (falls Initialisierung genutzt)
 - `.env` (serverseitig)
+
+### Update der day_meanings_export.csv und liveview_channels.csv
+
+#### day_meanings_export.csv 
+#### lokal
+
+Ins Verzeichnis wechseln:
+```
+cd /home/ralf/dci_training/websites/sentra/microservice
+```
+Änderung in der Datei prüfen:
+```
+grep -n "Welttag der Kunst" day_meanings_export.csv
+docker compose exec -T db sh -lc 'grep -n "Welttag der Kunst" /docker-entrypoint-initdb.d/day_meanings_export.csv'
+```
+DB-Container neu erstellen, damit die gemountete CSV sicher aktuell ist:
+```
+docker compose up -d --force-recreate db
+```
+Tabelle leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE day_meanings;"'
+```
+CSV neu importieren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\copy day_meanings (name, description, is_fixed, rule, country, created_at) FROM '\''/docker-entrypoint-initdb.d/day_meanings_export.csv'\'' WITH (FORMAT CSV, HEADER, ENCODING '\''UTF8'\'');"'
+```
+Ergebnis prüfen:
+```
+docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT name, description FROM day_meanings WHERE name = '\''Welttag der Kunst'\'';"'
+```
+Restart Sentra
+
+#### day_meanings_export.csv
+#### Webserver
+```
+ssh deploy@webschere.de
+cd /home/deploy/sentra
+git pull
+cd /home/deploy/sentra/microservice
+```
+Wenn du nur die CSV hochkopieren willst:
+```
+scp /home/ralf/dci_training/websites/sentra/microservice/day_meanings_export.csv deploy@webschere.de:/home/deploy/sentra/microservice/
+scp /home/ralf/dci_training/websites/sentra/microservice/liveview_channels.csv deploy@webschere.de:/home/deploy/sentra/microservice/
+ssh deploy@webschere.de
+cd /home/deploy/sentra/microservice
+```
+Datei prüfen:
+```
+grep -n "Welttag der Kunst" day_meanings_export.csv
+docker compose exec -T db sh -lc 'grep -n "Welttag der Kunst" /docker-entrypoint-initdb.d/day_meanings_export.csv'
+```
+DB-Container neu erstellen:
+```
+docker compose up -d --force-recreate db
+```
+Tabelle leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE day_meanings;"'
+```
+CSV neu importieren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\copy day_meanings (name, description, is_fixed, rule, country, created_at) FROM '\''/docker-entrypoint-initdb.d/day_meanings_export.csv'\'' WITH (FORMAT CSV, HEADER, ENCODING '\''UTF8'\'');"'
+```
+Ergebnis prüfen:
+```
+docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT name, description FROM day_meanings WHERE name = '\''Welttag der Kunst'\'';"'
+```
+/news im Browser prüfen. Nur wenn nötig:
+```
+pm2 restart sentra
+```
+#### liveview_channels.csv
+#### lokal
+
+Wichtig: Das ist ein Reset der katalogbasierten LiveView-Daten. Vorhandene katalogbasierte Slots, Favoriten und Hidden-States werden dabei geleert.
+Ins Verzeichnis wechseln:
+```
+cd /home/ralf/dci_training/websites/sentra/microservice
+```
+Änderung in der Datei prüfen:
+```
+grep -n "Germany M-V Warnemünde Neptun Hotel" liveview_channels.csv
+docker compose exec -T db sh -lc 'grep -n "Germany M-V Warnemünde Neptun Hotel" /docker-entrypoint-initdb.d/liveview_channels.csv'
+```
+DB-Container neu erstellen:
+```
+docker compose up -d --force-recreate db
+```
+Benutzer-Slots leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE liveview_sources RESTART IDENTITY CASCADE;"'
+```
+Gespeicherte LiveView-Kanalzustände leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "UPDATE user_settings SET channels = '\''[]'\''::jsonb, liveview_channel_preferences = '\''[]'\''::jsonb;"'
+```
+Kanaltabelle leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE channels RESTART IDENTITY CASCADE;"'
+```
+CSV neu importieren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\copy channels (tvg_name, tvg_id, \"group\", location, channel, stream_url) FROM '\''/docker-entrypoint-initdb.d/liveview_channels.csv'\'' WITH (FORMAT CSV, HEADER, DELIMITER '\'';'\'', ENCODING '\''UTF8'\'');"'
+```
+Ergebnis prüfen:
+```
+docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT tvg_name, location, stream_url FROM channels WHERE channel = '\''Germany M-V Warnemünde Neptun Hotel'\'';"'
+```
+Danach /liveview neu laden. Nur wenn weiter alte Daten erscheinen:
+```
+pm2 restart sentra
+```
+#### liveview_channels.csv 
+#### Webserver
+
+Datei prüfen:
+```
+grep -n "Germany M-V Warnemünde Neptun Hotel" liveview_channels.csv
+docker compose exec -T db sh -lc 'grep -n "Germany M-V Warnemünde Neptun Hotel" /docker-entrypoint-initdb.d/liveview_channels.csv'
+```
+DB-Container neu erstellen:
+```
+docker compose up -d --force-recreate db
+```
+Benutzer-Slots leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE liveview_sources RESTART IDENTITY CASCADE;"'
+```
+Gespeicherte LiveView-Kanalzustände leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "UPDATE user_settings SET channels = '\''[]'\''::jsonb, liveview_channel_preferences = '\''[]'\''::jsonb;"'
+```
+Kanaltabelle leeren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TRUNCATE TABLE channels RESTART IDENTITY CASCADE;"'
+```
+CSV neu importieren:
+```
+docker compose exec -T db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\copy channels (tvg_name, tvg_id, \"group\", location, channel, stream_url) FROM '\''/docker-entrypoint-initdb.d/liveview_channels.csv'\'' WITH (FORMAT CSV, HEADER, DELIMITER '\'';'\'', ENCODING '\''UTF8'\'');"'
+```
+Ergebnis prüfen:
+```
+docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT tvg_name, location, stream_url FROM channels WHERE location = '\''Germany M-V Warnemünde Neptun Hotel'\'';"'
+```
+/liveview im Browser prüfen. Nur wenn nötig:
+```
+pm2 restart sentra
+```

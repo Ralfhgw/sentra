@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { FaPlayCircle, FaPause } from "react-icons/fa";
 import { PiSpeakerSimpleHighFill, PiSpeakerSimpleSlashFill } from "react-icons/pi";
 import Hls from "hls.js";
+import type { LiveViewPlaybackProfile, LiveViewQualityCap } from "@/types/typesLiveView";
 
 type WebcamItemProps = {
     url: string | null;
@@ -10,6 +11,8 @@ type WebcamItemProps = {
     channel: number;
     channelName?: string;
     location?: string;
+    playbackProfile: LiveViewPlaybackProfile;
+    qualityCap: LiveViewQualityCap;
 };
 
 const shouldBypassProxy = (sourceUrl: string) => {
@@ -53,6 +56,65 @@ const getPlaybackUrl = (sourceUrl: string) => {
     return normalizedUrl;
 };
 
+const getHlsConfig = (playbackProfile: LiveViewPlaybackProfile) => {
+    switch (playbackProfile) {
+        case "latency":
+            return {
+                lowLatencyMode: true,
+                liveSyncDurationCount: 1,
+                liveMaxLatencyDurationCount: 3,
+                maxLiveSyncPlaybackRate: 1.5,
+                maxBufferLength: 10,
+                backBufferLength: 30,
+            };
+        case "stable":
+            return {
+                lowLatencyMode: false,
+                liveSyncDurationCount: 4,
+                liveMaxLatencyDurationCount: 10,
+                maxLiveSyncPlaybackRate: 1,
+                maxBufferLength: 30,
+                backBufferLength: 90,
+            };
+        case "balanced":
+        default:
+            return {
+                lowLatencyMode: false,
+                liveSyncDurationCount: 3,
+                liveMaxLatencyDurationCount: 8,
+                maxLiveSyncPlaybackRate: 1.15,
+                maxBufferLength: 20,
+                backBufferLength: 60,
+            };
+    }
+};
+
+const QUALITY_CAP_HEIGHTS: Record<Exclude<LiveViewQualityCap, "auto">, number> = {
+    "360p": 360,
+    "480p": 480,
+    "720p": 720,
+    "1080p": 1080,
+};
+
+const applyQualityCap = (hls: Hls, qualityCap: LiveViewQualityCap) => {
+    if (qualityCap === "auto") {
+        hls.autoLevelCapping = -1;
+        return;
+    }
+
+    const maxHeight = QUALITY_CAP_HEIGHTS[qualityCap];
+    const cappedLevels = hls.levels
+        .map((level, index) => ({
+            index,
+            height: level.height ?? 0,
+            bitrate: level.bitrate ?? 0,
+        }))
+        .filter((level) => level.height > 0 && level.height <= maxHeight)
+        .sort((a, b) => b.height - a.height || a.bitrate - b.bitrate);
+
+    hls.autoLevelCapping = cappedLevels[0]?.index ?? 0;
+};
+
 export default function WebcamItem({
     url,
     isHuge,
@@ -60,6 +122,8 @@ export default function WebcamItem({
     channel,
     channelName,
     location,
+    playbackProfile,
+    qualityCap,
 }: WebcamItemProps) {
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,21 +172,37 @@ export default function WebcamItem({
         const playbackUrl = getPlaybackUrl(url);
 
         if (Hls.isSupported()) {
-            hls = new Hls({
-                capLevelToPlayerSize: true,
-                lowLatencyMode: true,
-                liveSyncDurationCount: 1,
-                liveMaxLatencyDurationCount: 3,
-                maxLiveSyncPlaybackRate: 1.5,
+            const player = new Hls({
+                ...getHlsConfig(playbackProfile),
             });
 
-            hlsRef.current = hls;
-            hls.loadSource(playbackUrl);
-            hls.attachMedia(video);
+            hls = player;
+            hlsRef.current = player;
+            player.loadSource(playbackUrl);
+            player.attachMedia(video);
 
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            player.on(Hls.Events.MANIFEST_PARSED, () => {
+                applyQualityCap(player, qualityCap);
                 seekToLiveEdge();
                 video.play().catch(() => { });
+            });
+
+            player.on(Hls.Events.ERROR, (_, data) => {
+                if (!data.fatal) {
+                    requestAnimationFrame(() => {
+                        seekToLiveEdge();
+                    });
+                    return;
+                }
+
+                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                    player.startLoad(-1);
+                    return;
+                }
+
+                if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    player.recoverMediaError();
+                }
             });
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
             hlsRef.current = null;
@@ -140,7 +220,13 @@ export default function WebcamItem({
 
             resetVideo();
         };
-    }, [url]);
+    }, [url, playbackProfile, qualityCap]);
+
+    useEffect(() => {
+        const hls = hlsRef.current;
+        if (!hls) return;
+        applyQualityCap(hls, qualityCap);
+    }, [qualityCap]);
 
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -246,6 +332,7 @@ export default function WebcamItem({
                 <>
                     <video
                         ref={videoRef}
+                        preload="auto"
                         playsInline
                         muted={muted}
                         className="w-full h-full object-cover"

@@ -17,6 +17,15 @@ export type UserChannel = {
   location?: string;
 };
 
+export type LiveViewPlaybackProfile = "latency" | "balanced" | "stable";
+
+export type LiveViewQualityCap =
+  | "auto"
+  | "360p"
+  | "480p"
+  | "720p"
+  | "1080p";
+
 export type WebcamClientProps = {
   mtxEnabled: boolean;
   channels: Channel[];

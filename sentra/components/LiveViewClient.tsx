@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { WebcamClientProps } from "@/types/typesLiveView"
+import type { LiveViewPlaybackProfile, LiveViewQualityCap, WebcamClientProps } from "@/types/typesLiveView";
 import WebcamItem from "./LiveViewItem";
 import ModuleDisabledNotice from "@/components/ModuleDisabledNotice";
 import Image from "next/image";
@@ -120,6 +120,21 @@ type UserChannel = {
   location?: string;
 };
 
+const PLAYBACK_PROFILE_STORAGE_KEY = "sentra.liveview.playbackProfile";
+const QUALITY_CAP_STORAGE_KEY = "sentra.liveview.qualityCap";
+
+const isPlaybackProfile = (
+  value: string | null
+): value is LiveViewPlaybackProfile =>
+  value === "latency" || value === "balanced" || value === "stable";
+
+const isQualityCap = (value: string | null): value is LiveViewQualityCap =>
+  value === "auto" ||
+  value === "360p" ||
+  value === "480p" ||
+  value === "720p" ||
+  value === "1080p";
+
 export default function LiveViewClient({
   channels,
   userChannels,
@@ -129,7 +144,6 @@ export default function LiveViewClient({
 
   const [layoutId, setLayoutId] = useState<keyof typeof LAYOUT_CONFIGS>(10);
   const config = LAYOUT_CONFIGS[layoutId];
-  const [showMenu, setShowMenu] = useState(false);
   const [popupCell, setPopupCell] = useState<number | null>(null);
   const [customUrl, setCustomUrl] = useState("");
   const [customName, setCustomName] = useState("");
@@ -154,8 +168,13 @@ export default function LiveViewClient({
   const [availableChannels, setAvailableChannels] = useState(channels);
   const [locationFilter, setLocationFilter] = useState<string>("");
   const [channelSearchTerm, setChannelSearchTerm] = useState("");
-
+  const [playbackProfile, setPlaybackProfile] = useState<LiveViewPlaybackProfile>("balanced");
+  const [qualityCap, setQualityCap] = useState<LiveViewQualityCap>("auto");
+  const [playbackSettingsReady, setPlaybackSettingsReady] = useState(false);
   const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
+  const layoutOptions = Object.keys(LAYOUT_CONFIGS).map(
+    (id) => Number(id) as keyof typeof LAYOUT_CONFIGS
+  );
 
   const resetPopupState = () => {
     setPopupCell(null);
@@ -180,6 +199,38 @@ export default function LiveViewClient({
   useEffect(() => {
     setAvailableChannels(channels);
   }, [channels]);
+
+  useEffect(() => {
+    const storedPlaybackProfile = window.localStorage.getItem(
+      PLAYBACK_PROFILE_STORAGE_KEY
+    );
+    const storedQualityCap = window.localStorage.getItem(
+      QUALITY_CAP_STORAGE_KEY
+    );
+
+    if (isPlaybackProfile(storedPlaybackProfile)) {
+      setPlaybackProfile(storedPlaybackProfile);
+    }
+
+    if (isQualityCap(storedQualityCap)) {
+      setQualityCap(storedQualityCap);
+    }
+
+    setPlaybackSettingsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!playbackSettingsReady) return;
+    window.localStorage.setItem(
+      PLAYBACK_PROFILE_STORAGE_KEY,
+      playbackProfile
+    );
+  }, [playbackProfile, playbackSettingsReady]);
+
+  useEffect(() => {
+    if (!playbackSettingsReady) return;
+    window.localStorage.setItem(QUALITY_CAP_STORAGE_KEY, qualityCap);
+  }, [qualityCap, playbackSettingsReady]);
 
   if (!mtxEnabled) {
     return <ModuleDisabledNotice title="LiveView" settingCode="MTX" />;
@@ -573,11 +624,8 @@ export default function LiveViewClient({
                     >
                       Delete
                     </button>
-
-
                   </>
                 )}
-
 
               </div>
             </div>
@@ -682,9 +730,11 @@ export default function LiveViewClient({
         </div>
       )}
 
-      {/* Grid Layout Button */}
-      <div className="relative z-40 w-full md:w-23 flex flex-col overflow-visible border-b md:border-b-0 md:border-r border-blue-300 bg-gray-600">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {/* Buttons */}
+      <div className="border-blue-300 bg-gray-600 relative z-40 w-full md:w-23 flex flex-row flex-wrap items-start content-start gap-x-2 gap-y-1 p-1 overflow-visible border-b md:border-b-0 md:border-r">
+
+        {/* Background Image */}
+        <div className="bg-gray-300 pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <div className="relative w-full h-full">
             <Image
               src={isDesktop ? "/background-header-03.png" : "/background-header-02.png"}
@@ -697,29 +747,53 @@ export default function LiveViewClient({
           </div>
         </div>
 
-        <div className="relative z-10">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="md:w-23 md:m-0 p-2 m-2 bg-gray-800 rounded border border-gray-300 text-xs text-gray-100 transition flex items-center gap-3"
+        {/* Grid Layout Button */}
+        <div className="w-20 z-10 md:w-full">
+          <select
+            className="w-full z-10 py-2 rounded border border-gray-800 bg-blue-900/80 text-xs text-gray-300"
+            value={String(layoutId)}
+            onChange={(e) =>
+              setLayoutId(Number(e.target.value) as keyof typeof LAYOUT_CONFIGS)
+            }
           >
-            Grid: {layoutId}
-            <span className={`text-[8px] transition-transform ${showMenu ? "rotate-180" : ""}`}>▼</span>
-          </button>
+             {layoutOptions.map((id) => (
+              <option key={id} value={String(id)}>
+                Grid {id}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {showMenu && (
-            <div className="absolute left-2 top-full mt-1 w-24 bg-gray-800 border border-gray-700 rounded shadow-2xl z-70 pointer-events-auto">
-              {(Object.keys(LAYOUT_CONFIGS) as unknown as (keyof typeof LAYOUT_CONFIGS)[]).map((id) => (
-                <button
-                  key={id}
-                  onClick={() => { setLayoutId(id); setShowMenu(false); }}
-                  className={`w-full p-2 text-left rounded text-xs transition mb-0.5 ${layoutId === id ? "bg-gray-600/20 text-gray-200" : "text-gray-100 hover:bg-gray-500"
-                    }`}
-                >
-                  Grid {id}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Latency Button */}
+        <div className="w-20 md:w-full z-10">
+          <select
+            className="w-full z-10 py-2 rounded border border-gray-800 bg-blue-900/80 text-xs text-gray-300"
+            value={playbackProfile}
+            onChange={(e) =>
+              setPlaybackProfile(e.target.value as LiveViewPlaybackProfile)
+            }
+          >
+            <option value="latency">Low</option>
+            <option value="balanced">Balanced</option>
+            <option value="stable">Stable</option>
+          </select>
+        </div>
+
+        {/* Quality Button */}
+        <div className="w-20 md:w-full z-10">
+          <select
+            className="w-full z-10 py-2 rounded border border-gray-800 bg-blue-900/80 text-xs text-gray-300"
+            value={qualityCap}
+            onChange={(e) =>
+              setQualityCap(e.target.value as LiveViewQualityCap)
+            }
+          >
+            <option value="auto">Auto</option>
+            <option value="360p">360p</option>
+            <option value="480p">480p</option>
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+          </select>
         </div>
       </div>
 
@@ -768,6 +842,8 @@ export default function LiveViewClient({
                 channel={slotId + 1}
                 channelName={currentUserChannels[slotId]?.name ?? ""}
                 location={currentUserChannels[slotId]?.location ?? ""}
+                playbackProfile={playbackProfile}
+                qualityCap={qualityCap}
               />
             </div>
           );

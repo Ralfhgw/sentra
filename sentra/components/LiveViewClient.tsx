@@ -849,7 +849,6 @@ export default function LiveViewClient({
           );
         })}
       </div>
-
     </div>
   );
 }

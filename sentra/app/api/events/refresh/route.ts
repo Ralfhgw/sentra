@@ -1,3 +1,6 @@
+// API‑Route (POST): triggert Refresh für einen Tag (getEvents), liefert aktuelle Events 
+// zurück und startet optional asynchron das Refreshen von benutzerdefinierten URL‑Quellen 
+// (via refreshCustomEventSourcesForUser) — gibt refreshStarted + Zeitstempel zurück.
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies, getUserSettings } from "@/utils/serverAuth";
@@ -41,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (refreshCustomEventUrls) {
       const settings = await getUserSettings(userId);
       const hasCustomRefreshSources =
-        Boolean(settings.key2?.trim()) &&
+        Boolean(settings.key6?.trim()) &&
         settings.event_urls.some((source) => source.url.trim().length > 0);
 
       if (hasCustomRefreshSources) {

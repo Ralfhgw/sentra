@@ -38,6 +38,8 @@ type UserSettings = {
   key3: string | null;
   key4: string | null;
   key5: string | null;
+  key6: string | null;
+  key7: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -79,6 +81,8 @@ const defaultSettings: UserSettings = {
   key3: null,
   key4: null,
   key5: null,
+  key6: null,
+  key7: null,
   evt: false,
   wea: false,
   mtx: false,
@@ -109,6 +113,8 @@ type SettingsResponse = {
     key3?: string | null;
     key4?: string | null;
     key5?: string | null;
+    key6?: string | null;
+    key7?: string | null;
     evt?: boolean;
     wea?: boolean;
     mtx?: boolean;
@@ -221,6 +227,12 @@ function toUserSettings(data: SettingsResponse): UserSettings {
     key5:
       ((responseSettings as Record<string, unknown>)["key5"] as string | null | undefined) ??
       defaultSettings.key5,
+    key6:
+      ((responseSettings as Record<string, unknown>)["key6"] as string | null | undefined) ??
+      defaultSettings.key6,
+    key7:
+      ((responseSettings as Record<string, unknown>)["key7"] as string | null | undefined) ??
+      defaultSettings.key7,
 
     s_indoor:
       (responseSettings as Record<string, unknown>)["sIndoor"] as boolean ??

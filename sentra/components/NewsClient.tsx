@@ -13,6 +13,7 @@ type NewsEvent = NewsClientProps["events"][number] & {
 };
 
 const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+const REFRESH_POLL_TIMEOUT_MS = 30_000;
 
 // Preparing address format for serpapi, there are different formats possible
 function formatAddress(address: string | null): string {
@@ -331,6 +332,17 @@ export default function NewsClient({
 
     const pollRefreshStatus = async () => {
       try {
+
+        const startedAtMs = Date.parse(pendingRefreshStartedAt);
+        if (!Number.isNaN(startedAtMs) && Date.now() - startedAtMs >= REFRESH_POLL_TIMEOUT_MS) {
+          setPendingRefreshStartedAt("");
+          setIsRefreshing(false);
+          setRefreshStatus({
+            message: `Event-Query timed out after ${Math.round(REFRESH_POLL_TIMEOUT_MS / 1000)}s.`,
+            tone: "error",
+          });
+          return;
+        }
         const response = await fetch(
           `/api/events/refresh-status?startedAt=${encodeURIComponent(pendingRefreshStartedAt)}`,
           { cache: "no-store" },

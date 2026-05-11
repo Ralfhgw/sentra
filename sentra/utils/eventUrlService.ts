@@ -1,14 +1,17 @@
-import OpenAI from "openai";
+// Verwaltet Refresh von benutzerdefinierten URL‑Quellen — Gemini‑Abfrage (Web‑Search), 
+// CSV‑Parsing, Normalisierung, Deduplikation, Einfügen in DB, Postgres‑Locks und Pflege 
+// der Refresh‑Status‑Tabelle; stellt refreshCustomEventSourcesForUser, 
+// getCustomEventRefreshStatusForUser, invalidateCustomEventRefreshState bereit.
+import { GoogleGenAI } from "@google/genai";
 import type { ReservedSql } from "postgres";
-import type {
-    EventRefreshInterval,
-    EventUrlSetting,
-} from "@/types/typesSettings";
+import type { EventRefreshInterval, EventUrlSetting } from "@/types/typesSettings";
 import sql from "@/utils/db";
 import { getUserSettings } from "@/utils/serverAuth";
 
 const CUSTOM_SOURCE_KIND = "url";
 const inFlightCustomRefreshes = new Map<string, Promise<void>>();
+const GEMINI_REQUEST_TIMEOUT_MS = 180_000;
+const CUSTOM_REFRESH_STALE_AFTER_MS = 150_000;
 
 type DbConnection = typeof sql | ReservedSql<Record<string, never>>;
 
@@ -38,10 +41,12 @@ export type CustomEventRefreshStatus = {
     error: string | null;
 };
 
+// buildSourceKey(): Erzeugt einen eindeutigen Schlüssel für eine URL-basierte Eventquelle.
 function buildSourceKey(url: string) {
     return `url:${url.trim()}`;
 }
 
+// getLookaheadDays(): Liefert die Anzahl Tage, die je nach Refresh-Intervall vorausgeschaut werden sollen.
 function getLookaheadDays(interval: EventRefreshInterval) {
     switch (interval) {
         case "weekly":
@@ -53,6 +58,7 @@ function getLookaheadDays(interval: EventRefreshInterval) {
     }
 }
 
+// normalizeRequestedDay(): Validiert und normalisiert eine angefragte Datumsvorgabe (YYYY-MM-DD) oder gibt null zurück.
 function normalizeRequestedDay(targetDay?: string) {
     if (!targetDay) return null;
 
@@ -60,6 +66,7 @@ function normalizeRequestedDay(targetDay?: string) {
     return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : null;
 }
 
+// getDateRange(): Bestimmt Start- und Enddatum für die Suche basierend auf Intervall und optionalem Zieltag.
 function getDateRange(interval: EventRefreshInterval, targetDay?: string) {
     const normalizedTargetDay = normalizeRequestedDay(targetDay);
 
@@ -79,6 +86,42 @@ function getDateRange(interval: EventRefreshInterval, targetDay?: string) {
     };
 }
 
+async function withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string
+) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(timeoutMessage));
+        }, timeoutMs);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
+function isRunningRefreshStale(refreshStartedAt: string | null | undefined) {
+    if (!refreshStartedAt) {
+        return false;
+    }
+
+    const startedAt = Date.parse(refreshStartedAt);
+    if (Number.isNaN(startedAt)) {
+        return false;
+    }
+
+    return Date.now() - startedAt >= CUSTOM_REFRESH_STALE_AFTER_MS;
+}
+
+// formatDate(): Versucht, verschiedene Datumsformate zu interpretieren und lesbar (de-DE) zu formatieren.
 function formatDate(date: string) {
     if (!date) return "";
 
@@ -104,6 +147,7 @@ function formatDate(date: string) {
     return date;
 }
 
+// normalizeDate(): Wandelt ein Eingabedatum in ISO-YYYY-MM-DD um oder gibt einen Fallback-Tag zurück.
 function normalizeDate(dateValue: string | null | undefined, fallbackDay: string) {
     if (!dateValue) return fallbackDay;
 
@@ -119,70 +163,69 @@ function normalizeDate(dateValue: string | null | undefined, fallbackDay: string
     return fallbackDay;
 }
 
-function parseCsvLine(line: string) {
-    const values: string[] = [];
-    let current = "";
-    let inQuotes = false;
+// parseJsonEvents(): Wandelt die JSON-Antwort des Modells in Event-Objekte mit Normalisierung um.
+function parseJsonEvents(jsonText: string, sourceUrl: string, fallbackDay: string): CustomEventRow[] {
+    let parsed: unknown;
 
-    for (let i = 0; i < line.length; i += 1) {
-        const char = line[i];
-
-        if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-                current += '"';
-                i += 1;
-            } else {
-                inQuotes = !inQuotes;
-            }
-            continue;
-        }
-
-        if (char === ";" && !inQuotes) {
-            values.push(current.trim());
-            current = "";
-            continue;
-        }
-
-        current += char;
+    try {
+        parsed = JSON.parse(jsonText);
+    } catch {
+        throw new Error(
+            `[event-url] Gemini lieferte kein valides JSON. Preview: ${jsonText.slice(0, 300)}`
+        );
     }
 
-    values.push(current.trim());
-    return values;
-}
-
-function parseCsvEvents(csv: string, sourceUrl: string, fallbackDay: string): CustomEventRow[] {
-    const lines = csv
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-    const events: CustomEventRow[] = [];
-
-    for (const line of lines) {
-        const [
-            title = "",
-            date = "",
-            address = "",
-            link = "",
-            description = "",
-        ] = parseCsvLine(line);
-
-        if (!title) continue;
-        if (title.toLowerCase() === "kein event gefunden") continue;
-
-        events.push({
-            title,
-            date: normalizeDate(date, fallbackDay),
-            address: address && address !== "-" ? address : null,
-            link: link && link !== "-" ? link : sourceUrl,
-            description: description && description !== "-" ? description : null,
-            image: null,
-        });
+    if (!Array.isArray(parsed)) {
+        throw new Error("[event-url] Gemini-Antwort ist kein JSON-Array.");
     }
 
-    return events;
+    return parsed.flatMap((entry): CustomEventRow[] => {
+        const item = entry as Record<string, unknown>;
+        const title = String(item.title ?? "").trim();
+
+        if (!title || title.toLowerCase() === "kein event gefunden") {
+            return [];
+        }
+
+        const rawDate = String(item.date ?? "").trim();
+        const rawAddress = String(item.address ?? "").trim();
+        const rawLink = String(item.link ?? "").trim();
+        const rawDescription = String(item.description ?? "").trim();
+
+        return [
+            {
+                title,
+                date: normalizeDate(rawDate, fallbackDay),
+                address: rawAddress && rawAddress !== "-" ? rawAddress : null,
+                link: rawLink && rawLink !== "-" ? rawLink : sourceUrl,
+                description: rawDescription && rawDescription !== "-" ? rawDescription : null,
+                image: null,
+            },
+       ];
+    });
 }
 
+function extractJsonArray(text: string) {
+    const trimmed = text.trim();
+    if (trimmed.startsWith("[")) {
+        return trimmed;
+    }
+
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fencedMatch?.[1]) {
+        return fencedMatch[1].trim();
+    }
+
+    const start = trimmed.indexOf("[");
+    const end = trimmed.lastIndexOf("]");
+   if (start !== -1 && end !== -1 && end > start) {
+        return trimmed.slice(start, end + 1);
+    }
+
+    return trimmed;
+}
+
+// dedupeEvents(): Entfernt doppelte Events anhand eines zusammengesetzten Schlüssels aus Titel, Datum, Link und Adresse.
 function dedupeEvents(events: CustomEventRow[]) {
     const seen = new Set<string>();
     const unique: CustomEventRow[] = [];
@@ -206,101 +249,97 @@ function dedupeEvents(events: CustomEventRow[]) {
     return unique;
 }
 
-async function fetchOpenAiEventsForSource(
+// fetchGeminiEventsForSource(): Fragt die OpenAI-API an, extrahiert Events als CSV und parst/deduiziert die Ergebnisse.
+async function fetchGeminiEventsForSource(
     sourceUrl: string,
     interval: EventRefreshInterval,
-    openAiKey: string,
+    geminiApiKey: string,
     targetDay?: string
 ) {
     const { todayStr, endStr } = getDateRange(interval, targetDay);
     const isSingleDayRange = todayStr === endStr;
 
-    console.log("[event-url] OpenAI fetch start:", {
+    console.log("[event-url] Gemini fetch start:", {
         sourceUrl,
-        interval,
-        targetDay: targetDay ?? null,
         todayStr,
         endStr,
     });
 
-    const client = new OpenAI({ apiKey: openAiKey });
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
-    const response = await client.responses.create({
-        model: "gpt-5-mini",
-        tools: [
-            {
-                type: "web_search",
-                search_context_size: "medium",
-            },
-        ],
-        input: [
-            {
-                role: "system",
-                content: `
-Du bist ein Assistent zum Extrahieren von Eventdaten aus Webseiten.
+const systemInstruction = `
+Du bist ein präziser Daten-Scraper. Deine einzige Aufgabe: ZÄHLE UND EXTRAHIERE.
 
-Regeln:
-- Stelle keine Rueckfragen.
-- Beginne sofort mit der Extraktion.
-- Extrahiere nur Events ${isSingleDayRange ? `am ${todayStr}` : `im Zeitraum ${todayStr} bis ${endStr}`}.
-- Wenn mehr Monate auf der Seite existieren, ignoriere sie.
-- Navigiere nicht unnoetig zu sehr alten oder weit zukuenftigen Terminen.
-- Arbeite effizient und vermeide unnoetige Seitenabfragen.
-        `.trim(),
-            },
-            {
-                role: "user",
-                content: `
-Besuche die Webseite ${sourceUrl} und extrahiere Events.
+Kernregeln:
+1. VOLLSTÄNDIGKEITSMANIE: Wenn 11 Events auf der Seite sind, MUSST du 11 Objekte liefern. Es ist ein Fehler, auch nur eines auszulassen.
+2. SCAN-MODUS: Gehe die Seite von oben nach unten durch. Suche in Kacheln, Listen, Tabellen und im unsichtbaren JSON-LD Quelltext.
+3. KEIN ABBRUCH: Erfasse JEDEN Termin einzeln für den Zeitraum ${isSingleDayRange ? todayStr : `${todayStr} bis ${endStr}`}.
+4. REINES JSON: Gib NUR das JSON-Array zurück. Starte mit [ und ende mit ]. Kein Text davor oder danach.
+`.trim();
 
-Filter:
-- ${isSingleDayRange ? `Nur Events am ${todayStr}` : `Nur Events zwischen ${todayStr} und ${endStr}`}
+const userPrompt = `
+Besuche die Webseite ${sourceUrl} und extrahiere ALLE Events für den Zeitraum: ${isSingleDayRange ? todayStr : `${todayStr} bis ${endStr}`}.
 
-Gib die Daten als CSV ohne Header aus mit exakt diesen Spalten:
-title;date;address;link;description
+Arbeitsweise:
+1. URL-ANALYSE & NAVIGATION: 
+   - Analysiere das Suchformular oder den Kalender auf ${sourceUrl}. Identifiziere, wie Datumsfilter an die URL angehängt werden (z.B. ?start_date=, ?date=, ?q[start_date]=).
+   - Konstruiere die spezifische Ziel-URL für den ${todayStr} und rufe diese direkt auf, um die Filterung zu erzwingen.
+   - Falls die URL-Struktur nicht erkennbar ist, nutze das Google Search Tool mit 'site:${sourceUrl} "${todayStr}"', um direkt zur Tagesansicht zu springen.
 
-Vorgaben:
-- Trennzeichen: Semikolon (;)
-- link: immer ${sourceUrl}
-- date: Format yyyy-mm-dd
-- description: nur Klartext aus der Eventbeschreibung
-- keine HTML-Tags
-- keine Referenzen oder Quellen
-- keine zusaetzlichen Erklaerungen
-- keine Rueckfragen
-- nur reine CSV
+2. VOLLSTÄNDIGE EXTRAKTION:
+   - Scanne den gesamten Inhalt nach JEDEM einzelnen Event. Suche explizit im Quelltext nach <script type="application/ld+json">, da dort oft die vollständigen Listen hinterlegt sind.
+   - Erfasse für JEDEN Eintrag einzeln: title, date (YYYY-MM-DD), address, link, description.
+   - Falls "Mehr laden"-Optionen oder Pagination existieren, folge diesen, bis alle Events des Zeitraums erfasst sind.
 
-Wenn keine Events im gewuenschten Zeitraum vorhanden sind, erstelle genau diese Zeile:
-Kein Event gefunden;-;-;${sourceUrl};${isSingleDayRange ? `Keine Termine am ${todayStr}` : `Keine Termine zwischen ${todayStr} und ${endStr}`}
-        `.trim(),
-            },
-        ],
-    });
+3. OUTPUT:
+   - Gib NUR ein valides JSON-Array zurück. 
+   - Starte direkt mit [ und ende mit ].
 
-    const csv = response.output_text ?? "";
+Wichtig:
+- Wenn die Seite 50 Termine enthält, muss dein JSON-Array 50 Objekte enthalten.
+- Kürz die Liste niemals ab (kein "..." oder "weitere Events").
+- Keine Erklärungen, kein Begleittext, keine Markdown-Code-Blocks.
+`.trim();
 
-    console.log("[event-url] OpenAI raw response:", {
-        sourceUrl,
-        interval,
-        targetDay: targetDay ?? null,
-        todayStr,
-        endStr,
-        csvLength: csv.length,
-        preview: csv.slice(0, 300),
-    });
+    try {
+        const response = await withTimeout(
+            ai.models.generateContent({
+                model: "models/gemini-2.5-flash",
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: userPrompt }]
+                    }
+                ],
+                config: {
+                    systemInstruction: systemInstruction,
+                    tools: [{ googleSearch: {} }],
+                },
+            }),
+            GEMINI_REQUEST_TIMEOUT_MS,
+            `[event-url] Gemini request timed out after ${Math.round(GEMINI_REQUEST_TIMEOUT_MS / 1000)}s for ${sourceUrl}`
+        );
 
-    const events = parseCsvEvents(csv, sourceUrl, todayStr);
+        const rawText = response.text || "[]";
+        const jsonText = extractJsonArray(rawText);
+        console.log("[event-url] Gemini raw response length:", rawText.length);
+        const events = parseJsonEvents(jsonText, sourceUrl, todayStr);
 
-    console.log("[event-url] parsed events:", {
-        sourceUrl,
-        count: events.length,
-        titles: events.map((event) => event.title),
-    });
+        console.log("[event-url] parsed events:", {
+            sourceUrl,
+            count: events.length,
+            titles: events.map((event) => event.title),
+        });
 
-    return dedupeEvents(events);
+        return dedupeEvents(events);
+
+    } catch (error) {
+        console.error("Custom event URL refresh failed:", error);
+        throw error;
+    }
 }
 
-
+// fetchOpenAiEventsForSource(): Fragt die OpenAI-API an, extrahiert Events als CSV und parst/deduiziert die Ergebnisse.
 async function deleteOldEventsForSource(userId: string, sourceUrl: string) {
     const todayString = new Date().toISOString().slice(0, 10);
 
@@ -312,6 +351,7 @@ async function deleteOldEventsForSource(userId: string, sourceUrl: string) {
   `;
 }
 
+// insertCustomEventsForUser(): Fügt neue Events für einen Benutzer ein, vermeidet Duplikate und gibt die Einfüganzahl zurück.
 async function insertCustomEventsForUser(
     userId: string,
     sourceUrl: string,
@@ -381,6 +421,7 @@ async function insertCustomEventsForUser(
     return inserted.length;
 }
 
+// tryAcquireLock(): Versucht, eine PostgreSQL-Advice-Lock für einen Lock-Key zu setzen und gibt Erfolg/Fehlschlag zurück.
 async function tryAcquireLock(db: DbConnection, lockKey: string) {
     const [row] = await db<{ locked: boolean }[]>`
     SELECT pg_try_advisory_lock(hashtext(${lockKey})) AS locked
@@ -389,12 +430,14 @@ async function tryAcquireLock(db: DbConnection, lockKey: string) {
     return row?.locked ?? false;
 }
 
+// releaseLock(): Gibt eine zuvor gesetzte PostgreSQL-Advice-Lock wieder frei.
 async function releaseLock(db: DbConnection, lockKey: string) {
     await db`
     SELECT pg_advisory_unlock(hashtext(${lockKey}))
   `;
 }
 
+// markUrlRefreshRunning(): Setzt den Refresh-Status für eine Quelle auf "running" in der Status-Tabelle.
 async function markUrlRefreshRunning(userId: string, sourceKey: string) {
     await sql`
     INSERT INTO user_event_refresh_state (
@@ -422,6 +465,7 @@ async function markUrlRefreshRunning(userId: string, sourceKey: string) {
   `;
 }
 
+// markUrlRefreshSuccess(): Markiert den Refresh einer Quelle als erfolgreich und aktualisiert Zeitstempel.
 async function markUrlRefreshSuccess(
     userId: string,
     sourceKey: string
@@ -455,6 +499,7 @@ async function markUrlRefreshSuccess(
   `;
 }
 
+// markUrlRefreshError(): Protokolliert einen Fehlerstatus und die Fehlermeldung für einen Quellen-Refresh.
 async function markUrlRefreshError(
     userId: string,
     sourceKey: string,
@@ -489,6 +534,7 @@ async function markUrlRefreshError(
   `;
 }
 
+// hasRefreshStateChangedAfter(): Prüft, ob ein Status-Row nach einem gegebenen Zeitstempel geändert wurde.
 function hasRefreshStateChangedAfter(
     row: RefreshStatusRow,
     startedAfter?: string | null
@@ -512,15 +558,16 @@ function hasRefreshStateChangedAfter(
     return startedAt >= threshold || refreshedAt >= threshold;
 }
 
+// getCustomEventRefreshStatusForUser(): Aggregiert den Refresh-Status aller konfigurierten URL-Quellen eines Nutzers und gibt Gesamtstatus zurück.
 export async function getCustomEventRefreshStatusForUser(
     userId: string,
     options?: { startedAfter?: string | null }
 ): Promise<CustomEventRefreshStatus> {
     const settings = await getUserSettings(userId);
-    const openAiKey = settings.key2?.trim();
+    const geminiApiKey = settings.key6?.trim();
     const sources = settings.event_urls.filter((source) => source.url.trim().length > 0);
 
-    if (!openAiKey || sources.length === 0) {
+    if (!geminiApiKey || sources.length === 0) {
         return {
             status: "idle",
             error: null,
@@ -544,6 +591,24 @@ export async function getCustomEventRefreshStatusForUser(
     const currentRows = relevantRows.filter((row) =>
         hasRefreshStateChangedAfter(row, options?.startedAfter)
     );
+
+    const staleRunningRows = currentRows.filter(
+        (row) => row.last_status === "running" && isRunningRefreshStale(row.refresh_started_at)
+    );
+
+    if (staleRunningRows.length > 0) {
+        const timeoutMessage = `[event-url] Refresh timed out after ${Math.round(CUSTOM_REFRESH_STALE_AFTER_MS / 1000)}s without a Gemini response.`;
+
+        await Promise.all(
+            staleRunningRows.map((row) =>
+                markUrlRefreshError(userId, row.source_key, new Error(timeoutMessage))
+            )
+        );
+        return {
+            status: "error",
+            error: timeoutMessage,
+        };
+    }
 
     const failedRow = currentRows.find((row) => row.last_status === "error");
     if (failedRow) {
@@ -580,6 +645,7 @@ export async function getCustomEventRefreshStatusForUser(
     };
 }
 
+// runSingleFlight(): Verhindert parallele Ausführungen derselben Arbeit durch Single-flight-Caching von Promises.
 function runSingleFlight(key: string, work: () => Promise<void>) {
     const existing = inFlightCustomRefreshes.get(key);
     if (existing) {
@@ -594,11 +660,13 @@ function runSingleFlight(key: string, work: () => Promise<void>) {
     return promise;
 }
 
+// refreshSingleCustomEventSource(): Führt für eine einzelne URL-Quelle den kompletten Refresh-Workflow 
+// (Lock, Markierung, Gemini-Fetch, Insert, Erfolgs-/Fehler-Markierung) aus.
 async function refreshSingleCustomEventSource(
     userId: string,
     source: EventUrlSetting,
     sourceTown: string | null,
-    openAiKey: string,
+    geminiApiKey: string,
     targetDay?: string
 ) {
     const sourceUrl = source.url.trim();
@@ -623,10 +691,10 @@ async function refreshSingleCustomEventSource(
 
         await deleteOldEventsForSource(userId, sourceUrl);
 
-        const events = await fetchOpenAiEventsForSource(
+        const events = await fetchGeminiEventsForSource(
             sourceUrl,
             source.refreshInterval,
-            openAiKey,
+            geminiApiKey,
             targetDay
         );
 
@@ -645,23 +713,24 @@ await markUrlRefreshSuccess(userId, sourceKey);
     }
 }
 
+// refreshCustomEventSourcesForUser(): Iteriert alle konfigurierten URL-Quellen eines Nutzers und startet nacheinander deren Refreshs (mit Single-flight).
 export async function refreshCustomEventSourcesForUser(
     userId: string,
     options?: RefreshCustomEventSourceOptions
 ) {
     const settings = await getUserSettings(userId);
-    const openAiKey = settings.key2?.trim();
+    const geminiApiKey = settings.key6?.trim();
 
     console.log("[event-url] refreshCustomEventSourcesForUser called:", {
         userId,
         sourceCount: settings.event_urls.length,
         sources: settings.event_urls,
-        hasOpenAiKey: Boolean(openAiKey),
+        hasGeminiKey: Boolean(geminiApiKey),
         targetDay: options?.targetDay ?? null,
     });
 
-    if (!openAiKey) {
-        console.log("[event-url] skipped because OPENAI_API_KEY is missing:", {
+    if (!geminiApiKey) {
+        console.log("[event-url] skipped because GEMINI_API_SECRET is missing:", {
             userId,
             sources: settings.event_urls,
         });
@@ -697,14 +766,14 @@ export async function refreshCustomEventSourcesForUser(
                 userId,
                 source,
                 settings.town ?? null,
-                openAiKey,
+                geminiApiKey,
                 options?.targetDay
             )
         );
     }
 }
 
-
+// invalidateCustomEventRefreshState(): Löscht alle Refresh-Status-Einträge für URL-Quellen eines Benutzers.
 export async function invalidateCustomEventRefreshState(userId: string) {
     await sql`
     DELETE FROM user_event_refresh_state

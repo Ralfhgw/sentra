@@ -428,6 +428,16 @@ Benötigt (abhängig vom Setup):
 
 ### Update der day_meanings_export.csv und liveview_channels.csv
 
+#### Remove hiden/deleted Channels from liveview_channels.csv
+Filter all hidden/deleted channels of specified user
+```
+docker compose exec -T db psql -U dbuser -d sentra -c "COPY (SELECT us.user_id, (pref->>'channelId')::uuid AS channel_id, c.tvg_name, c.tvg_id, c.\"group\", c.location, c.channel, c.stream_url, pref->>'isFavorite' AS is_favorite, pref->>'hidden' AS hidden, pref->>'deleted' AS deleted FROM user_settings us CROSS JOIN LATERAL jsonb_array_elements(us.liveview_channel_preferences) AS pref LEFT JOIN channels c ON c.id = (pref->>'channelId')::uuid WHERE us.user_id = 'eb0b9ccc-159f-47a3-839f-be170c21890f'::uuid ORDER BY us.user_id) TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ';', ENCODING 'UTF8');" > liveview_channel_preferences.csv
+```
+Create new liveview_channel.csv
+```
+head -1 liveview_channels.csv > liveview_channels_neu.csv
+tail -n +2 liveview_channels.csv | grep -v -F -f <(cut -d';' -f8 liveview_channel_preferences.csv) >> liveview_channels_neu.csv
+```
 #### day_meanings_export.csv 
 #### lokal
 

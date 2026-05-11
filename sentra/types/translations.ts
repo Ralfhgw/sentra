@@ -28,11 +28,12 @@ export const startpageTranslations = {
     descriptionlg: "Click the screws 🔩 in the corners to open the modules.",
     descriptionsm: "Select the modules from the hamburger menu ☰.",
     userinfo: "User Information and Technical Data",
-    news: "📰 News: Your local cultural calendar for the coming days",
-    weather: "🌦️ Weather: Forecast for the next few days",
-    liveview: "📷 LiveView: Webcam streaming and integrated live TV channels",
-    livetalk: "👥 LiveTalk: Video conferencing powered by MediaSoup (WebRTC)",
-    settings: "⚙️ Settings: Manage your preferences"
+    news: "News",
+    weather: "Weather",
+    liveview: "LiveView",
+    livetalk: "LiveTalk",
+    toolinfo: "Zusätzliche Tools",
+    petrol: "Tanken"
 
  },
   de: {
@@ -41,11 +42,12 @@ export const startpageTranslations = {
     descriptionlg: "Klicke auf die Schrauben 🔩 in den Ecken, um die Module zu öffnen.",
     descriptionsm: "Wähle die Module im Burger-Menü ☰ aus.",
     userinfo: "Benutzerinformationen und technische Daten",
-    news: "📰 Aktuelles: Dein regionaler Kulturkalender für die nächsten Tage",
-    weather: "🌦️ Wetter: Aussichten für die nächsten Tage",
-    liveview: "📷 LiveView: Webcam-Streaming und integrierte Live-TV-Kanäle",
-    livetalk: "👥 LiveTalk: Videokonferenzen auf Basis von MediaSoup (WebRTC)",
-    settings: "⚙️ Einstellungen: Verwalte deine Präferenzen"
+    news: "Aktuelles",
+    weather: "Wetter",
+    liveview: "LiveView",
+    livetalk: "LiveTalk",
+    toolinfo: "Additional Tools",
+    petrol: "Petrol"
 },
 };
 

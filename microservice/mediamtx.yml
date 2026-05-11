@@ -7,9 +7,10 @@ hlsAllowOrigin: '*'
 hlsVariant: lowLatency      # Nutzt Low-Latency HLS
 hlsSegmentCount: 7          # Anzahl der Segmente in der Playlist
 hlsSegmentDuration: 1s      # Dauer der einzelnen Segmente
+runOnDemand: no
 
 # Authentifizierung
-authMethod: internal
+authMethod: internalcd ..
 authInternalUsers:
   - user: admin
     pass: password

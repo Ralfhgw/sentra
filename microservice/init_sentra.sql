@@ -49,6 +49,8 @@ CREATE TABLE "user_settings" (
     "key3" text,
     "key4" text,
     "key5" text,
+    "key6" text,
+    "key7" text,
     "evt" boolean NOT NULL DEFAULT false,
     "wea" boolean NOT NULL DEFAULT false,
     "mtx" boolean NOT NULL DEFAULT false,

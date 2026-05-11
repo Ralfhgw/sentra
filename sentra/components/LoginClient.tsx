@@ -103,7 +103,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
               <sup className="ml-1 text-base align-top">&copy;</sup>
             </h1>
             {/* Language Button */}
-            {/*             <div className="h-9 mb-1 flex justify-end">
+                         <div className="h-9 mb-1 flex justify-end">
               <select
                 className="w-28 px-2 rounded-xl bg-gray-700 text-[16px] opacity-70"
                 value={language}
@@ -112,7 +112,7 @@ export default function LoginForm({ translations, defaultLanguage = "en" }: Logi
                 <option value="en">English</option>
                 <option value="de">Deutsch</option>
               </select>
-            </div> */}
+            </div> 
 
             <h2 className="mb-9 text-2xl font-semibold text-white">{t.login}</h2>
 

@@ -469,6 +469,7 @@ export default function WebcamItem({
                         ref={videoRef}
                         preload="auto"
                         playsInline
+                        autoPlay
                         muted={muted}
                         className="w-full h-full object-cover"
                         onLoadedMetadata={() => {

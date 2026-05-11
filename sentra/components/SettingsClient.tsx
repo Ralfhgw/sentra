@@ -23,7 +23,7 @@ interface DualSensorState {
   outdoorStatus?: SensorStatus;
 }
 
-const KEY_FIELDS = ["key1", "key2", "key3", "key4", "key5"] as const;
+const KEY_FIELDS = ["key1", "key2", "key3", "key4", "key5", "key6", "key7"] as const;
 
 type KeyField = (typeof KEY_FIELDS)[number];
 type KeyInputState = {
@@ -74,6 +74,23 @@ function getKeyPlaceholder(value: string | null | undefined) {
   return `${value.slice(0, 5)}...`;
 }
 
+function getCloudinarySecretsPlaceholder(settings: Pick<Settings, "key3" | "key4" | "key5">) {
+  const values = [settings.key4, settings.key3, settings.key5];
+  if (values.every((value) => !value)) return "No key stored";
+
+  return values
+    .map((value) => (value ? `${value.slice(0, 5)}...` : "..."))
+    .join(":");
+}
+
+function parseCloudinarySecretsInput(value: string) {
+  const parts = value.split(":").map((part) => part.trim());
+  if (parts.length !== 3 || parts.some((part) => !part)) return null;
+
+  const [apiKey, apiSecret, cloudName] = parts;
+  return { apiKey, apiSecret, cloudName };
+}
+
 function mergeSettingsWithKeyInputs(settings: Settings, keyInputs: KeyInputState): Settings {
   return KEY_FIELDS.reduce((nextSettings, field) => {
     const nextValue = keyInputs[field].trim();
@@ -99,6 +116,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [compareSettings, setCompareSettings] = useState<Settings>(initialSettings);
   const [keyInputs, setKeyInputs] = useState<KeyInputState>(createEmptyKeyInputs);
+  const [cloudinarySecretsInput, setCloudinarySecretsInput] = useState("");
 
   const normalizeEventUrls = (eventUrls: EventUrlSetting[] | undefined) => {
     if (!Array.isArray(eventUrls)) return [];
@@ -161,6 +179,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         key3: userSettings.key3 ?? null,
         key4: userSettings.key4 ?? null,
         key5: userSettings.key5 ?? null,
+        key6: userSettings.key6 ?? null,
+        key7: userSettings.key7 ?? null,
       }));
     }
   }, [userSettings]);
@@ -311,7 +331,28 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
     setSaving(true);
     setError("");
     setStatus("idle");
-    const nextSettings = mergeSettingsWithKeyInputs(settings, keyInputs);
+        const parsedCloudinarySecrets = cloudinarySecretsInput.trim()
+      ? parseCloudinarySecretsInput(cloudinarySecretsInput)
+      : null;
+
+    if (cloudinarySecretsInput.trim() && !parsedCloudinarySecrets) {
+      setError("CLOUDINARY_SECRETS muss im Format API_KEY:API_SECRET:CLOUD_NAME eingegeben werden.");
+      setStatus("error");
+      setSaving(false);
+      return;
+    }
+
+    let nextSettings = mergeSettingsWithKeyInputs(settings, keyInputs);
+
+    if (parsedCloudinarySecrets) {
+      nextSettings = {
+        ...nextSettings,
+        key4: parsedCloudinarySecrets.apiKey,
+        key3: parsedCloudinarySecrets.apiSecret,
+        key5: parsedCloudinarySecrets.cloudName,
+      };
+    }
+
     try {
       const response = await fetch("/api/settings", {
         method: "POST",
@@ -337,6 +378,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         key3: nextSettings.key3,
         key4: nextSettings.key4,
         key5: nextSettings.key5,
+        key6: nextSettings.key6,
+        key7: nextSettings.key7,
         evt: nextSettings.evt,
         wea: nextSettings.wea,
         mtx: nextSettings.mtx,
@@ -348,6 +391,7 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
         s_cal_pressure: nextSettings.s_cal_pressure,
       }));
       setKeyInputs(createEmptyKeyInputs());
+      setCloudinarySecretsInput("");
       setStatus("success");
       setBorderColor("green");
       setTimeout(() => setBorderColor("none"), 2000);
@@ -390,7 +434,8 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
       JSON.stringify(normalizeEventUrls(settings.event_urls)) !==
       JSON.stringify(normalizeEventUrls(compareSettings.event_urls)) ||
       KEY_FIELDS.some((field) => settings[field] !== compareSettings[field]) ||
-      KEY_FIELDS.some((field) => keyInputs[field].trim().length > 0)
+      KEY_FIELDS.some((field) => keyInputs[field].trim().length > 0) ||
+      cloudinarySecretsInput.trim().length > 0
     );
   }
 
@@ -790,38 +835,39 @@ export default function SettingsClient({ initialSettings }: SettingsClientProps)
                     />
                   </div>
                   <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                    <label htmlFor="input3" className="text-sm text-slate-700">CLOUDINARY_API_SECRET</label>
+                    <label htmlFor="input3" className="text-sm text-slate-700">CLOUDINARY_SECRETS</label>
                     <input
                       id="input3"
                       type="text"
                       className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                      value={keyInputs.key3 ?? ""}
-                      onChange={(e) => handleKeyChange("key3", e.target.value)}
-                      placeholder={getKeyPlaceholder(settings.key3)}
+                      value={cloudinarySecretsInput}
+                      onChange={(e) => setCloudinarySecretsInput(e.target.value)}
+                      placeholder={getCloudinarySecretsPlaceholder(settings)}
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Format: API_KEY:API_SECRET:CLOUD_NAME</p>
+                  </div>
+                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
+                    <label htmlFor="input6" className="text-sm text-slate-700">GEMINI_API_SECRET</label>
+                    <input
+                      id="input6"
+                      type="text"
+                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
+                      value={keyInputs.key6 ?? ""}
+                      onChange={(e) => handleKeyChange("key6", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key6)}
                       autoComplete="off"
                     />
                   </div>
                   <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                    <label htmlFor="input4" className="text-sm text-slate-700">CLOUDINARY_API_KEY</label>
+                    <label htmlFor="input7" className="text-sm text-slate-700">CLAUDE_API_KEY</label>
                     <input
-                      id="input4"
+                      id="input7"
                       type="text"
                       className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                      value={keyInputs.key4 ?? ""}
-                      onChange={(e) => handleKeyChange("key4", e.target.value)}
-                      placeholder={getKeyPlaceholder(settings.key4)}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="p-1 rounded-lg flex flex-col bg-gray-300">
-                    <label htmlFor="input5" className="text-sm text-slate-700">CLOUDINARY_CLOUD_NAME</label>
-                    <input
-                      id="input5"
-                      type="text"
-                      className="px-2 py-1 bg-gray-100 rounded-lg border text-sm border-gray-300"
-                      value={keyInputs.key5 ?? ""}
-                      onChange={(e) => handleKeyChange("key5", e.target.value)}
-                      placeholder={getKeyPlaceholder(settings.key5)}
+                      value={keyInputs.key7 ?? ""}
+                      onChange={(e) => handleKeyChange("key7", e.target.value)}
+                      placeholder={getKeyPlaceholder(settings.key7)}
                       autoComplete="off"
                     />
                   </div>

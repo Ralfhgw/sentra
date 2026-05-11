@@ -32,6 +32,8 @@ export interface Settings {
   key3: string | null;
   key4: string | null;
   key5: string | null;
+  key6: string | null;
+  key7: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -61,6 +63,8 @@ export const defaultSettings: Settings = {
   key3: null,
   key4: null,
   key5: null,
+  key6: null,
+  key7: null,
   evt: false,
   wea: false,
   mtx: false,

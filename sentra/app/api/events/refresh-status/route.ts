@@ -1,3 +1,5 @@
+// API‑Route (GET): fragt getCustomEventRefreshStatusForUser ab; wenn Refresh 
+// läuft gibt Status zurück, sonst liefert sie aktualisierte Events zusammen mit Endstatus/Fehler.
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utils/db";
 import { getAuthenticatedUserFromCookies } from "@/utils/serverAuth";

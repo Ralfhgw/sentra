@@ -74,6 +74,8 @@ type UserSettingsRow = {
   key3: string | null;
   key4: string | null;
   key5: string | null;
+  key6: string | null;
+  key7: string | null;
   evt: boolean | null;
   wea: boolean | null;
   mtx: boolean | null;
@@ -104,6 +106,8 @@ export type UserSettings = {
   key3: string | null;
   key4: string | null;
   key5: string | null;
+  key6: string | null;
+  key7: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;
@@ -134,6 +138,8 @@ export const defaultUserSettings: UserSettings = {
   key3: null,
   key4: null,
   key5: null,
+  key6: null,
+  key7: null,
   evt: false,
   wea: false,
   mtx: false,
@@ -363,6 +369,8 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       key3,
       key4,
       key5,
+      key6,
+      key7,
       evt,
       wea,
       mtx,
@@ -402,6 +410,8 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     key3: row.key3,
     key4: row.key4,
     key5: row.key5,
+    key6: row.key6,
+    key7: row.key7,
     evt: row.evt ?? false,
     wea: row.wea ?? false,
     mtx: row.mtx ?? false,

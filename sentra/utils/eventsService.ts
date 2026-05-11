@@ -1,3 +1,6 @@
+// Hauptlogik für Primär‑Event‑Refresh (SerpAPI): berechnet Lookahead, ruft 
+// getEvents für Tage auf, verwaltet Cache/next_refresh, Locks, single‑flight 
+// und bietet ensureFreshEventsForUser, warmEventsForUser, invalidatePrimaryEventRefreshState.
 import { getEvents } from "@/app/api/events/getEvents";
 import type { EventRefreshInterval } from "@/types/typesSettings";
 import { getUserSettings } from "@/utils/serverAuth";

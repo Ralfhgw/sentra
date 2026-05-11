@@ -23,6 +23,8 @@ interface UserSettingsRow {
   key3: string | null;
   key4: string | null;
   key5: string | null;
+  key6: string | null;
+  key7: string | null;
   evt: boolean;
   wea: boolean;
   mtx: boolean;

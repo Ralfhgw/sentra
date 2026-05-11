@@ -1,4 +1,7 @@
 tvg_name;tvg_id;group;location;channel;stream_url
+LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Kühlungsborn Hafen;https://ch-fra-n10.livespotting.com/vpu/rqharwuk/at3nvjov_720.m3u8
+LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Kühlungsborn Seebrücke;https://ch-fra-n10.livespotting.com/vpu/brgr3u26/519srew5_1080.m3u8
+LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Ribnitz Hafen;https://cdn.livespotting.com/vpu/gil6ujj9/7lhuy3p7.m3u8
 Visdeurbel Cam;visdeurbel;Wildlife;Add-Ons;Netherlands Fish Doorbell Utrecht;https://visdeurbel.videostreams.nl/hls/visdeurbel/index.m3u8
 Flumserberg Panorama;flumserberg;Mountain;Add-Ons;Switzerland Flumserberg Summit View;https://live.143b.ch/cam/flux/ts:abr.m3u8
 LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Warnemünde Alter Strom;https://cdn.livespotting.com/vpu/oq57fxnt/mciwlhsf.m3u8

@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "@google/genai": "^1.52.0",
     "axios": "^1.13.5",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.3.1",
+    "edge-tts-universal": "^1.4.0",
     "hls.js": "^1.6.15",
     "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.3",

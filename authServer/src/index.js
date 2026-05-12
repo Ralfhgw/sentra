@@ -371,7 +371,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (!user) {
       console.warn(`[LOGIN] Fehlgeschlagen: Account nicht gefunden (${identifier})`);
-      return res.status(401).json({ error: "Ung?ltige Anmeldedaten" });
+      return res.status(401).json({ error: "Ungültige Anmeldedaten" });
     }
 
     if (user.status === "pending") {
@@ -391,7 +391,7 @@ app.post("/api/auth/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
       console.warn(`[LOGIN] Fehlgeschlagen: Falsches Passwort f?r ${identifier}`);
-      return res.status(401).json({ error: "Ung?ltige Anmeldedaten" });
+      return res.status(401).json({ error: "Ungültige Anmeldedaten" });
     }
 
     const [updatedUser] = await sql`

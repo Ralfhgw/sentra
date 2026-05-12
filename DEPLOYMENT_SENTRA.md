@@ -585,3 +585,25 @@ docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c 
 ```
 pm2 restart sentra
 ```
+
+### User komplett löschen
+cd ~/sentra/authServer/
+docker compose exec db psql -U user -d authdb
+SELECT id, username, email FROM users WHERE email = 'ralf@web.de';
+
+BEGIN;
+DELETE FROM users WHERE id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+COMMIT;
+
+
+cd ~/sentra/microservice/
+docker compose exec db psql -U dbuser -d sentra
+
+BEGIN;
+DELETE FROM livetalk_rooms WHERE owner_user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+DELETE FROM livetalk_messages WHERE user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+DELETE FROM livetalk_participants WHERE user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+DELETE FROM liveview_sources WHERE user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+DELETE FROM events WHERE user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+DELETE FROM user_settings WHERE user_id = 'ba4b543e-b81a-41bd-a1a6-17bb9cba7bfe';
+COMMIT;

@@ -157,6 +157,7 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const edgeTtsAbortRef = useRef<AbortController | null>(null);
+  const resumeListeningAfterPlaybackRef = useRef(false);
   const sendChatMessageRef = useRef<
     (messageOverride?: string) => Promise<void>
   >(async () => { });
@@ -501,6 +502,55 @@ export default function Home() {
     }
   }, []);
 
+  const restartSpeechRecognition = useCallback(() => {
+    const recognition = recognitionRef.current;
+
+    resumeListeningAfterPlaybackRef.current = false;
+
+    if (!recognition) {
+      return;
+    }
+
+    try {
+      shouldKeepListeningRef.current = true;
+      recognition.lang = lang === "de" ? "de-DE" : "en-US";
+      recognition.start();
+      setIsListening(true);
+      setChatError(null);
+      speechDraftPrefixRef.current = "";
+    } catch (error) {
+      console.error("Speech recognition restart after playback failed:", error);
+      shouldKeepListeningRef.current = false;
+      setIsListening(false);
+    }
+  }, [lang]);
+
+  const pauseListeningForPlayback = useCallback(() => {
+    const recognition = recognitionRef.current;
+
+    if (!recognition || (!isListening && !shouldKeepListeningRef.current)) {
+      resumeListeningAfterPlaybackRef.current = false;
+      return;
+    }
+
+    resumeListeningAfterPlaybackRef.current = true;
+    shouldKeepListeningRef.current = false;
+
+    if (recognitionRestartTimeoutRef.current !== null) {
+      window.clearTimeout(recognitionRestartTimeoutRef.current);
+      recognitionRestartTimeoutRef.current = null;
+    }
+
+    try {
+      recognition.stop();
+    } catch (error) {
+      console.error("Speech recognition pause for playback failed:", error);
+    }
+
+    setIsListening(false);
+    speechDraftPrefixRef.current = "";
+  }, [isListening]);
+
   const speakWithEdgeTts = useCallback(async (text: string) => {
     if (typeof window === "undefined" || !speechOutputSupported) {
       return;
@@ -511,6 +561,7 @@ export default function Home() {
       return;
     }
 
+    pauseListeningForPlayback();
     stopEdgeTtsPlayback();
 
     const controller = new AbortController();
@@ -546,7 +597,7 @@ export default function Home() {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-     audio.onended = () => {
+      audio.onended = () => {
         if (audioUrlRef.current === audioUrl) {
           URL.revokeObjectURL(audioUrl);
           audioUrlRef.current = null;
@@ -554,18 +605,40 @@ export default function Home() {
         if (audioRef.current === audio) {
           audioRef.current = null;
         }
+
+        if (resumeListeningAfterPlaybackRef.current) {
+          restartSpeechRecognition();
+        }
+      };
+
+      audio.onerror = () => {
+        stopEdgeTtsPlayback();
+
+        if (resumeListeningAfterPlaybackRef.current) {
+          restartSpeechRecognition();
+        }
       };
 
       await audio.play();
     } catch (error) {
       if (controller.signal.aborted) {
         return;
-     }
+      }
 
       console.error("Edge TTS playback failed:", error);
       stopEdgeTtsPlayback();
+
+      if (resumeListeningAfterPlaybackRef.current) {
+        restartSpeechRecognition();
+      }
     }
-  }, [lang, speechOutputSupported, stopEdgeTtsPlayback]);
+  }, [
+    lang,
+    pauseListeningForPlayback,
+    restartSpeechRecognition,
+    speechOutputSupported,
+    stopEdgeTtsPlayback,
+  ]);
 
   useEffect(() => {
     skipNextChatPersistRef.current = true;
@@ -944,6 +1017,10 @@ export default function Home() {
 
       if (!nextValue) {
         stopEdgeTtsPlayback();
+
+        if (resumeListeningAfterPlaybackRef.current) {
+          restartSpeechRecognition();
+        }
       }
 
       return nextValue;

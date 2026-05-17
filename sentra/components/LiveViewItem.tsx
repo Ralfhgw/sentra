@@ -13,6 +13,9 @@ type WebcamItemProps = {
     location?: string;
     playbackProfile: LiveViewPlaybackProfile;
     qualityCap: LiveViewQualityCap;
+    infoOverlayClickable?: boolean;
+    isMenuVisible?: boolean;
+    onInfoOverlayClick?: () => void;
 };
 
 type StreamInfo = {
@@ -181,6 +184,9 @@ export default function WebcamItem({
     location,
     playbackProfile,
     qualityCap,
+    infoOverlayClickable = false,
+    isMenuVisible = true,
+    onInfoOverlayClick,
 }: WebcamItemProps) {
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -518,12 +524,21 @@ export default function WebcamItem({
             )}
 
             {/* Sentra Water Mark top right */}
-            <div className={`absolute text-lg top-3 right-4 text-white/80 font-bold italic select-none pointer-events-none tracking-tighter ${isHuge ? 'text-5xl' : isLarge ? 'text-xl' : 'text-[8px]'}`}>
+            <div className={`absolute text-lg top-3 right-4 text-white/80 font-bold italic select-none pointer-events-none tracking-tighter ${isHuge ? 'text-5xl' : isLarge ? 'text-xl' : 'text-[16px]'}`}>
                 Sentra&copy;
             </div>
 
             {/* Activ channel indicator if hover */}
-            <div className="absolute top-1 left-2 right-2 text-xs bg-gray-300 text-gray/90 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+                type="button"
+                onClick={() => {
+                    if (!infoOverlayClickable) return;
+                    onInfoOverlayClick?.();
+                }}
+                className={`absolute top-1 left-2 right-2 z-10 text-left text-xs bg-gray-300 text-gray/90 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity ${infoOverlayClickable ? "cursor-pointer" : "cursor-default"}`}
+                title={infoOverlayClickable ? `Menü ${isMenuVisible ? "ausblenden" : "einblenden"}` : undefined}
+                aria-label={infoOverlayClickable ? `Menü ${isMenuVisible ? "ausblenden" : "einblenden"}` : undefined}
+            >
                 <div className="break-all">
                     Slot: {channel} - Channel: {channelName || "-"} - Location: {location || "-"} - URL: {url || "-"}
                 </div>
@@ -552,8 +567,13 @@ export default function WebcamItem({
                     <span className="whitespace-nowrap">
                         Active: {streamInfo.activeLevelLabel}
                     </span>
+                    {infoOverlayClickable && (
+                        <span className="whitespace-nowrap font-semibold">
+                            Klick: Menü {isMenuVisible ? "aus" : "ein"}
+                        </span>
+                    )}
                </div>
-            </div>
+            </button>
         </div>
     );
 }

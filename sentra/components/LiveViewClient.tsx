@@ -172,9 +172,11 @@ export default function LiveViewClient({
   const [qualityCap, setQualityCap] = useState<LiveViewQualityCap>("auto");
   const [playbackSettingsReady, setPlaybackSettingsReady] = useState(false);
   const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
+  const [isMenuVisible, setIsMenuVisible] = useState(true);
   const layoutOptions = Object.keys(LAYOUT_CONFIGS).map(
     (id) => Number(id) as keyof typeof LAYOUT_CONFIGS
   );
+  const isSingleLayout = layoutId === 1;
 
   const resetPopupState = () => {
     setPopupCell(null);
@@ -231,6 +233,24 @@ export default function LiveViewClient({
     if (!playbackSettingsReady) return;
     window.localStorage.setItem(QUALITY_CAP_STORAGE_KEY, qualityCap);
   }, [qualityCap, playbackSettingsReady]);
+
+  useEffect(() => {
+    const shouldHideBurgerMenu = isSingleLayout && !isMenuVisible;
+
+    window.dispatchEvent(
+      new CustomEvent("liveview-burger-visibility", {
+        detail: { hidden: shouldHideBurgerMenu },
+      })
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("liveview-burger-visibility", {
+          detail: { hidden: false },
+        })
+      );
+    };
+  }, [isSingleLayout, isMenuVisible]);
 
   if (!mtxEnabled) {
     return <ModuleDisabledNotice title="LiveView" settingCode="MTX" />;
@@ -569,6 +589,7 @@ export default function LiveViewClient({
   };
 
   const isDesktop = viewportWidth >= 768;
+  const showMenuPanel = !isSingleLayout || isMenuVisible;
 
   return (
 
@@ -731,7 +752,8 @@ export default function LiveViewClient({
       )}
 
       {/* Buttons */}
-      <div className="border-blue-300 bg-gray-600 relative z-40 w-full md:w-23 flex flex-row flex-wrap items-start content-start gap-x-2 gap-y-1 p-1 overflow-visible border-b md:border-b-0 md:border-r">
+        {showMenuPanel && (
+        <div className="border-blue-300 bg-gray-600 relative z-40 w-full md:w-23 flex flex-row flex-wrap items-start content-start gap-x-2 gap-y-1 p-1 overflow-visible border-b md:border-b-0 md:border-r">
 
         {/* Background Image */}
         <div className="bg-gray-300 pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -752,9 +774,14 @@ export default function LiveViewClient({
           <select
             className="w-full z-10 py-2 rounded border border-gray-800 bg-blue-900/80 text-xs text-gray-300"
             value={String(layoutId)}
-            onChange={(e) =>
-              setLayoutId(Number(e.target.value) as keyof typeof LAYOUT_CONFIGS)
-            }
+            onChange={(e) => {
+              const nextLayoutId = Number(e.target.value) as keyof typeof LAYOUT_CONFIGS;
+              setLayoutId(nextLayoutId);
+
+              if (nextLayoutId !== 1) {
+                setIsMenuVisible(true);
+              }
+            }}
           >
              {layoutOptions.map((id) => (
               <option key={id} value={String(id)}>
@@ -795,10 +822,11 @@ export default function LiveViewClient({
             <option value="1080p">1080p</option>
           </select>
         </div>
-      </div>
+         </div>
+      )}
 
       {/* Video Grid */}
-      <div className="relative z-0 w-full md:w-[80%] h-full grid gap-px bg-gray-300 border border-gray-800"
+      <div className={`relative z-0 w-full h-full grid gap-px bg-gray-300 border border-gray-800 ${showMenuPanel ? "md:w-[80%]" : "md:w-full"}`}
         style={{
           gridTemplateColumns: `repeat(${responsiveCols}, 1fr)`,
           gridAutoRows: useCompactSpans ? "minmax(220px, auto)" : "minmax(0, 1fr)",
@@ -824,16 +852,18 @@ export default function LiveViewClient({
             >
 
               {/* Webcam Item Container */}
-              <div className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
-                draggable={Boolean(currentUserChannels[slotId]?.url)}
-                onDragStart={() => {
-                  if (!currentUserChannels[slotId]?.url) return;
-                  setDragFrom(slotId);
-                }}
-                onDragEnd={() => setDragFrom(null)}
-                title="Drag here to move"
-                aria-label="Drag handle"
-              />
+              {!isSingleLayout && (
+                <div className="absolute top-0 left-0 right-0 h-1/2 z-20 cursor-grab active:cursor-grabbing"
+                  draggable={Boolean(currentUserChannels[slotId]?.url)}
+                  onDragStart={() => {
+                    if (!currentUserChannels[slotId]?.url) return;
+                    setDragFrom(slotId);
+                  }}
+                  onDragEnd={() => setDragFrom(null)}
+                  title="Drag here to move"
+                  aria-label="Drag handle"
+                />
+              )}
 
               {/* Webcam Item */}
               <WebcamItem url={currentUserChannels[slotId]?.url ?? null}
@@ -844,7 +874,13 @@ export default function LiveViewClient({
                 location={currentUserChannels[slotId]?.location ?? ""}
                 playbackProfile={playbackProfile}
                 qualityCap={qualityCap}
-              />
+                infoOverlayClickable={isSingleLayout}
+                isMenuVisible={isMenuVisible}
+                onInfoOverlayClick={() => {
+                  if (!isSingleLayout) return;
+                  setIsMenuVisible((current) => !current);
+                }}
+             />
             </div>
           );
         })}

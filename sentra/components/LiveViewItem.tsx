@@ -13,6 +13,7 @@ type WebcamItemProps = {
     location?: string;
     playbackProfile: LiveViewPlaybackProfile;
     qualityCap: LiveViewQualityCap;
+    subtitlesEnabled?: boolean;
     infoOverlayClickable?: boolean;
     isMenuVisible?: boolean;
     onInfoOverlayClick?: () => void;
@@ -25,6 +26,66 @@ type StreamInfo = {
     bufferLabel: string;
     liveDelayLabel: string;
     playbackRateLabel: string;
+};
+
+type SubtitleResponse = {
+    text?: string;
+    sourceText?: string;
+    sourceLanguage?: string | null;
+    error?: string;
+};
+
+type CaptureCapableVideoElement = HTMLVideoElement & {
+    captureStream?: () => MediaStream;
+    mozCaptureStream?: () => MediaStream;
+};
+
+const isDisplayTextTrack = (track: TextTrack) =>
+    track.kind === "subtitles" ||
+    track.kind === "captions";
+
+const getActiveCueText = (track: TextTrack) => {
+    const activeCue = track.activeCues?.[0];
+    if (!activeCue) {
+        return "";
+    }
+
+    if ("text" in activeCue && typeof activeCue.text === "string") {
+        return activeCue.text.trim();
+    }
+
+    return String(activeCue).trim();
+};
+
+const syncNativeTextTracks = (
+    video: HTMLVideoElement | null,
+    subtitlesEnabled: boolean,
+    setHasNativeSubtitles: (value: boolean) => void
+) => {
+    if (!video) return false;
+
+    const tracks = Array.from(video.textTracks).filter(isDisplayTextTrack);
+    const hasTracks = tracks.length > 0;
+    setHasNativeSubtitles(hasTracks);
+
+    for (const track of tracks) {
+        track.mode = subtitlesEnabled ? "hidden" : "disabled";
+    }
+
+    return hasTracks;
+};
+
+const SUBTITLE_CHUNK_MS = 10_000;
+const RECORDER_MIME_TYPES = ["audio/webm;codecs=opus", "audio/webm"] as const;
+
+const pickRecorderMimeType = () => {
+    if (typeof MediaRecorder === "undefined") {
+       return "";
+    }
+
+    return (
+        RECORDER_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? ""
+    );
 };
 
 const shouldBypassProxy = (sourceUrl: string) => {
@@ -184,6 +245,7 @@ export default function WebcamItem({
     location,
     playbackProfile,
     qualityCap,
+    subtitlesEnabled = false,
     infoOverlayClickable = false,
     isMenuVisible = true,
     onInfoOverlayClick,
@@ -203,6 +265,14 @@ export default function WebcamItem({
     });
     const hlsRef = useRef<Hls | null>(null);
     const resumeAfterVisibleRef = useRef(false);
+    const subtitleRecorderRef = useRef<MediaRecorder | null>(null);
+    const subtitleRequestIdRef = useRef(0);
+    const subtitleStopTimerRef = useRef<number | null>(null);
+    const subtitleDisposedRef = useRef(false);
+    const [subtitleText, setSubtitleText] = useState("");
+    const [nativeSubtitleText, setNativeSubtitleText] = useState("");
+    const [subtitleError, setSubtitleError] = useState("");
+    const [hasNativeSubtitles, setHasNativeSubtitles] = useState(false);
 
     const updateStreamInfo = (player?: Hls | null) => {
         const video = videoRef.current;
@@ -466,6 +536,182 @@ export default function WebcamItem({
     }, [volume]);
 
 
+    useEffect(() => {
+        if (!url) {
+            setSubtitleText("");
+            setNativeSubtitleText("");
+            setSubtitleError("");
+            setHasNativeSubtitles(false);
+            return;
+        }
+
+        syncNativeTextTracks(
+            videoRef.current,
+            subtitlesEnabled,
+            setHasNativeSubtitles
+        );
+
+    }, [url, subtitlesEnabled]);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video || !subtitlesEnabled) {
+            setNativeSubtitleText("");
+            return;
+        }
+
+        const tracks = Array.from(video.textTracks).filter(isDisplayTextTrack);
+        if (tracks.length === 0) {
+            setNativeSubtitleText("");
+            return;
+        }
+
+        const updateNativeSubtitleText = () => {
+           const nextText =
+                tracks
+                    .map(getActiveCueText)
+                    .find((text) => text.length > 0) ?? "";
+
+           setNativeSubtitleText(nextText);
+        };
+
+        updateNativeSubtitleText();
+       tracks.forEach((track) =>
+            track.addEventListener("cuechange", updateNativeSubtitleText)
+        );
+        return () => {
+            tracks.forEach((track) =>
+                track.removeEventListener("cuechange", updateNativeSubtitleText)
+            );
+        };
+    }, [url, subtitlesEnabled, hasNativeSubtitles]);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        let retryTimer: number | undefined;
+        subtitleDisposedRef.current = false;
+
+        const stopRecorder = () => {
+           const recorder = subtitleRecorderRef.current;
+            if (recorder && recorder.state !== "inactive") {
+                recorder.stop();
+            }
+            subtitleRecorderRef.current = null;
+            if (subtitleStopTimerRef.current !== null) {
+                window.clearTimeout(subtitleStopTimerRef.current);
+                subtitleStopTimerRef.current = null;
+            }
+        };
+
+        if (!video || !url || !subtitlesEnabled || hasNativeSubtitles) {
+            stopRecorder();
+           if (!subtitlesEnabled || hasNativeSubtitles) {
+                setSubtitleText("");
+                setSubtitleError("");
+            }
+            return;
+        }
+
+        const startRecorder = () => {
+            const captureVideo = video as CaptureCapableVideoElement;
+            const captureStream =
+                captureVideo.captureStream?.bind(captureVideo) ??
+                captureVideo.mozCaptureStream?.bind(captureVideo);
+           if (!captureStream) {
+                setSubtitleError("Browser unterstützt keine Live-Untertitel-Capture.");
+                return;
+            }
+            const audioTracks = captureStream().getAudioTracks();
+            if (audioTracks.length === 0) {
+                retryTimer = window.setTimeout(startRecorder, 1200);
+                return;
+            }
+
+           const mimeType = pickRecorderMimeType();
+            if (!mimeType) {
+                setSubtitleError("Kein passendes Audioformat für Live-Untertitel verfügbar.");
+                return;
+            }
+
+           const recorder = new MediaRecorder(new MediaStream(audioTracks), {
+                mimeType,
+            });
+
+            const chunks: Blob[] = [];
+            subtitleRecorderRef.current = recorder;
+
+            recorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            recorder.onstop = async () => {
+                 if (subtitleDisposedRef.current) {
+                    return;
+                }
+
+                const audioBlob = new Blob(chunks, { type: mimeType });
+                if (audioBlob.size > 0) {
+                    const requestId = ++subtitleRequestIdRef.current;
+                    const formData = new FormData();
+                    formData.set(
+                        "audio",
+                        new File([audioBlob], "liveview-subtitles.webm", {
+                            type: mimeType,
+                        })
+                    );
+
+                    try {
+                        const response = await fetch("/api/liveview/subtitles", {
+                            method: "POST",
+                            body: formData,
+                        });
+
+                        const data = (await response.json()) as SubtitleResponse;
+                        if (requestId !== subtitleRequestIdRef.current) return;
+                        if (!response.ok) {
+                            throw new Error(
+                                data.error ?? "Untertitel konnten nicht erzeugt werden."
+                            );
+                        }
+
+                        setSubtitleText(data.text?.trim() ?? "");
+                        setSubtitleError("");
+                    } catch (error) {
+                        if (requestId !== subtitleRequestIdRef.current) return;
+                        setSubtitleError(
+                            error instanceof Error
+                                ? error.message
+                                : "Untertitel konnten nicht erzeugt werden."
+                        );
+                    }
+               }
+
+                if (!subtitleDisposedRef.current && subtitlesEnabled && !hasNativeSubtitles) {
+                    startRecorder();
+                }
+            };
+
+            recorder.start();
+            subtitleStopTimerRef.current = window.setTimeout(() => {
+                if (recorder.state !== "inactive") {
+                    recorder.stop();
+                }
+            }, SUBTITLE_CHUNK_MS);
+        };
+
+       startRecorder();
+
+        return () => {
+            subtitleDisposedRef.current = true;
+            if (retryTimer) {
+                window.clearTimeout(retryTimer);
+            }
+            stopRecorder();
+        };
+     }, [url, subtitlesEnabled, hasNativeSubtitles]);
+
     return (
         <div className="w-full h-full relative group">
             { /* Video Component */}
@@ -477,16 +723,30 @@ export default function WebcamItem({
                         playsInline
                         autoPlay
                         muted={muted}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover ${subtitlesEnabled ? "liveview-hide-native-cues" : ""}`}
                         onLoadedMetadata={() => {
-                            const video = videoRef.current;
-                            if (video && video.textTracks) {
-                                for (let i = 0; i < video.textTracks.length; i++) {
-                                    video.textTracks[i].mode = "disabled";
-                                }
-                            }
+                            syncNativeTextTracks(
+                                videoRef.current,
+                                subtitlesEnabled,
+                                setHasNativeSubtitles
+                            );
                         }}
                     />
+
+                    {subtitlesEnabled && (nativeSubtitleText || (!hasNativeSubtitles && subtitleText)) && (
+                        <div className="pointer-events-none absolute bottom-10 left-2 right-2 z-20 flex justify-center">
+                            <div className="max-w-[92%] rounded bg-black/75 px-3 py-2 text-center text-xl font-medium text-white shadow-lg">
+                                {nativeSubtitleText || subtitleText}
+                            </div>
+                        </div>
+                    )}
+
+                    {subtitlesEnabled && subtitleError && (
+                        <div className="absolute top-12 left-2 right-2 z-20 rounded bg-red-600/85 px-2 py-1 text-[11px] text-white">
+                            {subtitleError}
+                        </div>
+                    )}
+
                     {/* Video Controls */}
                     <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 bg-black/60 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                         <button

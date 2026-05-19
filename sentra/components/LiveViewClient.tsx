@@ -122,6 +122,7 @@ type UserChannel = {
 
 const PLAYBACK_PROFILE_STORAGE_KEY = "sentra.liveview.playbackProfile";
 const QUALITY_CAP_STORAGE_KEY = "sentra.liveview.qualityCap";
+const SUBTITLE_ENABLED_STORAGE_KEY = "sentra.liveview.subtitlesEnabled";
 
 const isPlaybackProfile = (
   value: string | null
@@ -173,6 +174,7 @@ export default function LiveViewClient({
   const [playbackSettingsReady, setPlaybackSettingsReady] = useState(false);
   const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
   const [isMenuVisible, setIsMenuVisible] = useState(true);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
   const layoutOptions = Object.keys(LAYOUT_CONFIGS).map(
     (id) => Number(id) as keyof typeof LAYOUT_CONFIGS
   );
@@ -210,12 +212,20 @@ export default function LiveViewClient({
       QUALITY_CAP_STORAGE_KEY
     );
 
+    const storedSubtitlesEnabled = window.localStorage.getItem(
+      SUBTITLE_ENABLED_STORAGE_KEY
+    );
+
     if (isPlaybackProfile(storedPlaybackProfile)) {
       setPlaybackProfile(storedPlaybackProfile);
     }
 
     if (isQualityCap(storedQualityCap)) {
       setQualityCap(storedQualityCap);
+    }
+
+   if (storedSubtitlesEnabled === "true") {
+      setSubtitlesEnabled(true);
     }
 
     setPlaybackSettingsReady(true);
@@ -233,6 +243,14 @@ export default function LiveViewClient({
     if (!playbackSettingsReady) return;
     window.localStorage.setItem(QUALITY_CAP_STORAGE_KEY, qualityCap);
   }, [qualityCap, playbackSettingsReady]);
+
+  useEffect(() => {
+    if (!playbackSettingsReady) return;
+    window.localStorage.setItem(
+      SUBTITLE_ENABLED_STORAGE_KEY,
+      String(subtitlesEnabled)
+    );
+  }, [subtitlesEnabled, playbackSettingsReady]);
 
   useEffect(() => {
     const shouldHideBurgerMenu = isSingleLayout && !isMenuVisible;
@@ -590,6 +608,7 @@ export default function LiveViewClient({
 
   const isDesktop = viewportWidth >= 768;
   const showMenuPanel = !isSingleLayout || isMenuVisible;
+  const effectiveSubtitlesEnabled = subtitlesEnabled && isSingleLayout;
 
   return (
 
@@ -822,6 +841,21 @@ export default function LiveViewClient({
             <option value="1080p">1080p</option>
           </select>
         </div>
+        <div className="w-20 md:w-full z-10">
+          <button
+            type="button"
+            className={`w-full py-2 rounded border text-xs transition ${
+              subtitlesEnabled
+                ?  "border-gray-800 bg-blue-900/80 text-gray-300"
+                : "border-gray-800 bg-blue-900/80 text-gray-300"
+            }`}
+            onClick={() => setSubtitlesEnabled((current) => !current)}
+            title="Übersetzte Untertitel. Aus Kostengründen nur in Grid 1 aktiv."
+            aria-label="Übersetzte Untertitel umschalten"
+          >
+            CC {subtitlesEnabled ? "Off" : "On"}
+          </button>
+        </div>
          </div>
       )}
 
@@ -874,6 +908,7 @@ export default function LiveViewClient({
                 location={currentUserChannels[slotId]?.location ?? ""}
                 playbackProfile={playbackProfile}
                 qualityCap={qualityCap}
+                subtitlesEnabled={effectiveSubtitlesEnabled}
                 infoOverlayClickable={isSingleLayout}
                 isMenuVisible={isMenuVisible}
                 onInfoOverlayClick={() => {

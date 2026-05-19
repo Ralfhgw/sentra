@@ -17,6 +17,12 @@ xl: – ab 1280px (große Desktops)
 2xl: – ab 1536px (sehr große Bildschirme)
 */
 
+.liveview-hide-native-cues::cue {
+  color: transparent;
+  background: transparent;
+  text-shadow: none;
+}
+
 .markdown {
   overflow-x: hidden;
   max-width: 100%;

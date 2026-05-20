@@ -7,10 +7,24 @@ import {
 
 export const runtime = "nodejs";
 
-const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
-});
+let groqClient: OpenAI | null = null;
+
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  if (!groqClient) {
+    groqClient = new OpenAI({
+      apiKey,
+      baseURL: "https://api.groq.com/openai/v1",
+   });
+  }
+
+  return groqClient;
+}
 
 const TRANSCRIPTION_MODEL =
   process.env.LIVEVIEW_SUBTITLE_STT_MODEL ?? "whisper-large-v3-turbo";
@@ -123,6 +137,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (!process.env.GROQ_API_KEY) {
+    return applyRefreshedAccessToken(
+      NextResponse.json(
+        { error: "GROQ_API_KEY ist nicht gesetzt." },
+        { status: 500 }
+      ),
+      auth
+    );
+  }
+
+  const groq = getGroqClient();
+
+  if (!groq) {
     return applyRefreshedAccessToken(
       NextResponse.json(
         { error: "GROQ_API_KEY ist nicht gesetzt." },

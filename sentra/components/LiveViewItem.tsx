@@ -823,6 +823,7 @@ export default function WebcamItem({
             }, subtitleChunkMs);
         };
 
+        
        startRecorder();
 
         return () => {

@@ -14,6 +14,7 @@ type WebcamItemProps = {
     playbackProfile: LiveViewPlaybackProfile;
     qualityCap: LiveViewQualityCap;
     subtitlesEnabled?: boolean;
+    translateToGerman?: boolean;
     infoOverlayClickable?: boolean;
     isMenuVisible?: boolean;
     onInfoOverlayClick?: () => void;
@@ -32,6 +33,8 @@ type SubtitleResponse = {
     text?: string;
     sourceText?: string;
     sourceLanguage?: string | null;
+    translatedToGerman?: boolean;
+    retryAfterMs?: number;
     error?: string;
 };
 
@@ -43,6 +46,14 @@ type CaptureCapableVideoElement = HTMLVideoElement & {
 const isDisplayTextTrack = (track: TextTrack) =>
     track.kind === "subtitles" ||
     track.kind === "captions";
+
+const isTargetSubtitleLanguage = (
+    language: string | null | undefined,
+    targetLanguage: "en" | "de"
+) => {
+    const normalized = String(language ?? "").trim().toLowerCase();
+    return normalized === targetLanguage || normalized.startsWith(`${targetLanguage}-`);
+};
 
 const getActiveCueText = (track: TextTrack) => {
     const activeCue = track.activeCues?.[0];
@@ -59,24 +70,34 @@ const getActiveCueText = (track: TextTrack) => {
 
 const syncNativeTextTracks = (
     video: HTMLVideoElement | null,
-    subtitlesEnabled: boolean,
+    nativeSubtitleDisplayEnabled: boolean,
+    targetLanguage: "en" | "de",
     setHasNativeSubtitles: (value: boolean) => void
 ) => {
     if (!video) return false;
 
-    const tracks = Array.from(video.textTracks).filter(isDisplayTextTrack);
+    const allDisplayTracks = Array.from(video.textTracks).filter(isDisplayTextTrack);
+    const tracks = allDisplayTracks.filter(
+        (track) => isDisplayTextTrack(track) && isTargetSubtitleLanguage(track.language, targetLanguage)
+    );
     const hasTracks = tracks.length > 0;
     setHasNativeSubtitles(hasTracks);
 
+    for (const track of allDisplayTracks) {
+        track.mode = "disabled";
+    }
+
     for (const track of tracks) {
-        track.mode = subtitlesEnabled ? "hidden" : "disabled";
+        track.mode = nativeSubtitleDisplayEnabled ? "hidden" : "disabled";
     }
 
     return hasTracks;
 };
 
 const SUBTITLE_CHUNK_MS = 10_000;
-const RECORDER_MIME_TYPES = ["audio/webm;codecs=opus", "audio/webm"] as const;
+const TRANSLATED_SUBTITLE_CHUNK_MS = 20_000;
+const MIN_SUBTITLE_BLOB_BYTES = 4_096;
+const RECORDER_MIME_TYPES = ["audio/webm", "audio/webm;codecs=opus"] as const;
 
 const pickRecorderMimeType = () => {
     if (typeof MediaRecorder === "undefined") {
@@ -134,10 +155,10 @@ const getHlsConfig = (playbackProfile: LiveViewPlaybackProfile) => {
         case "latency":
             return {
                 lowLatencyMode: true,
-                liveSyncDurationCount: 1,
-                liveMaxLatencyDurationCount: 3,
-                maxLiveSyncPlaybackRate: 1.5,
-                maxBufferLength: 10,
+                liveSyncDurationCount: 2,
+                liveMaxLatencyDurationCount: 5,
+                maxLiveSyncPlaybackRate: 1.08,
+                maxBufferLength: 12,
                 backBufferLength: 30,
             };
         case "stable":
@@ -153,12 +174,24 @@ const getHlsConfig = (playbackProfile: LiveViewPlaybackProfile) => {
         default:
             return {
                 lowLatencyMode: false,
-                liveSyncDurationCount: 3,
-                liveMaxLatencyDurationCount: 8,
-                maxLiveSyncPlaybackRate: 1.15,
-                maxBufferLength: 20,
+                liveSyncDurationCount: 4,
+                liveMaxLatencyDurationCount: 10,
+                maxLiveSyncPlaybackRate: 1.04,
+                maxBufferLength: 24,
                 backBufferLength: 60,
             };
+    }
+};
+
+const getPlaybackRateCap = (playbackProfile: LiveViewPlaybackProfile) => {
+    switch (playbackProfile) {
+        case "latency":
+            return 1.08;
+        case "stable":
+            return 1;
+        case "balanced":
+        default:
+            return 1.04;
     }
 };
 
@@ -246,11 +279,16 @@ export default function WebcamItem({
     playbackProfile,
     qualityCap,
     subtitlesEnabled = false,
+    translateToGerman = false,
     infoOverlayClickable = false,
     isMenuVisible = true,
     onInfoOverlayClick,
 }: WebcamItemProps) {
-
+    const subtitleTargetLanguage: "en" | "de" = translateToGerman ? "de" : "en";
+    const subtitleChunkMs =
+        subtitleTargetLanguage === "de"
+            ? TRANSLATED_SUBTITLE_CHUNK_MS
+            : SUBTITLE_CHUNK_MS;
     const videoRef = useRef<HTMLVideoElement>(null);
     const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(true);
@@ -266,13 +304,23 @@ export default function WebcamItem({
     const hlsRef = useRef<Hls | null>(null);
     const resumeAfterVisibleRef = useRef(false);
     const subtitleRecorderRef = useRef<MediaRecorder | null>(null);
+    const subtitleSessionIdRef = useRef(0);
     const subtitleRequestIdRef = useRef(0);
+    const subtitleLastAppliedRequestIdRef = useRef(0);
+    const subtitleBackoffUntilRef = useRef(0);
     const subtitleStopTimerRef = useRef<number | null>(null);
     const subtitleDisposedRef = useRef(false);
     const [subtitleText, setSubtitleText] = useState("");
     const [nativeSubtitleText, setNativeSubtitleText] = useState("");
     const [subtitleError, setSubtitleError] = useState("");
     const [hasNativeSubtitles, setHasNativeSubtitles] = useState(false);
+    const [subtitleSourceLanguage, setSubtitleSourceLanguage] = useState<string | null>(null);
+    const [subtitleTranslatedToGerman, setSubtitleTranslatedToGerman] = useState(false);
+    const isSubtitleRateLimited = subtitleError.toLowerCase().includes("rate limit");
+    const hasSubtitleError = subtitleError.trim().length > 0;
+    const displayedSubtitleText = translateToGerman
+        ? (subtitleTranslatedToGerman ? subtitleText : "")
+        : (nativeSubtitleText || subtitleText);
 
     const updateStreamInfo = (player?: Hls | null) => {
         const video = videoRef.current;
@@ -321,13 +369,13 @@ export default function WebcamItem({
         const liveSyncPosition = hls?.liveSyncPosition;
 
         if (liveSyncPosition != null && Number.isFinite(liveSyncPosition)) {
-            video.currentTime = Math.max(0, liveSyncPosition - 0.25);
+            video.currentTime = Math.max(0, liveSyncPosition - 1);
             return;
         }
 
         if (video.buffered.length > 0) {
             const end = video.buffered.end(video.buffered.length - 1);
-            video.currentTime = Math.max(0, end - 0.25);
+            video.currentTime = Math.max(0, end - 1);
         }
     };
 
@@ -335,12 +383,14 @@ export default function WebcamItem({
     useEffect(() => {
         const video = videoRef.current;
         let hls: Hls | undefined;
+        const maxPlaybackRate = getPlaybackRateCap(playbackProfile);
 
         const resetVideo = () => {
             if (!video) return;
             video.pause();
             video.removeAttribute("src");
             video.load();
+             video.playbackRate = 1;
             setStreamInfo({
                 resolution: "-",
                 levelsLabel: "-",
@@ -357,6 +407,16 @@ export default function WebcamItem({
             return;
         }
 
+        const clampPlaybackRate = () => {
+            if (video.playbackRate > maxPlaybackRate) {
+                video.playbackRate = maxPlaybackRate;
+            } else if (video.playbackRate < 1) {
+                video.playbackRate = 1;
+            }
+        };
+
+        video.addEventListener("ratechange", clampPlaybackRate);
+
         const playbackUrl = getPlaybackUrl(url);
 
         if (Hls.isSupported()) {
@@ -371,6 +431,7 @@ export default function WebcamItem({
 
             player.on(Hls.Events.MANIFEST_PARSED, () => {
                 applyQualityCap(player, qualityCap);
+                video.playbackRate = 1;
                 updateStreamInfo(player);
                 seekToLiveEdge();
                 video.play().catch(() => { });
@@ -384,8 +445,14 @@ export default function WebcamItem({
 
             player.on(Hls.Events.ERROR, (_, data) => {
                 if (!data.fatal) {
+                    const shouldSeekToLiveEdge =
+                        data.details === "bufferStalledError" ||
+                        data.details === "bufferSeekOverHole" ||
+                        data.details === "bufferNudgeOnStall";
                     requestAnimationFrame(() => {
-                        seekToLiveEdge();
+                        if (shouldSeekToLiveEdge) {
+                            seekToLiveEdge();
+                        }
                         updateStreamInfo(player);
                     });
                     return;
@@ -408,7 +475,7 @@ export default function WebcamItem({
 
         return () => {
             hlsRef.current = null;
-
+            video.removeEventListener("ratechange", clampPlaybackRate);
             if (hls) {
                 hls.detachMedia();
                 hls.destroy();
@@ -538,20 +605,35 @@ export default function WebcamItem({
 
     useEffect(() => {
         if (!url) {
+            subtitleSessionIdRef.current += 1;
+            subtitleRequestIdRef.current = 0;
+            subtitleLastAppliedRequestIdRef.current = 0;
+            subtitleBackoffUntilRef.current = 0;
             setSubtitleText("");
             setNativeSubtitleText("");
             setSubtitleError("");
             setHasNativeSubtitles(false);
+            setSubtitleSourceLanguage(null);
+            setSubtitleTranslatedToGerman(false);
             return;
         }
-
+        subtitleSessionIdRef.current += 1;
+        subtitleRequestIdRef.current = 0;
+        subtitleLastAppliedRequestIdRef.current = 0;
+        subtitleBackoffUntilRef.current = 0;
+        setSubtitleText("");
+        setNativeSubtitleText("");
+        setSubtitleError("");
+        setSubtitleSourceLanguage(null);
+        setSubtitleTranslatedToGerman(false);
         syncNativeTextTracks(
             videoRef.current,
             subtitlesEnabled,
+            subtitleTargetLanguage,
             setHasNativeSubtitles
         );
 
-    }, [url, subtitlesEnabled]);
+    }, [url, subtitlesEnabled, subtitleTargetLanguage]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -560,7 +642,9 @@ export default function WebcamItem({
             return;
         }
 
-        const tracks = Array.from(video.textTracks).filter(isDisplayTextTrack);
+        const tracks = Array.from(video.textTracks).filter(
+            (track) => isDisplayTextTrack(track) && isTargetSubtitleLanguage(track.language, subtitleTargetLanguage)
+        );
         if (tracks.length === 0) {
             setNativeSubtitleText("");
             return;
@@ -584,12 +668,13 @@ export default function WebcamItem({
                 track.removeEventListener("cuechange", updateNativeSubtitleText)
             );
         };
-    }, [url, subtitlesEnabled, hasNativeSubtitles]);
+    }, [url, subtitlesEnabled, subtitleTargetLanguage, hasNativeSubtitles]);
 
     useEffect(() => {
         const video = videoRef.current;
         let retryTimer: number | undefined;
         subtitleDisposedRef.current = false;
+        const shouldUseNativeSubtitles = hasNativeSubtitles;
 
         const stopRecorder = () => {
            const recorder = subtitleRecorderRef.current;
@@ -603,11 +688,13 @@ export default function WebcamItem({
             }
         };
 
-        if (!video || !url || !subtitlesEnabled || hasNativeSubtitles) {
+        if (!video || !url || !subtitlesEnabled || shouldUseNativeSubtitles) {
             stopRecorder();
-           if (!subtitlesEnabled || hasNativeSubtitles) {
+           if (!subtitlesEnabled || shouldUseNativeSubtitles) {
                 setSubtitleText("");
                 setSubtitleError("");
+                setSubtitleSourceLanguage(null);
+                setSubtitleTranslatedToGerman(false);
             }
             return;
         }
@@ -636,6 +723,7 @@ export default function WebcamItem({
            const recorder = new MediaRecorder(new MediaStream(audioTracks), {
                 mimeType,
             });
+            const recorderSessionId = subtitleSessionIdRef.current;
 
             const chunks: Blob[] = [];
             subtitleRecorderRef.current = recorder;
@@ -647,49 +735,83 @@ export default function WebcamItem({
             };
 
             recorder.onstop = async () => {
-                 if (subtitleDisposedRef.current) {
+                if (
+                    subtitleDisposedRef.current ||
+                    recorderSessionId !== subtitleSessionIdRef.current
+                ) {
                     return;
                 }
 
-                const audioBlob = new Blob(chunks, { type: mimeType });
-                if (audioBlob.size > 0) {
-                    const requestId = ++subtitleRequestIdRef.current;
-                    const formData = new FormData();
-                    formData.set(
-                        "audio",
-                        new File([audioBlob], "liveview-subtitles.webm", {
-                            type: mimeType,
-                        })
-                    );
+                const uploadMimeType = mimeType.startsWith("audio/webm")
+                    ? "audio/webm"
+                    : mimeType;
+                const audioBlob = new Blob(chunks, { type: uploadMimeType });
 
-                    try {
-                        const response = await fetch("/api/liveview/subtitles", {
-                            method: "POST",
-                            body: formData,
-                        });
+                if (
+                    !subtitleDisposedRef.current &&
+                    recorderSessionId === subtitleSessionIdRef.current &&
+                    subtitlesEnabled &&
+                    !shouldUseNativeSubtitles
+                ) {
+                    startRecorder();
+                }
+                if (audioBlob.size < MIN_SUBTITLE_BLOB_BYTES) {
+                    return;
+                }
 
-                        const data = (await response.json()) as SubtitleResponse;
-                        if (requestId !== subtitleRequestIdRef.current) return;
-                        if (!response.ok) {
-                            throw new Error(
-                                data.error ?? "Untertitel konnten nicht erzeugt werden."
-                            );
-                        }
+                if (Date.now() < subtitleBackoffUntilRef.current) {
+                    return;
+                }
 
-                        setSubtitleText(data.text?.trim() ?? "");
-                        setSubtitleError("");
-                    } catch (error) {
-                        if (requestId !== subtitleRequestIdRef.current) return;
-                        setSubtitleError(
-                            error instanceof Error
-                                ? error.message
-                                : "Untertitel konnten nicht erzeugt werden."
+                const requestId = ++subtitleRequestIdRef.current;
+                const formData = new FormData();
+                formData.set(
+                    "audio",
+                    new File([audioBlob], "liveview-subtitles.webm", {
+                        type: uploadMimeType,
+                    })
+                );
+                formData.set("targetLanguage", subtitleTargetLanguage);
+
+                try {
+                    const response = await fetch("/api/liveview/subtitles", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const data = (await response.json()) as SubtitleResponse;
+                    if (recorderSessionId !== subtitleSessionIdRef.current) return;
+                    if (requestId < subtitleLastAppliedRequestIdRef.current) return;
+                    if (response.status === 429 || (data.retryAfterMs ?? 0) > 0) {
+                        subtitleBackoffUntilRef.current =
+                            Date.now() + Math.max(data.retryAfterMs ?? 30_000, subtitleChunkMs);
+                        setSubtitleError("Untertitel pausiert wegen Groq Rate Limit.");
+                        return;
+                    }
+                    if (!response.ok) {
+                        throw new Error(
+                            data.error ?? "Untertitel konnten nicht erzeugt werden."
                         );
                     }
-               }
 
-                if (!subtitleDisposedRef.current && subtitlesEnabled && !hasNativeSubtitles) {
-                    startRecorder();
+                    const nextText = data.text?.trim() ?? "";
+
+                    if (nextText.length > 0) {
+                        subtitleLastAppliedRequestIdRef.current = requestId;
+                        setSubtitleText(nextText);
+                        setSubtitleSourceLanguage(data.sourceLanguage ?? null);
+                       setSubtitleTranslatedToGerman(data.translatedToGerman === true);
+                    }
+
+                    setSubtitleError("");
+                } catch (error) {
+                    if (recorderSessionId !== subtitleSessionIdRef.current) return;
+                    if (requestId < subtitleLastAppliedRequestIdRef.current) return;
+                    setSubtitleError(
+                        error instanceof Error
+                            ? error.message
+                            : "Untertitel konnten nicht erzeugt werden."
+                    );
                 }
             };
 
@@ -698,7 +820,7 @@ export default function WebcamItem({
                 if (recorder.state !== "inactive") {
                     recorder.stop();
                 }
-            }, SUBTITLE_CHUNK_MS);
+            }, subtitleChunkMs);
         };
 
        startRecorder();
@@ -710,7 +832,7 @@ export default function WebcamItem({
             }
             stopRecorder();
         };
-     }, [url, subtitlesEnabled, hasNativeSubtitles]);
+     }, [url, subtitlesEnabled, subtitleTargetLanguage, subtitleChunkMs, hasNativeSubtitles]);
 
     return (
         <div className="w-full h-full relative group">
@@ -728,15 +850,16 @@ export default function WebcamItem({
                             syncNativeTextTracks(
                                 videoRef.current,
                                 subtitlesEnabled,
+                                subtitleTargetLanguage,
                                 setHasNativeSubtitles
                             );
                         }}
                     />
 
-                    {subtitlesEnabled && (nativeSubtitleText || (!hasNativeSubtitles && subtitleText)) && (
+                     {subtitlesEnabled && displayedSubtitleText && (
                         <div className="pointer-events-none absolute bottom-10 left-2 right-2 z-20 flex justify-center">
                             <div className="max-w-[92%] rounded bg-black/75 px-3 py-2 text-center text-xl font-medium text-white shadow-lg">
-                                {nativeSubtitleText || subtitleText}
+                                {displayedSubtitleText}
                             </div>
                         </div>
                     )}
@@ -826,6 +949,23 @@ export default function WebcamItem({
                     </span>
                     <span className="whitespace-nowrap">
                         Active: {streamInfo.activeLevelLabel}
+                    </span>
+                    <span className="whitespace-nowrap">
+                        CC: {!subtitlesEnabled
+                            ? "Off"
+                            : isSubtitleRateLimited
+                                ? "Rate Limited"
+                            : hasSubtitleError
+                                ? "Error"
+                            : translateToGerman
+                                ? subtitleTranslatedToGerman
+                                    ? "DE"
+                                    : subtitleSourceLanguage === "de"
+                                        ? "DE Native"
+                                        : "DE Pending"
+                                : hasNativeSubtitles
+                                    ? "Native"
+                                    : "AI"}
                     </span>
                     {infoOverlayClickable && (
                         <span className="whitespace-nowrap font-semibold">

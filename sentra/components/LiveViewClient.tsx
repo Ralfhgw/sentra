@@ -123,6 +123,7 @@ type UserChannel = {
 const PLAYBACK_PROFILE_STORAGE_KEY = "sentra.liveview.playbackProfile";
 const QUALITY_CAP_STORAGE_KEY = "sentra.liveview.qualityCap";
 const SUBTITLE_ENABLED_STORAGE_KEY = "sentra.liveview.subtitlesEnabled";
+const TRANSLATE_TO_GERMAN_STORAGE_KEY = "sentra.liveview.translateToGerman";
 
 const isPlaybackProfile = (
   value: string | null
@@ -175,6 +176,7 @@ export default function LiveViewClient({
   const [viewportWidth, setViewportWidth] = useState<number>(typeof window === "undefined" ? 1440 : window.innerWidth);
   const [isMenuVisible, setIsMenuVisible] = useState(true);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
+  const [translateToGerman, setTranslateToGerman] = useState(false);
   const layoutOptions = Object.keys(LAYOUT_CONFIGS).map(
     (id) => Number(id) as keyof typeof LAYOUT_CONFIGS
   );
@@ -216,6 +218,10 @@ export default function LiveViewClient({
       SUBTITLE_ENABLED_STORAGE_KEY
     );
 
+    const storedTranslateToGerman = window.localStorage.getItem(
+      TRANSLATE_TO_GERMAN_STORAGE_KEY
+    );
+
     if (isPlaybackProfile(storedPlaybackProfile)) {
       setPlaybackProfile(storedPlaybackProfile);
     }
@@ -226,6 +232,10 @@ export default function LiveViewClient({
 
    if (storedSubtitlesEnabled === "true") {
       setSubtitlesEnabled(true);
+    }
+
+   if (storedTranslateToGerman === "true") {
+      setTranslateToGerman(true);
     }
 
     setPlaybackSettingsReady(true);
@@ -251,6 +261,14 @@ export default function LiveViewClient({
       String(subtitlesEnabled)
     );
   }, [subtitlesEnabled, playbackSettingsReady]);
+
+  useEffect(() => {
+    if (!playbackSettingsReady) return;
+    window.localStorage.setItem(
+      TRANSLATE_TO_GERMAN_STORAGE_KEY,
+      String(translateToGerman)
+    );
+  }, [translateToGerman, playbackSettingsReady]);
 
   useEffect(() => {
     const shouldHideBurgerMenu = isSingleLayout && !isMenuVisible;
@@ -609,6 +627,7 @@ export default function LiveViewClient({
   const isDesktop = viewportWidth >= 768;
   const showMenuPanel = !isSingleLayout || isMenuVisible;
   const effectiveSubtitlesEnabled = subtitlesEnabled && isSingleLayout;
+  const effectiveTranslateToGerman = effectiveSubtitlesEnabled && translateToGerman;
 
   return (
 
@@ -846,15 +865,30 @@ export default function LiveViewClient({
             type="button"
             className={`w-full py-2 rounded border text-xs transition ${
               subtitlesEnabled
-                ?  "border-gray-800 bg-blue-900/80 text-gray-300"
+                ? "border-gray-800 bg-blue-600/80 text-gray-300"
                 : "border-gray-800 bg-blue-900/80 text-gray-300"
             }`}
             onClick={() => setSubtitlesEnabled((current) => !current)}
-            title="Übersetzte Untertitel. Aus Kostengründen nur in Grid 1 aktiv."
-            aria-label="Übersetzte Untertitel umschalten"
+            title="Untertitel ein- oder ausschalten. Aktiv nur in Grid 1."
+            aria-label="Untertitel umschalten"
           >
-            CC {subtitlesEnabled ? "Off" : "On"}
+            CC Trans
           </button>
+        </div>
+        <div className="w-20 md:w-full z-10">
+          <button
+            type="button"
+            className={`w-full py-2 rounded border text-xs transition ${
+              translateToGerman
+                ? "border-gray-800 bg-blue-600/80 text-gray-300"
+                : "border-gray-800 bg-blue-900/80 text-gray-300"
+            }`}
+            onClick={() => setTranslateToGerman((current) => !current)}
+            title="Nicht-deutsche Untertitel automatisch nach Deutsch übersetzen."
+            aria-label="Deutsche Übersetzung umschalten"
+          >
+            CC GER
+         </button>
         </div>
          </div>
       )}
@@ -909,6 +943,7 @@ export default function LiveViewClient({
                 playbackProfile={playbackProfile}
                 qualityCap={qualityCap}
                 subtitlesEnabled={effectiveSubtitlesEnabled}
+                translateToGerman={effectiveTranslateToGerman}
                 infoOverlayClickable={isSingleLayout}
                 isMenuVisible={isMenuVisible}
                 onInfoOverlayClick={() => {

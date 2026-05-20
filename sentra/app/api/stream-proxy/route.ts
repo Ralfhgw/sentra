@@ -8,8 +8,54 @@ const MANIFEST_CONTENT_TYPES = [
 ];
 
 const ABSOLUTE_URL_PATTERN = /^https?:\/\//i;
+const MEDIA_SEGMENT_PATH_PATTERN = /\.(ts|m4s|mp4|aac|mp3|vtt)$/i;
+const RETRYABLE_UPSTREAM_STATUSES = new Set([502, 503, 504]);
+const SEGMENT_FETCH_ATTEMPTS = 2;
+const SEGMENT_RETRY_DELAY_MS = 150;
 
 const buildProxyPath = (resolvedUrl: string) => `/api/stream-proxy?url=${encodeURIComponent(resolvedUrl)}`;
+
+const isMediaSegmentRequest = (targetUrl: URL) =>
+  MEDIA_SEGMENT_PATH_PATTERN.test(targetUrl.pathname);
+
+const isAbortLikeError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const name = error.name.toLowerCase();
+  const message = error.message.toLowerCase();
+
+  return (
+    name === "aborterror" ||
+    message.includes("responseaborted") ||
+    message.includes("aborted")
+  );
+};
+
+const waitForRetry = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      const error = new Error("Aborted");
+      error.name = "AbortError";
+      reject(error);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    function onAbort() {
+      clearTimeout(timeoutId);
+      signal.removeEventListener("abort", onAbort);
+      const error = new Error("Aborted");
+     error.name = "AbortError";
+      reject(error);
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 
 const rewriteUriAttribute = (line: string, baseUrl: URL) => {
   return line.replace(/URI="([^"]+)"/g, (_, uriValue: string) => {
@@ -64,11 +110,48 @@ export async function GET(request: NextRequest) {
     forwardedHeaders.set("range", rangeHeader);
   }
 
-  const upstream = await fetch(targetUrl, {
-    headers: forwardedHeaders,
-    cache: "no-store",
-    signal: request.signal,
-  });
+  const shouldRetrySegmentFetch = isMediaSegmentRequest(targetUrl);
+  const maxAttempts = shouldRetrySegmentFetch ? SEGMENT_FETCH_ATTEMPTS : 1;
+  let upstream: Response | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      upstream = await fetch(targetUrl, {
+        headers: forwardedHeaders,
+        cache: "no-store",
+        signal: request.signal,
+      });
+    } catch (error) {
+      if (request.signal.aborted || isAbortLikeError(error)) {
+        return new NextResponse(null, { status: 499 });
+      }
+
+      if (attempt < maxAttempts) {
+       await waitForRetry(SEGMENT_RETRY_DELAY_MS, request.signal);
+        continue;
+      }
+
+     console.error("stream-proxy upstream fetch failed:", error);
+      return NextResponse.json(
+        { error: "Upstream request failed before headers were received" },
+        { status: 502 }
+      );
+    }
+
+    if (!RETRYABLE_UPSTREAM_STATUSES.has(upstream.status) || attempt === maxAttempts) {
+      break;
+    }
+
+    upstream.body?.cancel().catch(() => {});
+    await waitForRetry(SEGMENT_RETRY_DELAY_MS, request.signal);
+  }
+
+  if (!upstream) {
+    return NextResponse.json(
+      { error: "Upstream request could not be completed" },
+      { status: 502 }
+    );
+ }
 
   if (!upstream.ok) {
     return NextResponse.json(
@@ -85,7 +168,22 @@ export async function GET(request: NextRequest) {
   responseHeaders.set("Cache-Control", "no-store");
 
   if (isManifest) {
-    const manifest = await upstream.text();
+    let manifest: string;
+
+    try {
+      manifest = await upstream.text();
+    } catch (error) {
+      if (request.signal.aborted || isAbortLikeError(error)) {
+        return new NextResponse(null, { status: 499, headers: responseHeaders });
+      }
+
+      console.error("stream-proxy manifest read failed:", error);
+      return NextResponse.json(
+       { error: "Upstream manifest could not be read" },
+        { status: 502 }
+      );
+    }
+
     const rewrittenManifest = rewriteManifest(manifest, targetUrl);
 
     responseHeaders.set("Content-Type", "application/vnd.apple.mpegurl");

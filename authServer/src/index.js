@@ -31,7 +31,7 @@ const PORT = Number(process.env.PORT || 3000);
 const isProd = process.env.NODE_ENV === "production";
 
 const defaultRegistrationStatus =
-  String(process.env.AUTH_DEFAULT_USER_STATUS ?? "active").trim().toLowerCase() === "pending"
+  String(process.env.AUTH_DEFAULT_USER_STATUS ?? "pending").trim().toLowerCase() === "pending"
     ? "pending"
     : "active";
 

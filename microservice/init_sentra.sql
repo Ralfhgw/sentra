@@ -261,3 +261,102 @@ $$ LANGUAGE plpgsql;
 
 \copy day_meanings (id, name, description, is_fixed, rule, country, created_at) FROM '/docker-entrypoint-initdb.d/day_meanings_export.csv' WITH (FORMAT CSV, HEADER, ENCODING 'UTF8');
 \copy channels (tvg_name, tvg_id, "group", location, channel, stream_url) FROM '/docker-entrypoint-initdb.d/liveview_channels.csv' WITH (FORMAT csv, HEADER true, DELIMITER ';', ENCODING 'UTF8');
+
+CREATE SCHEMA IF NOT EXISTS ai_chat;
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TABLE IF NOT EXISTS ai_chat.conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  public_id varchar(120) NOT NULL UNIQUE DEFAULT replace(gen_random_uuid()::text, '-', ''),
+  user_id uuid NOT NULL,
+  title text,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  rolling_summary text,
+  summary_updated_at timestamptz,
+  last_message_at timestamptz,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(metadata) = 'object'),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT fk_ai_chat_conversations_user
+    FOREIGN KEY (user_id)
+    REFERENCES user_settings(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_ai_chat_conversations_id_user UNIQUE (id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_conversations_user_last_message
+  ON ai_chat.conversations (user_id, last_message_at DESC NULLS LAST, created_at DESC);
+
+CREATE TRIGGER trg_ai_chat_conversations_updated_at
+BEFORE UPDATE ON ai_chat.conversations
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE IF NOT EXISTS ai_chat.messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'summary')),
+  content text NOT NULL,
+  token_count integer,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(metadata) = 'object'),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT fk_ai_chat_messages_conversation
+    FOREIGN KEY (conversation_id, user_id)
+    REFERENCES ai_chat.conversations(id, user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_ai_chat_messages_id_user UNIQUE (id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_conversation_created
+  ON ai_chat.messages (conversation_id, created_at ASC);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_user_created
+  ON ai_chat.messages (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS ai_chat.memories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  conversation_id uuid,
+  source_message_id uuid,
+  memory_kind text NOT NULL CHECK (
+    memory_kind IN ('summary', 'fact', 'preference', 'profile', 'task', 'document')
+  ),
+  content text NOT NULL,
+  embedding_model text,
+  importance smallint NOT NULL DEFAULT 0 CHECK (importance BETWEEN 0 AND 10),
+  last_accessed_at timestamptz,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(metadata) = 'object'),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT fk_ai_chat_memories_user
+    FOREIGN KEY (user_id)
+    REFERENCES user_settings(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_ai_chat_memories_conversation
+    FOREIGN KEY (conversation_id, user_id)
+    REFERENCES ai_chat.conversations(id, user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_ai_chat_memories_source_message
+    FOREIGN KEY (source_message_id, user_id)
+    REFERENCES ai_chat.messages(id, user_id)
+    ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_memories_user_kind
+  ON ai_chat.memories (user_id, memory_kind, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_memories_conversation
+  ON ai_chat.memories (conversation_id, created_at DESC);
+
+CREATE TRIGGER trg_ai_chat_memories_updated_at
+BEFORE UPDATE ON ai_chat.memories
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();

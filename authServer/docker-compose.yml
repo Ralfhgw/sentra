@@ -22,7 +22,7 @@ services:
       - REFRESH_SECRET=${REFRESH_SECRET}
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV:-production}
-      - AUTH_DEFAULT_USER_STATUS=${AUTH_DEFAULT_USER_STATUS:-active}
+      - AUTH_DEFAULT_USER_STATUS=${AUTH_DEFAULT_USER_STATUS:-pending}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     depends_on:
       - db

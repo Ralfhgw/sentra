@@ -101,6 +101,22 @@ function createChatMessage(
   };
 }
 
+function formatChatMessageTimestamp(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 function fetchStartpageBackground(userId: string) {
   const existingRequest = startpageRequestCache.get(userId);
   if (existingRequest) {
@@ -124,6 +140,8 @@ function fetchStartpageBackground(userId: string) {
   startpageRequestCache.set(userId, request);
   return request;
 }
+
+const SPEECH_SUBMIT_DELAY_MS = 2200;
 
 export default function Home() {
   const auth = useContext(AuthContext);
@@ -164,6 +182,9 @@ export default function Home() {
   const skipNextChatPersistRef = useRef(true);
   const shouldKeepListeningRef = useRef(false);
   const recognitionRestartTimeoutRef = useRef<number | null>(null);
+  const speechSubmitTimeoutRef = useRef<number | null>(null);
+  const speechFinalTranscriptRef = useRef("");
+  const queuedSpeechMessageRef = useRef("");
 
   const fallbackGradient =
     "linear-gradient(135deg, #6b7280 0%, #8b949e 45%, #d1d5db 100%)";
@@ -717,8 +738,74 @@ export default function Home() {
       ),
     ].join("\n\n");
 
+  const clearSpeechSubmitTimeout = useCallback(() => {
+    if (
+      typeof window !== "undefined" &&
+      speechSubmitTimeoutRef.current !== null
+    ) {
+      window.clearTimeout(speechSubmitTimeoutRef.current);
+      speechSubmitTimeoutRef.current = null;
+    }
+  }, []);
+
+  const queueSpeechSubmit = useCallback(() => {
+    if (typeof window === "undefined") {
+     return;
+    }
+
+    clearSpeechSubmitTimeout();
+
+    speechSubmitTimeoutRef.current = window.setTimeout(() => {
+      const finalMessage = [
+        speechDraftPrefixRef.current,
+        speechFinalTranscriptRef.current,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      if (!finalMessage) {
+       return;
+      }
+
+      if (recognitionRestartTimeoutRef.current !== null) {
+        window.clearTimeout(recognitionRestartTimeoutRef.current);
+        recognitionRestartTimeoutRef.current = null;
+      }
+
+      try {
+        recognitionRef.current?.stop();
+      } catch (error) {
+        console.error("Speech recognition stop before submit failed:", error);
+      }
+
+     speechDraftPrefixRef.current = "";
+      speechFinalTranscriptRef.current = "";
+      speechSubmitTimeoutRef.current = null;
+
+      void sendChatMessageRef.current(finalMessage);
+   }, SPEECH_SUBMIT_DELAY_MS);
+  }, [clearSpeechSubmitTimeout]);
+
   const sendChatMessage = async (messageOverride?: string) => {
-    if (!hasClaudeApiKey || chatLoading) {
+    if (!hasClaudeApiKey) {
+      return;
+    }
+
+    const trimmedMessage = (messageOverride ?? chatInput).trim();
+
+    if (chatLoading) {
+      if (messageOverride && trimmedMessage) {
+        queuedSpeechMessageRef.current = [
+          queuedSpeechMessageRef.current,
+          trimmedMessage,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        setChatInput(queuedSpeechMessageRef.current);
+      }
+
       return;
     }
 
@@ -728,7 +815,6 @@ export default function Home() {
       return;
     }
 
-    const trimmedMessage = (messageOverride ?? chatInput).trim();
     if (!trimmedMessage) {
       return;
     }
@@ -750,7 +836,12 @@ export default function Home() {
     setChatInput("");
     setChatError(null);
     setChatLoading(true);
+    clearSpeechSubmitTimeout();
     speechDraftPrefixRef.current = "";
+    speechFinalTranscriptRef.current = "";
+    if (queuedSpeechMessageRef.current === trimmedMessage) {
+      queuedSpeechMessageRef.current = "";
+    }
     focusChatInput();
 
     try {
@@ -796,16 +887,34 @@ export default function Home() {
       window.localStorage.removeItem(chatStorageKey);
     }
 
+    clearSpeechSubmitTimeout();
     setChatMessages([]);
     setChatInput("");
     setChatError(null);
     setChatLoading(false);
     setChatConversationId(crypto.randomUUID());
     speechDraftPrefixRef.current = "";
+    speechFinalTranscriptRef.current = "";
+    queuedSpeechMessageRef.current = "";
     focusChatInput();
   };
 
   sendChatMessageRef.current = sendChatMessage;
+
+  useEffect(() => {
+    if (chatLoading) {
+      return;
+    }
+
+    const queuedMessage = queuedSpeechMessageRef.current.trim();
+
+    if (!queuedMessage) {
+      return;
+    }
+
+    queuedSpeechMessageRef.current = "";
+    void sendChatMessageRef.current(queuedMessage);
+  }, [chatLoading]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -846,24 +955,32 @@ export default function Home() {
 
       const prefix = speechDraftPrefixRef.current;
 
-      if (interimTranscript.trim()) {
-        setChatInput(
-          [prefix, interimTranscript.trim()].filter(Boolean).join(" ")
-        );
-      }
+      const nextFinalTranscript = finalTranscript.trim()
+        ? [speechFinalTranscriptRef.current, finalTranscript.trim()]
+            .filter(Boolean)
+            .join(" ")
+        : speechFinalTranscriptRef.current;
 
-      if (!finalTranscript.trim()) {
-        return;
-      }
+      speechFinalTranscriptRef.current = nextFinalTranscript;
 
-      setChatInput((current) =>
-        [current.trim(), finalTranscript.trim()].filter(Boolean).join(" ")
-      );
-      const finalMessage = [prefix, finalTranscript.trim()]
+      const draftMessage = [
+        prefix,
+        nextFinalTranscript,
+        interimTranscript.trim(),
+      ]
         .filter(Boolean)
         .join(" ");
 
-      void sendChatMessageRef.current(finalMessage);
+      if (draftMessage) {
+        setChatInput(draftMessage);
+      }
+
+      if (!finalTranscript.trim()) {
+        clearSpeechSubmitTimeout();
+        return;
+      }
+
+      queueSpeechSubmit();
     };
 
     recognition.onerror = (event) => {
@@ -872,8 +989,10 @@ export default function Home() {
         event.error === "service-not-allowed"
       ) {
         shouldKeepListeningRef.current = false;
+        clearSpeechSubmitTimeout();
         setIsListening(false);
         speechDraftPrefixRef.current = "";
+        speechFinalTranscriptRef.current = "";
       }
     };
 
@@ -883,6 +1002,8 @@ export default function Home() {
         speechDraftPrefixRef.current = "";
         return;
       }
+
+      console.log("[speech] restarting recognition after submit/end");
 
       if (recognitionRestartTimeoutRef.current !== null) {
         window.clearTimeout(recognitionRestartTimeoutRef.current);
@@ -897,7 +1018,6 @@ export default function Home() {
           recognition.lang = lang === "de" ? "de-DE" : "en-US";
           recognition.start();
           setIsListening(true);
-          speechDraftPrefixRef.current = "";
         } catch (error) {
           console.error("Speech recognition restart failed:", error);
           setIsListening(false);
@@ -915,10 +1035,11 @@ export default function Home() {
         window.clearTimeout(recognitionRestartTimeoutRef.current);
         recognitionRestartTimeoutRef.current = null;
       }
+      clearSpeechSubmitTimeout();
       recognition.abort();
       recognitionRef.current = null;
     };
-  }, [lang]);
+  }, [clearSpeechSubmitTimeout, lang, queueSpeechSubmit]);
 
   useEffect(() => {
     return () => {
@@ -978,6 +1099,7 @@ export default function Home() {
 
     if (isListening) {
       shouldKeepListeningRef.current = false;
+      clearSpeechSubmitTimeout();
       if (recognitionRestartTimeoutRef.current !== null) {
         window.clearTimeout(recognitionRestartTimeoutRef.current);
         recognitionRestartTimeoutRef.current = null;
@@ -985,6 +1107,7 @@ export default function Home() {
       recognition.stop();
       setIsListening(false);
       speechDraftPrefixRef.current = "";
+      speechFinalTranscriptRef.current = "";
       return;
     }
 
@@ -992,6 +1115,8 @@ export default function Home() {
       shouldKeepListeningRef.current = true;
       recognition.lang = lang === "de" ? "de-DE" : "en-US";
       speechDraftPrefixRef.current = chatInput.trim();
+      speechFinalTranscriptRef.current = "";
+      clearSpeechSubmitTimeout();
       recognition.start();
       setIsListening(true);
       setChatError(null);
@@ -1174,7 +1299,7 @@ export default function Home() {
                 </p>
                 <div className="flex flex-row justify-between gap-2">
                   <p
-                    className="w-24 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+                    className="w-23 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
                     style={{
                       boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
                     }}
@@ -1190,7 +1315,7 @@ export default function Home() {
                   </p>
 
                   <p
-                    className="w-24 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+                    className="w-23 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
                     style={{
                       boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
                     }}
@@ -1206,7 +1331,7 @@ export default function Home() {
                   </p>
 
                   <p
-                    className="w-24 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+                    className="w-23 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
                     style={{
                       boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
                     }}
@@ -1222,7 +1347,7 @@ export default function Home() {
                   </p>
 
                   <p
-                    className="w-24 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
+                    className="w-23 h-10 p-2 transition bg-gray-200 ring-1 ring-gray-700 border-b-4 border-gray-500 text-gray-700 hover:bg-gray-200 hover:text-gray-900 rounded-xl cursor-pointer active:shadow-md"
                     style={{
                       boxShadow: "6px 8px 20px 0 rgba(31,38,135,0.25)",
                     }}
@@ -1370,10 +1495,13 @@ export default function Home() {
                           : "self-start bg-white/85 text-gray-900"
                           }`}
                       >
-                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide opacity-70">
-                          {message.role === "user"
-                            ? chatText.user
-                            : chatText.assistant}
+                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide">
+                          <span>
+                            {message.role === "user" ? chatText.user : chatText.assistant}
+                          </span>
+                          <span className="text-gray-800/40">
+                            {` - ${formatChatMessageTimestamp(message.createdAt)}`}
+                          </span>
                         </div>
                         <p className="whitespace-pre-wrap wrap-break-word">
                           {message.content}

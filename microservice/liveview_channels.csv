@@ -1,4 +1,5 @@
 tvg_name;tvg_id;group;location;channel;stream_url
+ESA TV;ESA.tv;Space;Add-Ons;ESA Live TV;https://live-ak.vimeocdn.com/exp=1780477169~acl=%2F639a32f2-2886-4401-b2be-894a44024afd%2F%2A~hmac=80822c8947779549d3f8b495330b5f44b3d94f7b16cdf3543a0d497be1538213/639a32f2-2886-4401-b2be-894a44024afd/avc/hls.m3u8
 LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Kühlungsborn Hafen;https://ch-fra-n10.livespotting.com/vpu/rqharwuk/at3nvjov_720.m3u8
 LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Kühlungsborn Seebrücke;https://ch-fra-n10.livespotting.com/vpu/brgr3u26/519srew5_1080.m3u8
 LiveSpotting Outdoor;livespotting1;Nature;Add-Ons;Germany M-V Ribnitz Hafen;https://cdn.livespotting.com/vpu/gil6ujj9/7lhuy3p7.m3u8

@@ -1487,7 +1487,7 @@ export default function Home() {
                       {chatText.empty}
                     </p>
                   ) : (
-                    chatMessages.map((message) => (
+                    chatMessages.slice(-5).map((message) => (
                       <div
                         key={message.id}
                         className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${message.role === "user"

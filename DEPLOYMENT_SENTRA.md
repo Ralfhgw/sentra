@@ -277,6 +277,7 @@ pi@raspberrypi:~ $ sudo cat /etc/mosquitto/conf.d/listener.conf
 listener 1883 0.0.0.0
 allow_anonymous true
 
+
 pi@raspberrypi:~ $ sudo cat /etc/mosquitto/conf.d/bridge.conf
 connection to-server
 address 10.10.0.1:1883

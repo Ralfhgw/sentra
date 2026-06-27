@@ -316,11 +316,14 @@ export default function WebcamItem({
     const [hasNativeSubtitles, setHasNativeSubtitles] = useState(false);
     const [subtitleSourceLanguage, setSubtitleSourceLanguage] = useState<string | null>(null);
     const [subtitleTranslatedToGerman, setSubtitleTranslatedToGerman] = useState(false);
+    const [supportsHover, setSupportsHover] = useState(true);
+    const [touchUiVisible, setTouchUiVisible] = useState(false);
     const isSubtitleRateLimited = subtitleError.toLowerCase().includes("rate limit");
     const hasSubtitleError = subtitleError.trim().length > 0;
     const displayedSubtitleText = translateToGerman
         ? (subtitleTranslatedToGerman ? subtitleText : "")
         : (nativeSubtitleText || subtitleText);
+    const isOverlayVisible = supportsHover ? false : touchUiVisible;
 
     const updateStreamInfo = (player?: Hls | null) => {
         const video = videoRef.current;
@@ -602,6 +605,42 @@ export default function WebcamItem({
         if (video) video.volume = volume;
     }, [volume]);
 
+    useEffect(() => {
+        if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+            return;
+        }
+
+        const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+        const updateSupportsHover = () => {
+            const nextSupportsHover = mediaQuery.matches;
+            setSupportsHover(nextSupportsHover);
+            if (nextSupportsHover) {
+                setTouchUiVisible(false);
+            }
+        };
+
+        updateSupportsHover();
+        mediaQuery.addEventListener("change", updateSupportsHover);
+
+        return () => {
+            mediaQuery.removeEventListener("change", updateSupportsHover);
+        };
+    }, []);
+
+    useEffect(() => {
+        setTouchUiVisible(false);
+    }, [url]);
+
+    const handleTileClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (supportsHover) return;
+
+        const target = event.target as HTMLElement | null;
+        if (target?.closest("button, input, select, textarea, a, label")) {
+            return;
+        }
+
+        setTouchUiVisible((current) => !current);
+    };
 
     useEffect(() => {
         if (!url) {
@@ -836,7 +875,7 @@ export default function WebcamItem({
      }, [url, subtitlesEnabled, subtitleTargetLanguage, subtitleChunkMs, hasNativeSubtitles]);
 
     return (
-        <div className="w-full h-full relative group">
+        <div className="w-full h-full relative group" onClick={handleTileClick}>
             { /* Video Component */}
             {url && url !== "" ? (
                 <>
@@ -872,7 +911,11 @@ export default function WebcamItem({
                     )}
 
                     {/* Video Controls */}
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 bg-black/60 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div
+                        className={`absolute bottom-2 left-2 right-2 flex items-center gap-2 bg-black/60 p-2 rounded transition-opacity ${
+                            isOverlayVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                    >
                         <button
                             onClick={handlePlayPause}
                             className="bg-gray-700 text-white px-2 py-1 rounded"
@@ -919,7 +962,9 @@ export default function WebcamItem({
                     if (!infoOverlayClickable) return;
                     onInfoOverlayClick?.();
                 }}
-                className={`absolute top-1 left-2 right-2 z-10 text-left text-xs bg-gray-300 text-gray/90 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity ${infoOverlayClickable ? "cursor-pointer" : "cursor-default"}`}
+                className={`absolute top-1 left-2 right-2 z-10 text-left text-xs bg-gray-300 text-gray/90 p-2 rounded transition-opacity ${
+                    isOverlayVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                } ${infoOverlayClickable ? "cursor-pointer" : "cursor-default"}`}
                 title={infoOverlayClickable ? `Menü ${isMenuVisible ? "ausblenden" : "einblenden"}` : undefined}
                 aria-label={infoOverlayClickable ? `Menü ${isMenuVisible ? "ausblenden" : "einblenden"}` : undefined}
             >
